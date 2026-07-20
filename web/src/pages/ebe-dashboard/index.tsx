@@ -1,11 +1,11 @@
 import { RoleWelcome } from "@/shared/ui";
 
-export function HastaDashboardPage() {
+export function EbeDashboardPage() {
   return (
     <RoleWelcome
-      title="Hasta Paneli"
+      title="Ebe Paneli"
       links={[
-        { to: "/hasta/randevu", label: "Randevu al" },
+        { to: "/nobet", label: "Nöbet" },
         { to: "/sikayet", label: "Şikayet" },
       ]}
     />

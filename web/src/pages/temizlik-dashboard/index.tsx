@@ -1,11 +1,11 @@
 import { RoleWelcome } from "@/shared/ui";
 
-export function HastaDashboardPage() {
+export function TemizlikDashboardPage() {
   return (
     <RoleWelcome
-      title="Hasta Paneli"
+      title="Temizlik Paneli"
       links={[
-        { to: "/hasta/randevu", label: "Randevu al" },
+        { to: "/temizlik/gorevler", label: "Görevlerim" },
         { to: "/sikayet", label: "Şikayet" },
       ]}
     />

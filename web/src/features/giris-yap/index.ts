@@ -1,4 +1,4 @@
-export { GirisYapForm } from "./ui/GirisYapForm";
+export { GirisYapForm, LoginForm } from "./ui/GirisYapForm";
 export {
   girisSchema,
   DEV_CREDENTIALS,

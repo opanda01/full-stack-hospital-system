@@ -1,15 +1,12 @@
 import { RoleWelcome } from "@/shared/ui";
 
-export function AdminDashboardPage() {
+export function BashekimDashboardPage() {
   return (
     <RoleWelcome
-      title="Yönetim Paneli"
+      title="Başhekim Paneli"
       links={[
         { to: "/departmanlar", label: "Departmanlar" },
         { to: "/personel", label: "Personel" },
-        { to: "/kullanicilar", label: "Kullanıcılar" },
-        { to: "/hasta-kayit", label: "Hasta kayıt" },
-        { to: "/nobet", label: "Nöbet" },
         { to: "/temizlik-ata", label: "Temizlik ata" },
         { to: "/sikayet", label: "Şikayetler" },
       ]}

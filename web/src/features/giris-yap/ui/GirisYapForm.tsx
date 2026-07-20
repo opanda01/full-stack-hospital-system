@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { homeForRole, useAuthStore } from "@/shared/auth";
-import { loginRequest } from "../api/login";
 import { girisSchema, type GirisFormValues } from "../model/schema";
 
+/** LoginForm — React Hook Form + Zod */
 export function GirisYapForm() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const login = useAuthStore((s) => s.login);
   const [hata, setHata] = useState<string | null>(null);
 
   const {
@@ -24,16 +25,19 @@ export function GirisYapForm() {
   const onSubmit = async (data: GirisFormValues) => {
     setHata(null);
     try {
-      const res = await loginRequest(data.email, data.sifre);
-      setAuth(
-        res.access_token,
-        [res.rol],
-        res.permissions ?? [],
-        res.refresh_token ?? null,
-      );
-      navigate(homeForRole(res.rol), { replace: true });
-    } catch {
-      setHata("E-posta veya şifre hatalı");
+      const me = await login(data.email, data.sifre);
+      navigate(homeForRole(me.rol), { replace: true });
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const detail = err.response?.data?.detail;
+        setHata(
+          typeof detail === "string"
+            ? detail
+            : "E-posta veya şifre hatalı",
+        );
+      } else {
+        setHata("Giriş başarısız");
+      }
     }
   };
 
@@ -76,3 +80,5 @@ export function GirisYapForm() {
     </form>
   );
 }
+
+export { GirisYapForm as LoginForm };

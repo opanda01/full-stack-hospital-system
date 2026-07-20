@@ -1,5 +1,6 @@
-import axios from "axios";
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/shared/auth";
+import * as authApi from "@/shared/auth/authApi";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "/api",
@@ -7,9 +8,63 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const { accessToken, token } = useAuthStore.getState();
+  const bearer = accessToken ?? token;
+  if (bearer) {
+    config.headers.Authorization = `Bearer ${bearer}`;
   }
   return config;
 });
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const { refreshToken, setTokens, clear } = useAuthStore.getState();
+  if (!refreshToken) {
+    clear();
+    return null;
+  }
+  try {
+    const res = await authApi.refresh(refreshToken);
+    setTokens(res.access_token, res.refresh_token);
+    if (res.rol) {
+      useAuthStore.setState({
+        roles: [res.rol],
+        permissions: res.permissions ?? [],
+      });
+    }
+    return res.access_token;
+  } catch {
+    clear();
+    return null;
+  }
+}
+
+api.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError) => {
+    const original = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+    if (error.response?.status !== 401 || !original || original._retry) {
+      return Promise.reject(error);
+    }
+    // Auth endpoint'lerinde tekrar deneme
+    if (original.url?.includes("/auth/login") || original.url?.includes("/auth/refresh")) {
+      return Promise.reject(error);
+    }
+    original._retry = true;
+    refreshPromise ??= refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+    const newToken = await refreshPromise;
+    if (!newToken) {
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/giris")) {
+        window.location.href = "/giris";
+      }
+      return Promise.reject(error);
+    }
+    original.headers.Authorization = `Bearer ${newToken}`;
+    return api(original);
+  },
+);

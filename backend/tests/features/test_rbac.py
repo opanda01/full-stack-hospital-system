@@ -7,7 +7,7 @@ from app.features.kullanicilar.models import Kullanici
 
 
 def auth_header(user: Kullanici) -> dict[str, str]:
-    token = create_access_token(str(user.id), {"rol": user.rol.value})
+    token = create_access_token(user.id, user.rol)
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -300,3 +300,133 @@ def test_login_returns_permissions(client, session):
     )
     assert r.status_code == 200
     assert "randevu:goruntule" in r.json()["permissions"]
+
+
+# --- Rol bazlı yetkili/yetkisiz (eksik roller) ---
+
+def test_mudur_personel_liste_200(client, session, seeded):
+    from app.core.security import hash_password
+    from app.features.kullanicilar.models import Kullanici
+
+    mudur = Kullanici(
+        tc_kimlik_no="90000000801",
+        ad="Mudur",
+        soyad="Test",
+        email="mudur-rbac@t.test",
+        sifre_hash=hash_password("Test1234!"),
+        rol=Rol.MUDUR,
+        aktif_mi=True,
+    )
+    session.add(mudur)
+    session.commit()
+    session.refresh(mudur)
+    r = client.get("/personel/", headers=auth_header(mudur))
+    assert r.status_code == 200
+
+
+def test_mudur_kullanici_create_403(client, session):
+    from app.core.security import hash_password
+    from app.features.kullanicilar.models import Kullanici
+
+    mudur = Kullanici(
+        tc_kimlik_no="90000000802",
+        ad="Mudur",
+        soyad="Deny",
+        email="mudur-deny@t.test",
+        sifre_hash=hash_password("Test1234!"),
+        rol=Rol.MUDUR,
+        aktif_mi=True,
+    )
+    session.add(mudur)
+    session.commit()
+    session.refresh(mudur)
+    r = client.post(
+        "/kullanicilar/",
+        headers=auth_header(mudur),
+        json={
+            "tc_kimlik_no": "90000000803",
+            "ad": "X",
+            "soyad": "Y",
+            "email": "x@t.test",
+            "sifre": "Test1234!",
+            "rol": "HASTA",
+        },
+    )
+    assert r.status_code == 403
+
+
+def test_ebe_randevu_liste_200(client, session, seeded):
+    from app.core.security import hash_password
+    from app.features.kullanicilar.models import Kullanici
+    from app.features.personel.models import Personel
+
+    ebe_u = Kullanici(
+        tc_kimlik_no="90000000804",
+        ad="Ebe",
+        soyad="Test",
+        email="ebe@t.test",
+        sifre_hash=hash_password("Test1234!"),
+        rol=Rol.EBE,
+        aktif_mi=True,
+    )
+    session.add(ebe_u)
+    session.commit()
+    session.refresh(ebe_u)
+    session.add(
+        Personel(
+            kullanici_id=ebe_u.id,
+            sicil_no="EBE-A",
+            departman_id=seeded["dep_a"].id,
+            unvan="Ebe",
+        )
+    )
+    session.commit()
+    r = client.get("/randevular/", headers=auth_header(ebe_u))
+    assert r.status_code == 200
+
+
+def test_ebe_temizlik_ata_403(client, session, seeded):
+    from app.core.security import hash_password
+    from app.features.kullanicilar.models import Kullanici
+
+    ebe_u = Kullanici(
+        tc_kimlik_no="90000000805",
+        ad="Ebe",
+        soyad="Deny",
+        email="ebe-deny@t.test",
+        sifre_hash=hash_password("Test1234!"),
+        rol=Rol.EBE,
+        aktif_mi=True,
+    )
+    session.add(ebe_u)
+    session.commit()
+    session.refresh(ebe_u)
+    r = client.post(
+        "/temizlik-gorevleri/",
+        json={
+            "personel_id": seeded["gorev_a"].personel_id,
+            "oda_bolum": "999",
+            "gorev_tarihi": "2030-02-01",
+        },
+        headers=auth_header(ebe_u),
+    )
+    assert r.status_code == 403
+
+
+def test_guvenlik_sikayet_gonder_matrisi():
+    assert kapsam_getir(Rol.GUVENLIK, "sikayet_oneri:gonder") != Kapsam.YOK
+    assert kapsam_getir(Rol.GUVENLIK, "randevu:olustur") == Kapsam.YOK
+
+
+def test_idari_personel_izin_matrisi():
+    assert kapsam_getir(Rol.IDARI_PERSONEL, "sikayet_oneri:gonder") != Kapsam.YOK
+    assert kapsam_getir(Rol.IDARI_PERSONEL, "kullanici:sil") == Kapsam.YOK
+
+
+def test_doktor_a_doktor_b_kaynak_403(client, seeded):
+    """DOKTOR A → DOKTOR B kaynağı — sahiplik (Faz 3 tamamlandı)."""
+    r = client.get(
+        f"/randevular/{seeded['randevu_b'].id}",
+        headers=auth_header(seeded["doktor_a"]),
+    )
+    assert r.status_code == 403

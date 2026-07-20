@@ -2,6 +2,7 @@
 
 from app.features.rbac.models import Izin, KullaniciRol, Rol, RolIzin  # noqa: F401
 from app.features.kullanicilar.models import Kullanici  # noqa: F401
+from app.features.auth.models import RefreshToken  # noqa: F401
 from app.features.departmanlar.models import Departman  # noqa: F401
 from app.features.personel.models import Personel  # noqa: F401
 from app.features.doktorlar.models import Doktor  # noqa: F401

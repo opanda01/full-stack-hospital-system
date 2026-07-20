@@ -7,8 +7,13 @@ from app.features.kullanicilar.models import Kullanici
 from app.features.kullanicilar.schemas import KullaniciCreate, KullaniciUpdate
 
 
-def list_kullanicilar(session: Session) -> list[Kullanici]:
-    return list(session.exec(select(Kullanici).order_by(Kullanici.id)).all())
+def list_kullanicilar(
+    session: Session, *, rol: Rol | None = None
+) -> list[Kullanici]:
+    stmt = select(Kullanici).order_by(Kullanici.id)
+    if rol is not None:
+        stmt = stmt.where(Kullanici.rol == rol)
+    return list(session.exec(stmt).all())
 
 
 def get_kullanici(session: Session, kullanici_id: int) -> Kullanici:
@@ -68,10 +73,14 @@ def set_rol(session: Session, kullanici_id: int, rol: Rol) -> Kullanici:
     return kullanici
 
 
-def deactivate_kullanici(session: Session, kullanici_id: int) -> Kullanici:
+def set_durum(session: Session, kullanici_id: int, aktif_mi: bool) -> Kullanici:
     kullanici = get_kullanici(session, kullanici_id)
-    kullanici.aktif_mi = False
+    kullanici.aktif_mi = aktif_mi
     session.add(kullanici)
     session.commit()
     session.refresh(kullanici)
     return kullanici
+
+
+def deactivate_kullanici(session: Session, kullanici_id: int) -> Kullanici:
+    return set_durum(session, kullanici_id, False)

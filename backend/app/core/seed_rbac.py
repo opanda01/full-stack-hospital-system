@@ -1,6 +1,7 @@
 """Demo kullanıcı seed — kod tabanlı Rol enum + IZIN_MATRISI.
 
 Kaynak: docs/rbac-yetki-matrisi.md, app/core/permissions.py
+Her rol için 1 demo kullanıcı; email varsa atlanır (idempotent).
 """
 
 from sqlmodel import Session, select
@@ -28,6 +29,13 @@ DEMO_KULLANICILAR: list[dict] = [
         "tc": "10000000002",
     },
     {
+        "email": "mudur@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Müdür",
+        "rol": Rol.MUDUR,
+        "tc": "10000000008",
+    },
+    {
         "email": "doktor@hastane.example.com",
         "ad": "Test",
         "soyad": "Doktor",
@@ -42,18 +50,11 @@ DEMO_KULLANICILAR: list[dict] = [
         "tc": "10000000004",
     },
     {
-        "email": "temizlik@hastane.example.com",
+        "email": "ebe@hastane.example.com",
         "ad": "Test",
-        "soyad": "Temizlik",
-        "rol": Rol.TEMIZLIK_PERSONELI,
-        "tc": "10000000005",
-    },
-    {
-        "email": "hasta@hastane.example.com",
-        "ad": "Test",
-        "soyad": "Hasta",
-        "rol": Rol.HASTA,
-        "tc": "10000000006",
+        "soyad": "Ebe",
+        "rol": Rol.EBE,
+        "tc": "10000000009",
     },
     {
         "email": "laborant@hastane.example.com",
@@ -63,13 +64,46 @@ DEMO_KULLANICILAR: list[dict] = [
         "tc": "10000000007",
     },
     {
-        "email": "mudur@hastane.example.com",
+        "email": "temizlik@hastane.example.com",
         "ad": "Test",
-        "soyad": "Müdür",
-        "rol": Rol.MUDUR,
-        "tc": "10000000008",
+        "soyad": "Temizlik",
+        "rol": Rol.TEMIZLIK_PERSONELI,
+        "tc": "10000000005",
+    },
+    {
+        "email": "guvenlik@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Güvenlik",
+        "rol": Rol.GUVENLIK,
+        "tc": "10000000010",
+    },
+    {
+        "email": "idari@hastane.example.com",
+        "ad": "Test",
+        "soyad": "İdari",
+        "rol": Rol.IDARI_PERSONEL,
+        "tc": "10000000011",
+    },
+    {
+        "email": "hasta@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Hasta",
+        "rol": Rol.HASTA,
+        "tc": "10000000006",
     },
 ]
+
+_PERSONEL_ROLLER = {
+    Rol.DOKTOR,
+    Rol.HEMSIRE,
+    Rol.EBE,
+    Rol.TEMIZLIK_PERSONELI,
+    Rol.BASHEKIM,
+    Rol.LABORANT,
+    Rol.MUDUR,
+    Rol.GUVENLIK,
+    Rol.IDARI_PERSONEL,
+}
 
 
 def seed_demo_kullanicilar(session: Session) -> None:
@@ -81,18 +115,18 @@ def seed_demo_kullanicilar(session: Session) -> None:
     sifre_hash = hash_password(DEMO_SIFRE)
     for item in DEMO_KULLANICILAR:
         existing = session.exec(
-            select(Kullanici).where(
-                (Kullanici.email == item["email"])
-                | (Kullanici.tc_kimlik_no == item["tc"])
-            )
+            select(Kullanici).where(Kullanici.email == item["email"])
         ).first()
         if existing:
-            existing.rol = item["rol"]
-            existing.email = item["email"]
-            existing.aktif_mi = True
-            session.add(existing)
+            # Idempotent: email varsa atla (duplicate oluşturma)
             kullanici = existing
         else:
+            # TC çakışması varsa da atla
+            tc_existing = session.exec(
+                select(Kullanici).where(Kullanici.tc_kimlik_no == item["tc"])
+            ).first()
+            if tc_existing:
+                continue
             kullanici = Kullanici(
                 tc_kimlik_no=item["tc"],
                 ad=item["ad"],
@@ -115,15 +149,10 @@ def seed_demo_kullanicilar(session: Session) -> None:
                     Hasta(kullanici_id=kullanici.id, tc_kimlik_no=item["tc"])
                 )
 
-        if item["rol"] in {
-            Rol.DOKTOR,
-            Rol.HEMSIRE,
-            Rol.TEMIZLIK_PERSONELI,
-            Rol.BASHEKIM,
-            Rol.LABORANT,
-            Rol.MUDUR,
-        }:
-            dep = session.exec(select(Departman).where(Departman.ad == "Kardiyoloji")).first()
+        if item["rol"] in _PERSONEL_ROLLER:
+            dep = session.exec(
+                select(Departman).where(Departman.ad == "Kardiyoloji")
+            ).first()
             if not dep:
                 dep = Departman(ad="Kardiyoloji", kategori="Dahili")
                 session.add(dep)
