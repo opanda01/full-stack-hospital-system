@@ -20,6 +20,7 @@ export function DoktorMuayeneEkraniPage() {
   const [tani, setTani] = useState("");
   const [tedavi, setTedavi] = useState("");
   const [tetkikTuru, setTetkikTuru] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
 
   const muayene = useMutation({
     mutationFn: async () =>
@@ -29,7 +30,13 @@ export function DoktorMuayeneEkraniPage() {
         tedavi_plani: tedavi,
         receteler: null,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["randevularim"] }),
+    onSuccess: () => {
+      setMsg("Muayene kaydedildi");
+      setTani("");
+      setTedavi("");
+      qc.invalidateQueries({ queryKey: ["randevularim"] });
+    },
+    onError: () => setMsg("Muayene kaydedilemedi"),
   });
 
   const tetkik = useMutation({
@@ -41,11 +48,23 @@ export function DoktorMuayeneEkraniPage() {
         tetkik_turu: tetkikTuru,
       });
     },
+    onSuccess: () => {
+      setMsg("Tetkik isteği oluşturuldu");
+      setTetkikTuru("");
+    },
+    onError: () => setMsg("Tetkik isteği oluşturulamadı"),
   });
 
   return (
-    <AppShell title="Muayene Ekranı" links={[{ to: "/doktor/randevularim", label: "Randevular" }]}>
+    <AppShell
+      title="Muayene Ekranı"
+      links={[
+        { to: "/doktor/randevularim", label: "Randevular" },
+        { to: "/sikayet", label: "Şikayet" },
+      ]}
+    >
       <div className="max-w-lg space-y-3 rounded border bg-white p-4">
+        {msg && <p className="text-sm text-slate-600">{msg}</p>}
         <select
           className="w-full rounded border px-3 py-2"
           value={randevuId}
@@ -56,7 +75,8 @@ export function DoktorMuayeneEkraniPage() {
             .filter((r) => r.durum !== "IPTAL")
             .map((r) => (
               <option key={r.id} value={r.id}>
-                #{r.id} — {new Date(r.tarih_saat).toLocaleString("tr-TR")}
+                #{r.id} — {new Date(r.tarih_saat).toLocaleString("tr-TR")} —{" "}
+                {r.durum}
               </option>
             ))}
         </select>
@@ -72,20 +92,24 @@ export function DoktorMuayeneEkraniPage() {
           value={tedavi}
           onChange={(e) => setTedavi(e.target.value)}
         />
-        <Button type="button" onClick={() => muayene.mutate()} disabled={!randevuId}>
+        <Button
+          type="button"
+          onClick={() => muayene.mutate()}
+          disabled={!randevuId || !tani || muayene.isPending}
+        >
           Muayene kaydet
         </Button>
         <hr />
         <input
           className="w-full rounded border px-3 py-2"
-          placeholder="Tetkik türü"
+          placeholder="Tetkik türü (örn. Tam kan sayımı)"
           value={tetkikTuru}
           onChange={(e) => setTetkikTuru(e.target.value)}
         />
         <Button
           type="button"
           onClick={() => tetkik.mutate()}
-          disabled={!randevuId || !tetkikTuru || !doktor}
+          disabled={!randevuId || !tetkikTuru || !doktor || tetkik.isPending}
         >
           Tetkik iste
         </Button>

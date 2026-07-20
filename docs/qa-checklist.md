@@ -5,6 +5,8 @@
 - [ ] doktor@hastane.example.com → /doktor/randevularim
 - [ ] hemsire@hastane.example.com → /hemsire
 - [ ] temizlik@hastane.example.com → /temizlik
+- [ ] laborant@hastane.example.com → /laborant
+- [ ] mudur@hastane.example.com → /admin
 - [ ] hasta@hastane.example.com (web) → /hasta
 - [ ] hasta@hastane.example.com (mobil) → randevularım
 
@@ -23,7 +25,7 @@
 
 ## Faz 5
 - [ ] Müdür nöbet oluşturur; personel kendi nöbetini görür
-- [ ] Temizlik görev tamamlar
+- [ ] Temizlik görev tamamlar / yönetim görev atar
 - [ ] Şikayet gönderilir; yönetim listeler
 
 Şifre (tümü): Test1234!

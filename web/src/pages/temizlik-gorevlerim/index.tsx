@@ -1,6 +1,7 @@
-﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AppShell, Button } from "@/shared/ui";
+﻿import { useQuery } from "@tanstack/react-query";
+import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { TemizlikGoreviTamamlaButton } from "@/features/temizlik-gorevi-tamamla";
 
 type Gorev = {
   id: number;
@@ -10,19 +11,19 @@ type Gorev = {
 };
 
 export function TemizlikGorevlerimPage() {
-  const qc = useQueryClient();
   const { data = [] } = useQuery({
     queryKey: ["temizlik"],
     queryFn: async () => (await api.get<Gorev[]>("/temizlik-gorevleri/")).data,
   });
-  const tamamla = useMutation({
-    mutationFn: (id: number) =>
-      api.patch(`/temizlik-gorevleri/${id}`, { durum: "TAMAMLANDI" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["temizlik"] }),
-  });
 
   return (
-    <AppShell title="Temizlik Görevlerim">
+    <AppShell
+      title="Temizlik Görevlerim"
+      links={[
+        { to: "/nobet", label: "Nöbetlerim" },
+        { to: "/sikayet", label: "Şikayet" },
+      ]}
+    >
       <ul className="space-y-2">
         {data.map((g) => (
           <li
@@ -33,9 +34,7 @@ export function TemizlikGorevlerimPage() {
               {g.oda_bolum} — {g.gorev_tarihi} — {g.durum}
             </span>
             {g.durum !== "TAMAMLANDI" && (
-              <Button type="button" onClick={() => tamamla.mutate(g.id)}>
-                Tamamla
-              </Button>
+              <TemizlikGoreviTamamlaButton gorevId={g.id} />
             )}
           </li>
         ))}

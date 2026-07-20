@@ -1,12 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { DepartmanListesi } from "@/widgets/departman-listesi";
 
 export function AdminDashboardPage() {
   const { data: randevular } = useQuery({
     queryKey: ["randevular-count"],
     queryFn: async () => {
       const { data } = await api.get("/randevular/");
+      return data as unknown[];
+    },
+  });
+  const { data: personeller } = useQuery({
+    queryKey: ["personel-count"],
+    queryFn: async () => {
+      const { data } = await api.get("/personel/");
       return data as unknown[];
     },
   });
@@ -24,15 +32,23 @@ export function AdminDashboardPage() {
       links={[
         { to: "/departmanlar", label: "Departmanlar" },
         { to: "/personel", label: "Personel" },
+        { to: "/kullanicilar", label: "Kullanıcılar" },
         { to: "/hasta-kayit", label: "Hasta kayıt" },
+        { to: "/nobet", label: "Nöbet" },
+        { to: "/temizlik-ata", label: "Temizlik ata" },
+        { to: "/sikayet", label: "Şikayetler" },
       ]}
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Kpi label="Aktif randevu" value={randevular?.length ?? "—"} />
         <Kpi label="Departman" value={departmanlar?.length ?? "—"} />
-        <Kpi label="Yatak kapasitesi (profil)" value="545" />
+        <Kpi label="Personel" value={personeller?.length ?? "—"} />
       </div>
-      <p className="mt-6 text-sm text-slate-600">
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-semibold text-slate-600">Departmanlar</h2>
+        <DepartmanListesi />
+      </section>
+      <p className="text-sm text-slate-600">
         Çanakkale Mehmet Akif Ersoy Devlet Hastanesi — yönetim özeti.
       </p>
     </AppShell>

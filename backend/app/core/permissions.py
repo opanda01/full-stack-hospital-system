@@ -109,3 +109,39 @@ def kapsam_getir(rol: Rol | str, kaynak_aksiyon: str) -> Kapsam:
 
 def izin_var_mi(rol: Rol | str, kaynak_aksiyon: str) -> bool:
     return kapsam_getir(rol, kaynak_aksiyon) != Kapsam.YOK
+
+
+def tum_izin_kodlari() -> list[str]:
+    kodlar: set[str] = set()
+    for matris in IZIN_MATRISI.values():
+        for kod in matris:
+            if kod != "*":
+                kodlar.add(kod)
+    return sorted(kodlar)
+
+
+def rol_izin_kodlari(rol: Rol | str) -> list[str]:
+    if isinstance(rol, str):
+        try:
+            rol = Rol(rol)
+        except ValueError:
+            return []
+    matris = IZIN_MATRISI.get(rol, {})
+    if "*" in matris:
+        return ["*"]
+    return sorted(matris.keys())
+
+
+def rol_izin_detaylari(rol: Rol | str) -> list[dict[str, str]]:
+    if isinstance(rol, str):
+        try:
+            rol = Rol(rol)
+        except ValueError:
+            return []
+    matris = IZIN_MATRISI.get(rol, {})
+    if "*" in matris:
+        return [{"kod": "*", "kapsam": Kapsam.GLOBAL.value}]
+    return [
+        {"kod": kod, "kapsam": kapsam.value}
+        for kod, kapsam in sorted(matris.items(), key=lambda x: x[0])
+    ]

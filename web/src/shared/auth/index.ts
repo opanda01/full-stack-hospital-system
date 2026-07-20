@@ -30,8 +30,11 @@ export const useAuthStore = create<AuthState>()(
       logout: () =>
         set({ token: null, refreshToken: null, roles: [], permissions: [] }),
       hasRole: (...roles) => roles.some((r) => get().roles.includes(r)),
-      hasPermission: (...codes) =>
-        codes.some((c) => get().permissions.includes(c)),
+      hasPermission: (...codes) => {
+        const perms = get().permissions;
+        if (perms.includes("*")) return true;
+        return codes.some((c) => perms.includes(c));
+      },
       primaryRole: () => get().roles[0] ?? null,
     }),
     { name: "hastane-auth" },

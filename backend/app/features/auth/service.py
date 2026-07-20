@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import Rol
+from app.core.permissions import rol_izin_kodlari
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -19,6 +20,7 @@ def _token_pair(kullanici: Kullanici) -> TokenResponse:
         access_token=create_access_token(str(kullanici.id), claims),
         refresh_token=create_refresh_token(str(kullanici.id), claims),
         rol=rol,
+        permissions=rol_izin_kodlari(rol),
     )
 
 

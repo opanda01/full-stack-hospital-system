@@ -10,8 +10,13 @@ import { PersonelYonetimiPage } from "@/pages/personel-yonetimi";
 import { DepartmanYonetimiPage } from "@/pages/departman-yonetimi";
 import { HastaKayitPage } from "@/pages/hasta-kayit";
 import { HastaDashboardPage } from "@/pages/hasta-dashboard";
+import { HastaRandevuPage } from "@/pages/hasta-randevu";
 import { LaborantPage } from "@/pages/laborant";
-import { useAuthStore } from "@/shared/auth";
+import { NobetYonetimiPage } from "@/pages/nobet-yonetimi";
+import { TemizlikAtaPage } from "@/pages/temizlik-ata";
+import { SikayetOneriPage } from "@/pages/sikayet-oneri";
+import { KullaniciYonetimiPage } from "@/pages/kullanici-yonetimi";
+import { homeForRole, useAuthStore } from "@/shared/auth";
 
 function RequireAuth({
   roles,
@@ -20,10 +25,10 @@ function RequireAuth({
   roles?: string[];
   children: React.ReactNode;
 }) {
-  const { token, hasRole } = useAuthStore();
+  const { token, hasRole, primaryRole } = useAuthStore();
   if (!token) return <Navigate to="/giris" replace />;
   if (roles?.length && !hasRole(...roles)) {
-    return <Navigate to="/giris" replace />;
+    return <Navigate to={homeForRole(primaryRole())} replace />;
   }
   return <>{children}</>;
 }
@@ -99,6 +104,14 @@ export function AppRouter() {
           }
         />
         <Route
+          path="/hasta/randevu"
+          element={
+            <RequireAuth roles={["HASTA"]}>
+              <HastaRandevuPage />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/personel"
           element={
             <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
@@ -119,6 +132,49 @@ export function AppRouter() {
           element={
             <RequireAuth roles={["ADMIN", "IDARI_PERSONEL"]}>
               <HastaKayitPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/nobet"
+          element={
+            <RequireAuth
+              roles={[
+                "ADMIN",
+                "BASHEKIM",
+                "MUDUR",
+                "DOKTOR",
+                "HEMSIRE",
+                "EBE",
+                "LABORANT",
+                "TEMIZLIK_PERSONELI",
+              ]}
+            >
+              <NobetYonetimiPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/temizlik-ata"
+          element={
+            <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
+              <TemizlikAtaPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/sikayet"
+          element={
+            <RequireAuth>
+              <SikayetOneriPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/kullanicilar"
+          element={
+            <RequireAuth roles={["ADMIN"]}>
+              <KullaniciYonetimiPage />
             </RequireAuth>
           }
         />

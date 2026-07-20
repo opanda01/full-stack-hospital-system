@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("/", response_model=list[KullaniciRead])
 def list_kullanicilar(
     session: Session = Depends(get_session),
-    _user=Depends(require_role(Rol.ADMIN)),
+    _user=Depends(require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)),
 ):
     return kullanici_service.list_kullanicilar(session)
 

@@ -36,6 +36,16 @@ def create_hasta(session: Session, data: HastaCreate) -> Hasta:
 
 
 def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta:
+    existing_user = session.exec(
+        select(Kullanici).where(
+            (Kullanici.email == data.email)
+            | (Kullanici.tc_kimlik_no == data.tc_kimlik_no)
+        )
+    ).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400, detail="Bu e-posta veya TC ile kayıt zaten var"
+        )
     kullanici = Kullanici(
         tc_kimlik_no=data.tc_kimlik_no,
         ad=data.ad,

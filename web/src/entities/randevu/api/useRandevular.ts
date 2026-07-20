@@ -4,11 +4,7 @@ import type { Randevu } from "../model/types";
 
 export function useRandevular() {
   return useQuery({
-    queryKey: ["randevu"],
-    queryFn: async () => {
-      const { data } = await api.get<Randevu[]>("/randevular");
-      return data;
-    },
-    enabled: false,
+    queryKey: ["randevular"],
+    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
   });
 }

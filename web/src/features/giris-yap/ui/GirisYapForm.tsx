@@ -25,7 +25,12 @@ export function GirisYapForm() {
     setHata(null);
     try {
       const res = await loginRequest(data.email, data.sifre);
-      setAuth(res.access_token, [res.rol], [], res.refresh_token ?? null);
+      setAuth(
+        res.access_token,
+        [res.rol],
+        res.permissions ?? [],
+        res.refresh_token ?? null,
+      );
       navigate(homeForRole(res.rol), { replace: true });
     } catch {
       setHata("E-posta veya şifre hatalı");

@@ -1,7 +1,7 @@
 export type Doktor = {
   id: number;
-  personelId: number;
-  uzmanlikAlani: string;
-  diplomaNo: string;
-  onlineRandevuAcikMi: boolean;
+  personel_id: number;
+  uzmanlik_alani: string;
+  diploma_no: string;
+  online_randevu_acik_mi: boolean;
 };

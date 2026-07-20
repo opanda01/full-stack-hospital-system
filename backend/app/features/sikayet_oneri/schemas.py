@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 
 class SikayetOneriCreate(BaseModel):
-    gonderen_kullanici_id: int
     tur: str
     icerik: str
 

@@ -63,9 +63,10 @@ def sync_yonetim_rolu(
     *,
     commit: bool = True,
 ) -> None:
-    """Personel.yonetim_gorevi değişince yönetim rollerini kullanici_roller ile senkronize et.
+    """Personel.yonetim_gorevi → kullanici_roller senkronu (metadata).
 
-    Meslek / sistem rolleri (DOKTOR, HASTA, …) korunur.
+    Canlı yetkilendirme Kullanici.rol + IZIN_MATRISI kullanır; bu fonksiyon
+    runtime guard'da çağrılmaz.
     """
     kullanici = session.get(Kullanici, kullanici_id)
     if kullanici is None:

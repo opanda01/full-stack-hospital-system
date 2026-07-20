@@ -1,4 +1,7 @@
 ﻿export type Departman = {
   id: number;
-  // TODO: alanlar
+  ad: string;
+  kategori: string | null;
+  aciklama: string | null;
+  kat_no: number | null;
 };
