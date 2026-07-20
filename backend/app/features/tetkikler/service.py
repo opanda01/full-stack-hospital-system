@@ -23,12 +23,8 @@ def listele(
             hasta = hasta_getir(session, current_user.id)
             return q.where(Tetkik.hasta_id == hasta.id)
         if current_user.rol == Rol.LABORANT:
-            # Laborant kendi girdiği sonuçları görür; sonuç yoksa istek listesi GLOBAL değil —
-            # başlangıç: laborant tüm sonuç girilebilir kayıtları görebilir yerine
-            # sadece sonuç_dosyasi dolu ve (ileride) laborant_id ile kısıtlanır.
-            # Spec: KENDI_KAYDIM — laborant için sonuç girdiği kayıtlar.
-            # Basit modelde sonuc_dosyasi set edilmişleri göster + tüm açık istekler:
-            return q  # laborant sonuç girerken liste ihtiyacı; sahiplik GET'te
+            # Laborant bekleyen istekleri ve sonuçlandırdıklarını görür
+            return q
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Kendi kaydı kapsamı bu rol için tanımlı değil",

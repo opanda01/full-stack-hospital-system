@@ -5,6 +5,7 @@ export type LoginResponse = {
   refresh_token?: string | null;
   token_type: string;
   rol: string;
+  permissions?: string[];
 };
 
 export async function loginRequest(email: string, sifre: string) {

@@ -17,7 +17,13 @@ export function HemsirePanelPage() {
   });
 
   return (
-    <AppShell title="Hemşire Paneli">
+    <AppShell
+      title="Hemşire Paneli"
+      links={[
+        { to: "/nobet", label: "Nöbetlerim" },
+        { to: "/sikayet", label: "Şikayet" },
+      ]}
+    >
       <p className="mb-4 text-sm text-slate-600">Departmanınızdaki randevular</p>
       {isLoading ? (
         <p>Yükleniyor…</p>

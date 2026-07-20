@@ -2,10 +2,13 @@
 
 Kaynak: Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS RBAC tasarımı.
 
-Bu belge **kaynak gerçeğidir**. Çalışan kod matrisi:
+Bu belge **tasarım özetidir**. Çalışan kod matrisi tek kaynak gerçeğidir:
 
 - [`backend/app/core/permissions.py`](../backend/app/core/permissions.py) → `IZIN_MATRISI`
 - Guard: `require_permission("kaynak:aksiyon")` → `request.state.kapsam`
+- Okuma API: `GET /rbac/roller`, `GET /rbac/izinler`, `GET /rbac/roller/{kod}/izinler`
+
+İzin kodları **iki nokta** formatındadır: `randevu:goruntule` (eski `.` formatı kullanılmaz).
 
 ---
 
@@ -13,15 +16,15 @@ Bu belge **kaynak gerçeğidir**. Çalışan kod matrisi:
 
 | Belge sütunu | Sistem rol kodları | Not |
 |--------------|-------------------|-----|
-| ADMIN | `ADMIN` | Tüm izinler |
-| BAŞHEKİM/MÜDÜR | `BASHEKIM`, `MUDUR` | Yönetim görevi (`Personel.yonetim_gorevi`); meslek rolünden ayrı |
+| ADMIN | `ADMIN` | Tüm izinler (`*`) |
+| BAŞHEKİM/MÜDÜR | `BASHEKIM`, `MUDUR` | Yönetim; birincil `Kullanici.rol` |
 | DOKTOR | `DOKTOR` | Meslek |
 | HEMŞİRE/EBE | `HEMSIRE`, `EBE` | Meslek |
 | LABORANT | `LABORANT` | Meslek |
 | TEMİZLİK | `TEMIZLIK_PERSONELI` | Meslek |
 | HASTA | `HASTA` | Sistem |
 
-Ek roller (matriste ayrı sütun yok; seed’de minimal): `BIRIM_SORUMLUSU`, `GUVENLIK`, `IDARI_PERSONEL`.
+Ek roller: `GUVENLIK`, `IDARI_PERSONEL`.
 
 ---
 
@@ -31,56 +34,52 @@ Semboller:
 
 - ✅ = rol düzeyinde izin var (`require_permission`)
 - ❌ = izin yok
-- *italik* = izin var ama **nesne kapsamı** (ownership / departman) service katmanında uygulanır — henüz tam implemente değil
+- *italik* = izin var; **nesne kapsamı** service katmanında uygulanır
 
 | Kaynak / Aksiyon | İzin kodu | ADMIN | BAŞHEKİM/MÜDÜR | DOKTOR | HEMŞİRE/EBE | LABORANT | TEMİZLİK | HASTA |
 |------------------|-----------|:-----:|:--------------:|:------:|:-----------:|:--------:|:--------:|:-----:|
-| Kullanıcı oluştur/sil | `kullanici.create` (+ ileride delete) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Personel listele (tümü) | `personel.read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Departman oluştur/düzenle | `departman.write` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Departman görüntüle | `departman.read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Doktor profili düzenle | `doktor.write` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
-| Randevu oluştur | `randevu.create` | ✅ | ✅ | ❌ | *kendi departmanı* | ❌ | ❌ | *kendi adına* |
-| Randevu görüntüle | `randevu.read` | ✅ | ✅ *rapor* | *kendi* | *kendi departmanı* | ❌ | ❌ | *kendi* |
-| Randevu iptal et | `randevu.cancel` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | *kendi* |
-| Muayene oluştur/düzenle | `muayene.create` | ✅ | ❌ | *kendi hastasına* | ❌ | ❌ | ❌ | ❌ |
-| Muayene görüntüle | `muayene.read` | ✅ | ✅ | *kendi yazdığı* | *asistan olduğu* | ❌ | ❌ | *kendi kaydı* |
-| Tetkik iste | `tetkik.iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Tetkik sonucu gir | `tetkik.sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Tetkik sonucu görüntüle | `tetkik.read` | ✅ | ❌ | *isteyen doktor* | ❌ | *kendi girdiği* | ❌ | *kendi sonucu* |
-| Nöbet çizelgesi oluştur | `nobet.write` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Nöbet çizelgesi görüntüle | `nobet.read` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
-| Temizlik görevi ata | `temizlik.write` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Temizlik görüntüle/güncelle | `temizlik.read` / `temizlik.tamamla` | ✅ | ✅ | ❌ | ❌ | ❌ | *sadece kendi* | ❌ |
-| Şikayet/öneri gönder | `sikayet.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Şikayet/öneri görüntüle (tümü) | `sikayet.read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Kullanıcı oluştur/sil | `kullanici:olustur` / `kullanici:sil` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Personel listele | `personel:listele` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Departman oluştur | `departman:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Departman görüntüle | `departman:goruntule` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Doktor profili düzenle | `doktor:profil_duzenle` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Randevu oluştur | `randevu:olustur` | ✅ | ✅ | ❌ | *departman* | ❌ | ❌ | *kendi* |
+| Randevu görüntüle | `randevu:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
+| Randevu iptal | `randevu:iptal` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | *kendi* |
+| Muayene oluştur | `muayene:olustur` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Muayene görüntüle | `muayene:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
+| Tetkik iste | `tetkik:iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Tetkik sonucu gir | `tetkik:sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Tetkik görüntüle | `tetkik:goruntule` | ✅ | ❌ | *isteyen* | ❌ | ✅ | ❌ | *kendi* |
+| Nöbet oluştur | `nobet:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
+| Temizlik ata | `temizlik_gorevi:ata` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Temizlik görüntüle/güncelle | `temizlik_gorevi:goruntule` / `temizlik_gorevi:guncelle` | ✅ | ✅ | ❌ | ❌ | ❌ | *kendi* | ❌ |
+| Şikayet gönder | `sikayet_oneri:gonder` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Şikayet tümünü gör | `sikayet_oneri:tumunu_goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
 ## 3. İki katmanlı yetki
 
-1. **Rol → izin (bu matris):** endpoint’e girilebilir mi? → `require_permission("randevu.read")`
-2. **Nesne kapsamı (object-level):** hangi kayıtlar? → service içinde (*kendi*, *departman*, *asistan*) — ayrı iş; matris satırındaki *italik* notlar bunu işaret eder.
-
-Örnek: Hemşire `randevu.create` alır; service yalnızca kendi `departman_id` için oluşturmaya izin verir.
+1. **Rol → izin:** endpoint’e girilebilir mi? → `require_permission("randevu:goruntule")`
+2. **Nesne kapsamı:** hangi kayıtlar? → `Kapsam` + `scope.py` / service filtreleri
 
 ---
 
-## 4. Yönetim görevi hatırlatması
+## 4. Birincil rol modeli
 
-`BASHEKIM` / `MUDUR` meslek değildir. Örnek:
+Canlı yetkilendirme **`Kullanici.rol`** (tek birincil rol) üzerinden yapılır.
 
-- Kullanıcı rolleri: `DOKTOR`
-- `Personel.yonetim_gorevi = BASHEKIM` → `BASHEKIM` rolü `kullanici_roller`’a senkronize edilir
-- Etkin izinler = `DOKTOR` ∪ `BASHEKIM`
+`Personel.yonetim_gorevi` + `sync_yonetim_rolu` / `kullanici_roller` **canlı auth’ta kullanılmaz**; yalnızca legacy/metadata yardımcısıdır. DB `roller` / `izinler` tabloları şema uyumu içindir; guard `IZIN_MATRISI` okur.
 
 ---
 
-## 5. Seed senkronu
+## 5. Seed
 
 ```bash
 cd backend
 python -m app.core.seed_cli
 ```
 
-`seed_rbac` sistem rollerinin `rol_izinler` bağlarını bu matrise **tam senkron** eder (eksik ekler, fazla kaldırır).
+Demo kullanıcılar oluşturulur; izinler kod matrisinden gelir (DB `rol_izinler` senkronu yoktur).

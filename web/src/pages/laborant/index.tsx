@@ -17,17 +17,23 @@ export function LaborantPage() {
     queryFn: async () => (await api.get<Tetkik[]>("/tetkikler/")).data,
   });
   const [sonuc, setSonuc] = useState<Record<number, string>>({});
+  const [msg, setMsg] = useState<string | null>(null);
   const kaydet = useMutation({
     mutationFn: ({ id, text }: { id: number; text: string }) =>
       api.patch(`/tetkikler/${id}/sonuc`, {
         sonuc_dosyasi: text,
         durum: "SONUCLANDI",
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tetkikler"] }),
+    onSuccess: () => {
+      setMsg("Sonuç kaydedildi");
+      qc.invalidateQueries({ queryKey: ["tetkikler"] });
+    },
+    onError: () => setMsg("Sonuç kaydedilemedi"),
   });
 
   return (
     <AppShell title="Laborant — Tetkik Sonuçları">
+      {msg && <p className="mb-3 text-sm text-slate-600">{msg}</p>}
       <ul className="space-y-3">
         {data.map((t) => (
           <li key={t.id} className="rounded border bg-white p-3 text-sm">
@@ -36,9 +42,10 @@ export function LaborantPage() {
             </p>
             {t.durum !== "SONUCLANDI" && (
               <div className="mt-2 flex gap-2">
-                <input
+                <textarea
                   className="flex-1 rounded border px-2 py-1"
-                  placeholder="Sonuç / dosya yolu"
+                  rows={2}
+                  placeholder="Sonuç metni (ör. Hemoglobin: 13.2 g/dL)"
                   value={sonuc[t.id] ?? ""}
                   onChange={(e) =>
                     setSonuc((s) => ({ ...s, [t.id]: e.target.value }))
@@ -47,7 +54,10 @@ export function LaborantPage() {
                 <Button
                   type="button"
                   onClick={() =>
-                    kaydet.mutate({ id: t.id, text: sonuc[t.id] || "sonuc.pdf" })
+                    kaydet.mutate({
+                      id: t.id,
+                      text: (sonuc[t.id] || "").trim() || "Sonuç girildi",
+                    })
                   }
                 >
                   Kaydet
@@ -55,10 +65,13 @@ export function LaborantPage() {
               </div>
             )}
             {t.sonuc_dosyasi && (
-              <p className="mt-1 text-slate-500">Sonuç: {t.sonuc_dosyasi}</p>
+              <p className="mt-1 text-slate-600">Sonuç: {t.sonuc_dosyasi}</p>
             )}
           </li>
         ))}
+        {data.length === 0 && (
+          <p className="text-slate-500">Bekleyen tetkik yok.</p>
+        )}
       </ul>
     </AppShell>
   );

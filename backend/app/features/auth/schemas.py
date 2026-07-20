@@ -13,6 +13,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     refresh_token: str | None = None
     rol: Rol
+    permissions: list[str] = []
 
 
 class RefreshRequest(BaseModel):

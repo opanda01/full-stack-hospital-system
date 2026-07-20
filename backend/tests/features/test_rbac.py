@@ -210,3 +210,93 @@ def test_hemsire_kendi_departman_randevu_200(client, seeded):
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 200
+
+
+def test_muayene_list_doktor_only_own(client, seeded, session):
+    from app.features.muayeneler.models import MuayeneKaydi
+
+    m_a = MuayeneKaydi(
+        randevu_id=seeded["randevu_a"].id, tani="A", tedavi_plani="T", receteler=None
+    )
+    m_b = MuayeneKaydi(
+        randevu_id=seeded["randevu_b"].id, tani="B", tedavi_plani="T", receteler=None
+    )
+    session.add_all([m_a, m_b])
+    session.commit()
+
+    r = client.get("/muayeneler/", headers=auth_header(seeded["doktor_a"]))
+    assert r.status_code == 200
+    ids = {row["randevu_id"] for row in r.json()}
+    assert seeded["randevu_a"].id in ids
+    assert seeded["randevu_b"].id not in ids
+
+
+def test_muayene_list_hemsire_departman(client, seeded, session):
+    from app.features.muayeneler.models import MuayeneKaydi
+
+    m_a = MuayeneKaydi(
+        randevu_id=seeded["randevu_a"].id, tani="A", tedavi_plani="T", receteler=None
+    )
+    m_b = MuayeneKaydi(
+        randevu_id=seeded["randevu_b"].id, tani="B", tedavi_plani="T", receteler=None
+    )
+    session.add_all([m_a, m_b])
+    session.commit()
+
+    r = client.get("/muayeneler/", headers=auth_header(seeded["hemsire"]))
+    assert r.status_code == 200
+    ids = {row["randevu_id"] for row in r.json()}
+    assert seeded["randevu_a"].id in ids
+    assert seeded["randevu_b"].id not in ids
+
+
+def test_rbac_roller_admin_200(client, seeded):
+    r = client.get("/rbac/roller", headers=auth_header(seeded["admin"]))
+    assert r.status_code == 200
+    assert any(x["kod"] == "DOKTOR" for x in r.json())
+
+
+def test_rbac_put_izinler_405(client, seeded):
+    r = client.put(
+        "/rbac/roller/DOKTOR/izinler",
+        json={"izin_kodlari": ["randevu:goruntule"]},
+        headers=auth_header(seeded["admin"]),
+    )
+    assert r.status_code == 405
+
+
+def test_auth_register_hasta(client):
+    r = client.post(
+        "/auth/register",
+        json={
+            "tc_kimlik_no": "88888888881",
+            "ad": "Yeni",
+            "soyad": "Hasta",
+            "email": "yeni.hasta@example.com",
+            "sifre": "Test1234!",
+        },
+    )
+    assert r.status_code == 201
+    assert r.json()["tc_kimlik_no"] == "88888888881"
+
+
+def test_login_returns_permissions(client, session):
+    from app.core.security import hash_password
+    from app.features.kullanicilar.models import Kullanici
+
+    user = Kullanici(
+        tc_kimlik_no="90000000999",
+        ad="Perm",
+        soyad="Test",
+        email="perm@example.com",
+        sifre_hash=hash_password("Test1234!"),
+        rol=Rol.DOKTOR,
+        aktif_mi=True,
+    )
+    session.add(user)
+    session.commit()
+    r = client.post(
+        "/auth/login", json={"email": "perm@example.com", "sifre": "Test1234!"}
+    )
+    assert r.status_code == 200
+    assert "randevu:goruntule" in r.json()["permissions"]

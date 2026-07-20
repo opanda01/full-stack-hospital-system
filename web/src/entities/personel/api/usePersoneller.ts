@@ -5,10 +5,6 @@ import type { Personel } from "../model/types";
 export function usePersoneller() {
   return useQuery({
     queryKey: ["personel"],
-    queryFn: async () => {
-      const { data } = await api.get<Personel[]>("/personel");
-      return data;
-    },
-    enabled: false,
+    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
   });
 }

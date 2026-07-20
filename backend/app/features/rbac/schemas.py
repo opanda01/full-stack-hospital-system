@@ -20,5 +20,12 @@ class IzinRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RolIzinDetay(BaseModel):
+    kod: str
+    kapsam: str
+
+
 class RolIzinlerUpdate(BaseModel):
+    """Eski şema — PUT artık desteklenmiyor."""
+
     izin_kodlari: list[str]

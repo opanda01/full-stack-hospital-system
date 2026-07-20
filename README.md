@@ -87,7 +87,7 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/index.ts
 
 ## Mimari kurallar (özet)
 
-**Backend:** Her feature kendi `models` / `schemas` / `service` / `router` dosyalarını taşır. Feature’lar birbirinin **service** fonksiyonunu import edebilir; **router**’lar birbirini çağırmaz. Yetkilendirme `core/security.py` içindeki `require_permission(...)` ile yapılır (izin kodları DB’deki `izinler` tablosundan gelir).
+**Backend:** Her feature kendi `models` / `schemas` / `service` / `router` dosyalarını taşır. Feature’lar birbirinin **service** fonksiyonunu import edebilir; **router**’lar birbirini çağırmaz. Yetkilendirme `core/security.py` içindeki `require_permission(...)` ile yapılır (izinler `IZIN_MATRISI` kod matrisinden gelir).
 
 **Web (FSD):** Bağımlılık yönü yalnızca `app → pages → widgets → features → entities → shared`. Her feature/entity public API için `index.ts` dışa aktarır.
 
@@ -118,4 +118,6 @@ alembic upgrade head
 python -m app.core.seed_cli
 ```
 
-Demo şifre: `Test1234!` — `admin@hastane.test`, `doktor@hastane.test`, `hasta@hastane.test`, …
+Demo şifre: `Test1234!` — örn. `admin@hastane.example.com`, `doktor@hastane.example.com`, `hasta@hastane.example.com`, `laborant@hastane.example.com`, `mudur@hastane.example.com`.
+
+Shared types: [`packages/shared-types/README.md`](packages/shared-types/README.md) · Production: [`docs/PRODUCTION.md`](docs/PRODUCTION.md)

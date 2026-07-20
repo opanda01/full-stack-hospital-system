@@ -24,7 +24,10 @@ def create_muayene(
 
 @router.get("/", response_model=list[MuayeneRead])
 def list_muayeneler(
+    request: Request,
+    current_user: Kullanici = Depends(require_permission("muayene:goruntule")),
     session: Session = Depends(get_session),
-    _user=Depends(require_permission("muayene:goruntule")),
 ):
-    return muayene_service.list_muayeneler(session)
+    return muayene_service.list_muayeneler(
+        session, current_user, request.state.kapsam
+    )

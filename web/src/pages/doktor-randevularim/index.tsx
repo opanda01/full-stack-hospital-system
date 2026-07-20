@@ -23,6 +23,8 @@ export function DoktorRandevularimPage() {
       links={[
         { to: "/doktor/profil", label: "Profil" },
         { to: "/doktor/muayene", label: "Muayene" },
+        { to: "/nobet", label: "Nöbet" },
+        { to: "/sikayet", label: "Şikayet" },
       ]}
     >
       {isLoading ? (

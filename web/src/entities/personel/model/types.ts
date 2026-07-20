@@ -1,4 +1,9 @@
 ﻿export type Personel = {
   id: number;
-  // TODO: alanlar
+  kullanici_id: number;
+  sicil_no: string;
+  departman_id: number | null;
+  unvan: string | null;
+  amir_id?: number | null;
+  yonetim_gorevi?: string | null;
 };

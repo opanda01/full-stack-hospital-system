@@ -55,6 +55,20 @@ DEMO_KULLANICILAR: list[dict] = [
         "rol": Rol.HASTA,
         "tc": "10000000006",
     },
+    {
+        "email": "laborant@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Laborant",
+        "rol": Rol.LABORANT,
+        "tc": "10000000007",
+    },
+    {
+        "email": "mudur@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Müdür",
+        "rol": Rol.MUDUR,
+        "tc": "10000000008",
+    },
 ]
 
 
@@ -106,6 +120,8 @@ def seed_demo_kullanicilar(session: Session) -> None:
             Rol.HEMSIRE,
             Rol.TEMIZLIK_PERSONELI,
             Rol.BASHEKIM,
+            Rol.LABORANT,
+            Rol.MUDUR,
         }:
             dep = session.exec(select(Departman).where(Departman.ad == "Kardiyoloji")).first()
             if not dep:
