@@ -1,0 +1,145 @@
+"""Demo kullanıcı seed — kod tabanlı Rol enum + IZIN_MATRISI.
+
+Kaynak: docs/rbac-yetki-matrisi.md, app/core/permissions.py
+"""
+
+from sqlmodel import Session, select
+
+from app.core.enums import Rol
+from app.core.security import hash_password
+import app.core.models_registry  # noqa: F401
+from app.features.kullanicilar.models import Kullanici
+
+DEMO_SIFRE = "Test1234!"
+
+DEMO_KULLANICILAR: list[dict] = [
+    {
+        "email": "admin@hastane.example.com",
+        "ad": "Sistem",
+        "soyad": "Admin",
+        "rol": Rol.ADMIN,
+        "tc": "10000000001",
+    },
+    {
+        "email": "bashekim@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Başhekim",
+        "rol": Rol.BASHEKIM,
+        "tc": "10000000002",
+    },
+    {
+        "email": "doktor@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Doktor",
+        "rol": Rol.DOKTOR,
+        "tc": "10000000003",
+    },
+    {
+        "email": "hemsire@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Hemşire",
+        "rol": Rol.HEMSIRE,
+        "tc": "10000000004",
+    },
+    {
+        "email": "temizlik@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Temizlik",
+        "rol": Rol.TEMIZLIK_PERSONELI,
+        "tc": "10000000005",
+    },
+    {
+        "email": "hasta@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Hasta",
+        "rol": Rol.HASTA,
+        "tc": "10000000006",
+    },
+]
+
+
+def seed_demo_kullanicilar(session: Session) -> None:
+    from app.features.departmanlar.models import Departman
+    from app.features.doktorlar.models import Doktor
+    from app.features.hastalar.models import Hasta
+    from app.features.personel.models import Personel
+
+    sifre_hash = hash_password(DEMO_SIFRE)
+    for item in DEMO_KULLANICILAR:
+        existing = session.exec(
+            select(Kullanici).where(
+                (Kullanici.email == item["email"])
+                | (Kullanici.tc_kimlik_no == item["tc"])
+            )
+        ).first()
+        if existing:
+            existing.rol = item["rol"]
+            existing.email = item["email"]
+            existing.aktif_mi = True
+            session.add(existing)
+            kullanici = existing
+        else:
+            kullanici = Kullanici(
+                tc_kimlik_no=item["tc"],
+                ad=item["ad"],
+                soyad=item["soyad"],
+                email=item["email"],
+                telefon=None,
+                sifre_hash=sifre_hash,
+                rol=item["rol"],
+                aktif_mi=True,
+            )
+            session.add(kullanici)
+            session.flush()
+
+        if item["rol"] == Rol.HASTA:
+            hasta = session.exec(
+                select(Hasta).where(Hasta.kullanici_id == kullanici.id)
+            ).first()
+            if not hasta:
+                session.add(
+                    Hasta(kullanici_id=kullanici.id, tc_kimlik_no=item["tc"])
+                )
+
+        if item["rol"] in {
+            Rol.DOKTOR,
+            Rol.HEMSIRE,
+            Rol.TEMIZLIK_PERSONELI,
+            Rol.BASHEKIM,
+        }:
+            dep = session.exec(select(Departman).where(Departman.ad == "Kardiyoloji")).first()
+            if not dep:
+                dep = Departman(ad="Kardiyoloji", kategori="Dahili")
+                session.add(dep)
+                session.flush()
+            personel = session.exec(
+                select(Personel).where(Personel.kullanici_id == kullanici.id)
+            ).first()
+            if not personel:
+                personel = Personel(
+                    kullanici_id=kullanici.id,
+                    sicil_no=f"DEMO-{item['rol']}-{item['tc'][-4:]}",
+                    departman_id=dep.id,
+                    unvan=item["rol"],
+                )
+                session.add(personel)
+                session.flush()
+            if item["rol"] == Rol.DOKTOR:
+                doktor = session.exec(
+                    select(Doktor).where(Doktor.personel_id == personel.id)
+                ).first()
+                if not doktor:
+                    session.add(
+                        Doktor(
+                            personel_id=personel.id,
+                            uzmanlik_alani="Kardiyoloji",
+                            diploma_no=f"DEMO-DIP-{item['tc'][-4:]}",
+                            online_randevu_acik_mi=True,
+                        )
+                    )
+    session.commit()
+
+
+def seed_rbac(session: Session, *, demo_admin: bool = True) -> None:
+    """Geriye uyum — demo kullanıcıları oluşturur."""
+    seed_demo_kullanicilar(session)

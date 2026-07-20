@@ -57,6 +57,7 @@ Backend konteyneri ayaktayken veya lokal venv ile:
 ```bash
 cd backend
 alembic upgrade head
+python -m app.core.seed_cli
 ```
 
 ### 4. Web (host)
@@ -86,13 +87,35 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/index.ts
 
 ## Mimari kurallar (özet)
 
-**Backend:** Her feature kendi `models` / `schemas` / `service` / `router` dosyalarını taşır. Feature’lar birbirinin **service** fonksiyonunu import edebilir; **router**’lar birbirini çağırmaz. Rol yetkilendirmesi `core/security.py` içindeki `require_role(...)` ile yapılır.
+**Backend:** Her feature kendi `models` / `schemas` / `service` / `router` dosyalarını taşır. Feature’lar birbirinin **service** fonksiyonunu import edebilir; **router**’lar birbirini çağırmaz. Yetkilendirme `core/security.py` içindeki `require_permission(...)` ile yapılır (izin kodları DB’deki `izinler` tablosundan gelir).
 
 **Web (FSD):** Bağımlılık yönü yalnızca `app → pages → widgets → features → entities → shared`. Her feature/entity public API için `index.ts` dışa aktarır.
 
 **Mobile:** Sadece hasta rolü; sadeleştirilmiş FSD (`entities` / `features` / `shared`) + Expo Router.
 
-## Roller
+## RBAC (rol / izin / kapsam)
 
-`ADMIN`, `BASHEKIM`, `MUDUR`, `DOKTOR`, `HEMSIRE`, `EBE`, `LABORANT`, `TEMIZLIK_PERSONELI`, `GUVENLIK`, `IDARI_PERSONEL`, `HASTA`
-"# full-stack-hospital-system" 
+Yetkilendirme **kod tabanlı**dır:
+
+| Parça | Dosya |
+|-------|--------|
+| Roller | `app/core/enums.py` → `Rol` |
+| İzin matrisi + kapsam | `app/core/permissions.py` → `IZIN_MATRISI`, `Kapsam` |
+| Guard | `app/core/security.py` → `require_permission` / `require_role` |
+| Query filtre | `app/core/scope.py` |
+| Lookup | `app/core/lookups.py` |
+| Model registry | `app/core/models_registry.py` |
+
+- `Kullanici.rol` tek birincil roldür.
+- `require_permission("randevu:goruntule")` → `request.state.kapsam` (`GLOBAL` / `KENDI_KAYDIM` / `DEPARTMANIM`).
+- Belge: [`docs/rbac-yetki-matrisi.md`](docs/rbac-yetki-matrisi.md)
+
+### Seed
+
+```bash
+cd backend
+alembic upgrade head
+python -m app.core.seed_cli
+```
+
+Demo şifre: `Test1234!` — `admin@hastane.test`, `doktor@hastane.test`, `hasta@hastane.test`, …

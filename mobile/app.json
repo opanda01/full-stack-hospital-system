@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "HBYS Hasta",
+    "slug": "hastane-sistemi-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "hastane",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
