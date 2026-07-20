@@ -70,7 +70,7 @@ def _user(
 
 
 def auth_header(user: Kullanici) -> dict[str, str]:
-    token = create_access_token(str(user.id), {"rol": user.rol.value})
+    token = create_access_token(user.id, user.rol)
     return {"Authorization": f"Bearer {token}"}
 
 

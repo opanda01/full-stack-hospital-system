@@ -1,36 +1,45 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { GirisPage } from "@/pages/giris";
+import { ForbiddenPage } from "@/pages/forbidden";
 import { AdminDashboardPage } from "@/pages/admin-dashboard";
+import { BashekimDashboardPage } from "@/pages/bashekim-dashboard";
+import { MudurDashboardPage } from "@/pages/mudur-dashboard";
+import { DoktorDashboardPage } from "@/pages/doktor-dashboard";
 import { DoktorRandevularimPage } from "@/pages/doktor-randevularim";
 import { DoktorMuayeneEkraniPage } from "@/pages/doktor-muayene-ekrani";
 import { DoktorProfilPage } from "@/pages/doktor-profil";
+import { HemsireDashboardPage } from "@/pages/hemsire-dashboard";
 import { HemsirePanelPage } from "@/pages/hemsire-panel";
+import { EbeDashboardPage } from "@/pages/ebe-dashboard";
+import { TemizlikDashboardPage } from "@/pages/temizlik-dashboard";
 import { TemizlikGorevlerimPage } from "@/pages/temizlik-gorevlerim";
 import { PersonelYonetimiPage } from "@/pages/personel-yonetimi";
 import { DepartmanYonetimiPage } from "@/pages/departman-yonetimi";
 import { HastaKayitPage } from "@/pages/hasta-kayit";
 import { HastaDashboardPage } from "@/pages/hasta-dashboard";
 import { HastaRandevuPage } from "@/pages/hasta-randevu";
+import { LaborantDashboardPage } from "@/pages/laborant-dashboard";
 import { LaborantPage } from "@/pages/laborant";
 import { NobetYonetimiPage } from "@/pages/nobet-yonetimi";
 import { TemizlikAtaPage } from "@/pages/temizlik-ata";
 import { SikayetOneriPage } from "@/pages/sikayet-oneri";
 import { KullaniciYonetimiPage } from "@/pages/kullanici-yonetimi";
-import { homeForRole, useAuthStore } from "@/shared/auth";
+import { GuvenlikDashboardPage } from "@/pages/guvenlik-dashboard";
+import { IdariDashboardPage } from "@/pages/idari-dashboard";
+import { ProtectedRoute, RoleGuard } from "@/shared/auth";
 
-function RequireAuth({
-  roles,
+function Guard({
+  roller,
   children,
 }: {
-  roles?: string[];
+  roller?: string[];
   children: React.ReactNode;
 }) {
-  const { token, hasRole, primaryRole } = useAuthStore();
-  if (!token) return <Navigate to="/giris" replace />;
-  if (roles?.length && !hasRole(...roles)) {
-    return <Navigate to={homeForRole(primaryRole())} replace />;
-  }
-  return <>{children}</>;
+  return (
+    <ProtectedRoute>
+      {roller?.length ? <RoleGuard roller={roller}>{children}</RoleGuard> : children}
+    </ProtectedRoute>
+  );
 }
 
 export function AppRouter() {
@@ -39,107 +48,181 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<Navigate to="/giris" replace />} />
         <Route path="/giris" element={<GirisPage />} />
+        <Route path="/403" element={<ForbiddenPage />} />
+
         <Route
           path="/admin"
           element={
-            <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
+            <Guard roller={["ADMIN"]}>
               <AdminDashboardPage />
-            </RequireAuth>
+            </Guard>
+          }
+        />
+        <Route
+          path="/bashekim"
+          element={
+            <Guard roller={["BASHEKIM"]}>
+              <BashekimDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/mudur"
+          element={
+            <Guard roller={["MUDUR"]}>
+              <MudurDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/doktor"
+          element={
+            <Guard roller={["DOKTOR"]}>
+              <DoktorDashboardPage />
+            </Guard>
           }
         />
         <Route
           path="/doktor/randevularim"
           element={
-            <RequireAuth roles={["DOKTOR"]}>
+            <Guard roller={["DOKTOR"]}>
               <DoktorRandevularimPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/doktor/muayene"
           element={
-            <RequireAuth roles={["DOKTOR"]}>
+            <Guard roller={["DOKTOR"]}>
               <DoktorMuayeneEkraniPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/doktor/profil"
           element={
-            <RequireAuth roles={["DOKTOR"]}>
+            <Guard roller={["DOKTOR"]}>
               <DoktorProfilPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/hemsire"
           element={
-            <RequireAuth roles={["HEMSIRE", "EBE"]}>
+            <Guard roller={["HEMSIRE"]}>
+              <HemsireDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/hemsire/panel"
+          element={
+            <Guard roller={["HEMSIRE", "EBE"]}>
               <HemsirePanelPage />
-            </RequireAuth>
+            </Guard>
+          }
+        />
+        <Route
+          path="/ebe"
+          element={
+            <Guard roller={["EBE"]}>
+              <EbeDashboardPage />
+            </Guard>
           }
         />
         <Route
           path="/temizlik"
           element={
-            <RequireAuth roles={["TEMIZLIK_PERSONELI"]}>
+            <Guard roller={["TEMIZLIK_PERSONELI"]}>
+              <TemizlikDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/temizlik/gorevler"
+          element={
+            <Guard roller={["TEMIZLIK_PERSONELI"]}>
               <TemizlikGorevlerimPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/laborant"
           element={
-            <RequireAuth roles={["LABORANT", "ADMIN"]}>
+            <Guard roller={["LABORANT"]}>
+              <LaborantDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/laborant/isler"
+          element={
+            <Guard roller={["LABORANT", "ADMIN"]}>
               <LaborantPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/hasta"
           element={
-            <RequireAuth roles={["HASTA"]}>
+            <Guard roller={["HASTA"]}>
               <HastaDashboardPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/hasta/randevu"
           element={
-            <RequireAuth roles={["HASTA"]}>
+            <Guard roller={["HASTA"]}>
               <HastaRandevuPage />
-            </RequireAuth>
+            </Guard>
+          }
+        />
+        <Route
+          path="/guvenlik"
+          element={
+            <Guard roller={["GUVENLIK"]}>
+              <GuvenlikDashboardPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/idari"
+          element={
+            <Guard roller={["IDARI_PERSONEL"]}>
+              <IdariDashboardPage />
+            </Guard>
           }
         />
         <Route
           path="/personel"
           element={
-            <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
+            <Guard roller={["ADMIN", "BASHEKIM", "MUDUR"]}>
               <PersonelYonetimiPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/departmanlar"
           element={
-            <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
+            <Guard roller={["ADMIN", "BASHEKIM", "MUDUR"]}>
               <DepartmanYonetimiPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/hasta-kayit"
           element={
-            <RequireAuth roles={["ADMIN", "IDARI_PERSONEL"]}>
+            <Guard roller={["ADMIN", "IDARI_PERSONEL"]}>
               <HastaKayitPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/nobet"
           element={
-            <RequireAuth
-              roles={[
+            <Guard
+              roller={[
                 "ADMIN",
                 "BASHEKIM",
                 "MUDUR",
@@ -151,31 +234,31 @@ export function AppRouter() {
               ]}
             >
               <NobetYonetimiPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/temizlik-ata"
           element={
-            <RequireAuth roles={["ADMIN", "BASHEKIM", "MUDUR"]}>
+            <Guard roller={["ADMIN", "BASHEKIM", "MUDUR"]}>
               <TemizlikAtaPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/sikayet"
           element={
-            <RequireAuth>
+            <Guard>
               <SikayetOneriPage />
-            </RequireAuth>
+            </Guard>
           }
         />
         <Route
           path="/kullanicilar"
           element={
-            <RequireAuth roles={["ADMIN"]}>
+            <Guard roller={["ADMIN"]}>
               <KullaniciYonetimiPage />
-            </RequireAuth>
+            </Guard>
           }
         />
       </Routes>

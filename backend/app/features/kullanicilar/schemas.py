@@ -33,3 +33,11 @@ class KullaniciUpdate(BaseModel):
     telefon: str | None = None
     aktif_mi: bool | None = None
     rol: Rol | None = None
+
+
+class KullaniciRolUpdate(BaseModel):
+    rol: Rol
+
+
+class KullaniciDurumUpdate(BaseModel):
+    aktif_mi: bool

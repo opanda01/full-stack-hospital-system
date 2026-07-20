@@ -40,8 +40,9 @@ export function AppShell({
           <Button
             type="button"
             onClick={() => {
-              logout();
-              window.location.href = "/giris";
+              void logout().finally(() => {
+                window.location.href = "/giris";
+              });
             }}
           >
             Çıkış
