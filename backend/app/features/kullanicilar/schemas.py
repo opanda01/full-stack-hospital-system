@@ -20,7 +20,7 @@ class KullaniciRead(BaseModel):
     tc_kimlik_no: str
     ad: str
     soyad: str
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     telefon: str | None = None
     kullanici_adi: Optional[str] = None
     rol: Rol

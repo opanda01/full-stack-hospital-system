@@ -7,6 +7,7 @@ Kullanım (backend venv aktifken):
 import app.core.models_registry  # noqa: F401
 from app.core.db import engine
 from app.core.seed_hastane import seed_hastane_referans
+from app.core.seed_ornek_islemler import seed_ornek_islemler
 from app.core.seed_rbac import DEMO_SIFRE, seed_demo_kullanicilar
 from sqlmodel import Session
 
@@ -15,8 +16,10 @@ def main() -> None:
     with Session(engine) as session:
         seed_demo_kullanicilar(session)
         seed_hastane_referans(session)
+        seed_ornek_islemler(session)
     print(
-        f"Demo kullanıcılar + hastane referans seed tamamlandı (şifre: {DEMO_SIFRE})."
+        f"Demo kullanıcılar + hastane referans + örnek işlemler seed tamamlandı "
+        f"(şifre: {DEMO_SIFRE})."
     )
 
 
