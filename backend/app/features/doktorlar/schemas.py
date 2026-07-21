@@ -14,6 +14,12 @@ class DoktorRead(BaseModel):
     uzmanlik_alani: str
     diploma_no: str
     online_randevu_acik_mi: bool
+    ad: str | None = None
+    soyad: str | None = None
+    email: str | None = None
+    sicil_no: str | None = None
+    departman_id: int | None = None
+    departman_ad: str | None = None
 
     model_config = {"from_attributes": True}
 

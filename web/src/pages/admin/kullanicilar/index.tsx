@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { getApiErrorMessage } from "@/shared/lib";
 
 type Kullanici = {
   id: number;
@@ -28,7 +29,8 @@ const ROLLER = [
 
 export function KullaniciYonetimiPage() {
   const qc = useQueryClient();
-  const { data = [], isLoading } = useQuery({
+  const [actionError, setActionError] = useState<string | null>(null);
+  const { data = [], isLoading, isError, error } = useQuery({
     queryKey: ["kullanicilar"],
     queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
   });
@@ -38,16 +40,30 @@ export function KullaniciYonetimiPage() {
     ad: "",
     soyad: "",
     email: "",
+    telefon: "",
     sifre: "Test1234!",
     rol: "IDARI_PERSONEL",
   });
 
   const createMut = useMutation({
-    mutationFn: async () => api.post("/kullanicilar/", form),
+    mutationFn: async () =>
+      api.post("/kullanicilar/", {
+        ...form,
+        telefon: form.telefon || null,
+      }),
     onSuccess: () => {
+      setActionError(null);
       qc.invalidateQueries({ queryKey: ["kullanicilar"] });
-      setForm((f) => ({ ...f, tc_kimlik_no: "", ad: "", soyad: "", email: "" }));
+      setForm((f) => ({
+        ...f,
+        tc_kimlik_no: "",
+        ad: "",
+        soyad: "",
+        email: "",
+        telefon: "",
+      }));
     },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
   });
 
   const patchMut = useMutation({
@@ -58,12 +74,20 @@ export function KullaniciYonetimiPage() {
       id: number;
       body: Partial<Kullanici>;
     }) => api.patch(`/kullanicilar/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["kullanicilar"] }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["kullanicilar"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
   });
 
   const deactivateMut = useMutation({
     mutationFn: async (id: number) => api.delete(`/kullanicilar/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["kullanicilar"] }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["kullanicilar"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
   });
 
   return (
@@ -107,6 +131,12 @@ export function KullaniciYonetimiPage() {
           onChange={(e) => setForm({ ...form, soyad: e.target.value })}
           required
         />
+        <input
+          className="rounded border px-3 py-2"
+          placeholder="Telefon (opsiyonel)"
+          value={form.telefon}
+          onChange={(e) => setForm({ ...form, telefon: e.target.value })}
+        />
         <select
           className="rounded border px-3 py-2"
           value={form.rol}
@@ -118,11 +148,25 @@ export function KullaniciYonetimiPage() {
             </option>
           ))}
         </select>
-        <Button type="submit">Kullanıcı ekle</Button>
+        <Button type="submit" disabled={createMut.isPending}>
+          Kullanıcı ekle
+        </Button>
       </form>
+
+      {actionError && (
+        <p className="mb-4 text-sm text-red-600" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {isLoading ? (
         <p>Yükleniyor…</p>
+      ) : isError ? (
+        <p className="text-sm text-red-600" role="alert">
+          {getApiErrorMessage(error)}
+        </p>
+      ) : data.length === 0 ? (
+        <p className="text-sm text-slate-600">Henüz kullanıcı yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
