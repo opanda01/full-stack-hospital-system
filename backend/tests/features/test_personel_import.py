@@ -142,7 +142,7 @@ def test_import_endpoint_with_mocked_celery(client, session, monkeypatch):
         return R()
 
     monkeypatch.setattr(
-        "app.features.personel.router.personel_import_isle.delay",
+        "app.features.personel.tasks.personel_import_isle.delay",
         fake_delay,
     )
 
