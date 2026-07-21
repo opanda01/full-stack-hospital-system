@@ -1,4 +1,4 @@
-﻿import { useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
@@ -49,7 +49,7 @@ export function HastaKayitPage() {
           </label>
         ))}
         <Button type="submit">Kaydet</Button>
-        {msg && <p className="text-sm text-slate-600">{msg}</p>}
+        {msg && <p className="text-sm text-muted-foreground">{msg}</p>}
       </form>
     </AppShell>
   );

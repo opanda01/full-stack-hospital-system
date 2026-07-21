@@ -6,4 +6,9 @@
   unvan: string | null;
   amir_id?: number | null;
   yonetim_gorevi?: string | null;
+  ad?: string | null;
+  soyad?: string | null;
+  email?: string | null;
+  rol?: string | null;
+  departman_ad?: string | null;
 };

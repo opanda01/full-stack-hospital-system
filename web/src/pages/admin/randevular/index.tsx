@@ -76,7 +76,7 @@ export function AdminRandevularPage() {
           {getApiErrorMessage(error)}
         </p>
       ) : randevular.length === 0 ? (
-        <p className="text-sm text-slate-600">Henüz randevu yok.</p>
+        <p className="text-sm text-muted-foreground">Henüz randevu yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>

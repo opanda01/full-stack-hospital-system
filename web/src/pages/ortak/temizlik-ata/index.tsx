@@ -51,7 +51,7 @@ export function TemizlikAtaPage() {
       links={[{ to: "/admin", label: "Admin" }]}
     >
       <form
-        className="mb-6 flex flex-wrap gap-2 rounded border bg-white p-4"
+        className="mb-6 flex flex-wrap gap-2 rounded border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault();
           createMut.mutate();
@@ -88,7 +88,7 @@ export function TemizlikAtaPage() {
       </form>
       <ul className="space-y-2">
         {gorevler.map((g) => (
-          <li key={g.id} className="rounded border bg-white px-3 py-2 text-sm">
+          <li key={g.id} className="rounded border bg-card px-3 py-2 text-sm">
             #{g.id} — {g.oda_bolum} — personel {g.personel_id} — {g.gorev_tarihi}{" "}
             — {g.durum}
           </li>

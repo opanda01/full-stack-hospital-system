@@ -13,6 +13,7 @@ from app.features.personel.schemas import (
     PersonelImportDurumResponse,
     PersonelRead,
     PersonelUpdate,
+    PersonelWithUserCreate,
 )
 
 router = APIRouter()
@@ -24,6 +25,19 @@ def list_personel(
     _user=Depends(require_permission("personel:listele")),
 ):
     return personel_service.list_personel(session)
+
+
+@router.post(
+    "/with-user",
+    response_model=PersonelRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_personel_with_user(
+    body: PersonelWithUserCreate,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("personel:listele")),
+):
+    return personel_service.create_personel_with_user(session, body)
 
 
 @router.post("/", response_model=PersonelRead, status_code=status.HTTP_201_CREATED)

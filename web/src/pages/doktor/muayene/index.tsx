@@ -49,18 +49,18 @@ export function DoktorMuayeneEkraniPage() {
       });
     },
     onSuccess: () => {
-      setMsg("Tetkik iste?i olu?turuldu");
+      setMsg("Tetkik isteği oluşturuldu");
       setTetkikTuru("");
     },
-    onError: () => setMsg("Tetkik iste?i olu?turulamad?"),
+    onError: () => setMsg("Tetkik isteği oluşturulamadı"),
   });
 
   return (
     <AppShell
-      title="Muayene Ekran?"
+      title="Muayene Ekranı"
       links={[
         { to: "/doktor/randevularim", label: "Randevular" },
-        { to: "/sikayet", label: "?ikayet" },
+        { to: "/sikayet", label: "Şikayet" },
       ]}
     >
       <div className="max-w-lg space-y-3 rounded border bg-card p-4">
@@ -70,25 +70,25 @@ export function DoktorMuayeneEkraniPage() {
           value={randevuId}
           onChange={(e) => setRandevuId(e.target.value)}
         >
-          <option value="">Randevu se�</option>
+          <option value="">Randevu seç</option>
           {randevular
             .filter((r) => r.durum !== "IPTAL")
             .map((r) => (
               <option key={r.id} value={r.id}>
-                #{r.id} ? {new Date(r.tarih_saat).toLocaleString("tr-TR")} ?{" "}
+                #{r.id} · {new Date(r.tarih_saat).toLocaleString("tr-TR")} · 
                 {r.durum}
               </option>
             ))}
         </select>
         <textarea
           className="w-full rounded border px-3 py-2"
-          placeholder="Tan?"
+          placeholder="Tanı"
           value={tani}
           onChange={(e) => setTani(e.target.value)}
         />
         <textarea
           className="w-full rounded border px-3 py-2"
-          placeholder="Tedavi plan?"
+          placeholder="Tedavi planı"
           value={tedavi}
           onChange={(e) => setTedavi(e.target.value)}
         />
@@ -102,7 +102,7 @@ export function DoktorMuayeneEkraniPage() {
         <hr />
         <input
           className="w-full rounded border px-3 py-2"
-          placeholder="Tetkik t�r� (�rn. Tam kan say?m?)"
+          placeholder="Tetkik türü (örn. Tam kan sayımı)"
           value={tetkikTuru}
           onChange={(e) => setTetkikTuru(e.target.value)}
         />

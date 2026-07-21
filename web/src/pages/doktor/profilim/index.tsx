@@ -38,7 +38,7 @@ export function DoktorProfilPage() {
 
   return (
     <AppShell title="Doktor Profili" links={[{ to: "/doktor/randevularim", label: "Randevular" }]}>
-      <div className="max-w-md space-y-3 rounded border bg-white p-4">
+      <div className="max-w-md space-y-3 rounded border bg-card p-4">
         <p className="text-sm">Diploma: {data.diploma_no}</p>
         <label className="block text-sm">
           Uzmanlık

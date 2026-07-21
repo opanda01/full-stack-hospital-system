@@ -19,3 +19,7 @@ export { LegacyShell } from "./LegacyShell";
 /** Eski üst menülü sayfalar — title/links API */
 export { LegacyShell as AppShell } from "./LegacyShell";
 export { RoleDashboard } from "./RoleDashboard";
+export {
+  SearchableCombobox,
+  type ComboboxOption,
+} from "./searchable-combobox";

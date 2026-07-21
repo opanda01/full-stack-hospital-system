@@ -1,59 +1,92 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Button } from "@/shared/ui";
+import { useMemo, useState } from "react";
+import { Button, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
-import type { Personel } from "@/entities/personel";
 
-type Kullanici = {
+type Departman = {
   id: number;
   ad: string;
-  soyad: string;
-  email: string;
-  rol: string;
+  birim_ad?: string | null;
 };
-type Departman = { id: number; ad: string };
+
+const PERSONEL_ROLLER = [
+  "ADMIN",
+  "BASHEKIM",
+  "MUDUR",
+  "DOKTOR",
+  "HEMSIRE",
+  "EBE",
+  "LABORANT",
+  "TEMIZLIK_PERSONELI",
+  "GUVENLIK",
+  "IDARI_PERSONEL",
+];
+
+const emptyForm = {
+  tc_kimlik_no: "",
+  ad: "",
+  soyad: "",
+  email: "",
+  telefon: "",
+  sifre: "Test1234!",
+  rol: "HEMSIRE",
+  sicil_no: "",
+  departman_id: "",
+  unvan: "",
+  uzmanlik_alani: "",
+  diploma_no: "",
+  online_randevu_acik_mi: true,
+};
 
 export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
   const qc = useQueryClient();
-  const [kullaniciId, setKullaniciId] = useState("");
-  const [sicil, setSicil] = useState("");
-  const [departmanId, setDepartmanId] = useState("");
-  const [unvan, setUnvan] = useState("");
+  const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: kullanicilar = [] } = useQuery({
-    queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
-  });
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
     queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
   });
-  const { data: personeller = [] } = useQuery({
-    queryKey: ["personel"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
-  });
 
-  const personelKullaniciIds = new Set(personeller.map((p) => p.kullanici_id));
-  const uygunKullanicilar = kullanicilar.filter(
-    (k) => k.rol !== "HASTA" && !personelKullaniciIds.has(k.id),
+  const departmanOptions = useMemo(
+    () =>
+      departmanlar.map((d) => {
+        const label = d.birim_ad ? `${d.birim_ad} — ${d.ad}` : d.ad;
+        return {
+          value: String(d.id),
+          label,
+          searchText: `${d.ad} ${d.birim_ad ?? ""}`,
+        };
+      }),
+    [departmanlar],
   );
+
+  const isDoktor = form.rol === "DOKTOR";
 
   const createMut = useMutation({
     mutationFn: async () =>
-      api.post("/personel/", {
-        kullanici_id: Number(kullaniciId),
-        sicil_no: sicil,
-        departman_id: departmanId ? Number(departmanId) : null,
-        unvan: unvan || null,
+      api.post("/personel/with-user", {
+        tc_kimlik_no: form.tc_kimlik_no,
+        ad: form.ad,
+        soyad: form.soyad,
+        email: form.email,
+        telefon: form.telefon || null,
+        sifre: form.sifre,
+        rol: form.rol,
+        sicil_no: form.sicil_no,
+        departman_id: form.departman_id ? Number(form.departman_id) : null,
+        unvan: form.unvan || null,
+        uzmanlik_alani: isDoktor ? form.uzmanlik_alani : null,
+        diploma_no: isDoktor ? form.diploma_no : null,
+        online_randevu_acik_mi: isDoktor ? form.online_randevu_acik_mi : true,
       }),
     onSuccess: () => {
       setError(null);
+      setForm(emptyForm);
       qc.invalidateQueries({ queryKey: ["personel"] });
-      setKullaniciId("");
-      setSicil("");
-      setUnvan("");
+      qc.invalidateQueries({ queryKey: ["kullanicilar"] });
+      qc.invalidateQueries({ queryKey: ["doktorlar"] });
       onSuccess?.();
     },
     onError: (err) => setError(getApiErrorMessage(err)),
@@ -61,50 +94,114 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <form
-      className="mb-6 grid max-w-xl gap-2 sm:grid-cols-2"
+      className="mb-6 grid max-w-2xl gap-2 rounded border bg-card p-4 sm:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
         createMut.mutate();
       }}
     >
+      <p className="sm:col-span-2 text-sm text-muted-foreground">
+        Tek formda hesap + personel kaydı oluşturulur. Doktor seçilirse uzmanlık
+        bilgileri de kaydedilir.
+      </p>
+      <input
+        className="rounded border px-3 py-2"
+        placeholder="Ad"
+        value={form.ad}
+        onChange={(e) => setForm({ ...form, ad: e.target.value })}
+        required
+      />
+      <input
+        className="rounded border px-3 py-2"
+        placeholder="Soyad"
+        value={form.soyad}
+        onChange={(e) => setForm({ ...form, soyad: e.target.value })}
+        required
+      />
+      <input
+        className="rounded border px-3 py-2"
+        placeholder="TC"
+        value={form.tc_kimlik_no}
+        onChange={(e) => setForm({ ...form, tc_kimlik_no: e.target.value })}
+        required
+      />
+      <input
+        className="rounded border px-3 py-2"
+        placeholder="E-posta"
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        required
+      />
+      <input
+        className="rounded border px-3 py-2"
+        placeholder="Telefon (opsiyonel)"
+        value={form.telefon}
+        onChange={(e) => setForm({ ...form, telefon: e.target.value })}
+      />
       <select
         className="rounded border px-3 py-2"
-        value={kullaniciId}
-        onChange={(e) => setKullaniciId(e.target.value)}
-        required
+        value={form.rol}
+        onChange={(e) => setForm({ ...form, rol: e.target.value })}
       >
-        <option value="">Kullanıcı seç</option>
-        {uygunKullanicilar.map((k) => (
-          <option key={k.id} value={k.id}>
-            {k.ad} {k.soyad} ({k.rol})
+        {PERSONEL_ROLLER.map((r) => (
+          <option key={r} value={r}>
+            {r}
           </option>
         ))}
       </select>
       <input
         className="rounded border px-3 py-2"
         placeholder="Sicil no"
-        value={sicil}
-        onChange={(e) => setSicil(e.target.value)}
+        value={form.sicil_no}
+        onChange={(e) => setForm({ ...form, sicil_no: e.target.value })}
         required
       />
-      <select
-        className="rounded border px-3 py-2"
-        value={departmanId}
-        onChange={(e) => setDepartmanId(e.target.value)}
-      >
-        <option value="">Departman (opsiyonel)</option>
-        {departmanlar.map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.ad}
-          </option>
-        ))}
-      </select>
-      <input
-        className="rounded border px-3 py-2"
-        placeholder="Unvan"
-        value={unvan}
-        onChange={(e) => setUnvan(e.target.value)}
+      <SearchableCombobox
+        options={departmanOptions}
+        value={form.departman_id}
+        onChange={(departman_id) => setForm({ ...form, departman_id })}
+        placeholder="Departman ara ve seç…"
+        emptyLabel="Eşleşen departman yok"
       />
+      <input
+        className="rounded border px-3 py-2 sm:col-span-2"
+        placeholder="Unvan (opsiyonel)"
+        value={form.unvan}
+        onChange={(e) => setForm({ ...form, unvan: e.target.value })}
+      />
+
+      {isDoktor && (
+        <>
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Uzmanlık alanı"
+            value={form.uzmanlik_alani}
+            onChange={(e) =>
+              setForm({ ...form, uzmanlik_alani: e.target.value })
+            }
+            required
+          />
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Diploma no"
+            value={form.diploma_no}
+            onChange={(e) => setForm({ ...form, diploma_no: e.target.value })}
+            required
+          />
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={form.online_randevu_acik_mi}
+              onChange={(e) =>
+                setForm({ ...form, online_randevu_acik_mi: e.target.checked })
+              }
+            />
+            Online randevu açık
+          </label>
+        </>
+      )}
+
       <Button type="submit" disabled={createMut.isPending}>
         Personel ekle
       </Button>

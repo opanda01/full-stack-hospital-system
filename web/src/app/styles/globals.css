@@ -62,6 +62,30 @@
   :root[data-theme="acik"] {
     color-scheme: light;
   }
+
+  /* Form kontrolleri tema rengine uysun (koyu/OLED’de beyaz kalmasın) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select,
+  textarea {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.85;
+  }
+
+  option {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+  }
+
+  table {
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer components {

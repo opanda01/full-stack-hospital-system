@@ -18,10 +18,10 @@ export function TemizlikGorevlerimPage() {
 
   return (
     <AppShell
-      title="Temizlik Görevlerim"
+      title="Temizlik GÃ¶revlerim"
       links={[
-        { to: "/nobet", label: "Nöbetlerim" },
-        { to: "/sikayet", label: "?ikayet" },
+        { to: "/nobet", label: "NÃ¶betlerim" },
+        { to: "/sikayet", label: "Åžikayet" },
       ]}
     >
       <ul className="space-y-2">
@@ -31,7 +31,7 @@ export function TemizlikGorevlerimPage() {
             className="flex items-center justify-between rounded border bg-card p-3 text-sm"
           >
             <span>
-              {g.oda_bolum} — {g.gorev_tarihi} — {g.durum}
+              {g.oda_bolum} â€” {g.gorev_tarihi} â€” {g.durum}
             </span>
             {g.durum !== "TAMAMLANDI" && (
               <TemizlikGoreviTamamlaButton gorevId={g.id} />
@@ -39,7 +39,7 @@ export function TemizlikGorevlerimPage() {
           </li>
         ))}
         {!data.length && (
-          <p className="text-muted-foreground">Atanm?? görev yok.</p>
+          <p className="text-muted-foreground">AtanmÄ±ÅŸ gÃ¶rev yok.</p>
         )}
       </ul>
     </AppShell>
