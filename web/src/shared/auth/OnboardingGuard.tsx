@@ -5,7 +5,12 @@ import {
   useAuthStore,
 } from "./authStore";
 
-const ONBOARDING_PATHS = new Set(["/sifre-degistir", "/kvkk-onay", "/giris"]);
+const ONBOARDING_PATHS = new Set([
+  "/sifre-degistir",
+  "/kvkk-onay",
+  "/giris",
+  "/sifre-sifirla",
+]);
 
 /** Panel route'larında ilk giriş / KVKK tamamlanmadıysa yönlendirir. */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {

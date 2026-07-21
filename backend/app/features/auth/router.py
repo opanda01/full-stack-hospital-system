@@ -17,6 +17,9 @@ from app.features.auth.schemas import (
     OtpGonderResponse,
     RefreshRequest,
     SifreDegistirRequest,
+    SifreSifirlaIstekRequest,
+    SifreSifirlaIstekResponse,
+    SifreSifirlaOnayRequest,
     TokenResponse,
 )
 from app.features.hastalar import service as hasta_service
@@ -119,6 +122,34 @@ def otp_dogrula(
         ad=body.ad,
         soyad=body.soyad,
         kvkk_onay=body.kvkk_onay,
+        ip_adresi=istemci_ip_al(request),
+    )
+
+
+@router.post("/sifre-sifirla/istek", response_model=SifreSifirlaIstekResponse)
+def sifre_sifirla_istek(
+    body: SifreSifirlaIstekRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> SifreSifirlaIstekResponse:
+    return auth_service.sifre_sifirla_istek(
+        session,
+        kimlik=body.kimlik,
+        ip_adresi=istemci_ip_al(request),
+    )
+
+
+@router.post("/sifre-sifirla/onay", status_code=status.HTTP_204_NO_CONTENT)
+def sifre_sifirla_onay(
+    body: SifreSifirlaOnayRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> None:
+    auth_service.sifre_sifirla_onay(
+        session,
+        kimlik=body.kimlik,
+        kod=body.kod,
+        yeni_sifre=body.yeni_sifre,
         ip_adresi=istemci_ip_al(request),
     )
 

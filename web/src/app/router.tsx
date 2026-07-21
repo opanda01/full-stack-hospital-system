@@ -12,6 +12,7 @@ import { SikayetOneriPage } from "@/pages/ortak/sikayet";
 import { HastaKayitPage } from "@/pages/ortak/hasta-kayit";
 import { TemizlikAtaPage } from "@/pages/ortak/temizlik-ata";
 import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
+import { SifreSifirlaPage } from "@/pages/ortak/sifre-sifirla";
 import { KvkkOnayPage } from "@/pages/ortak/kvkk-onay";
 
 import { AdminDashboardPage } from "@/pages/admin/dashboard";
@@ -85,6 +86,7 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<Navigate to="/giris" replace />} />
         <Route path="/giris" element={<GirisPage />} />
+        <Route path="/sifre-sifirla" element={<SifreSifirlaPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/hasta-mobil" element={<HastaMobilPage />} />
         <Route path="/profil" element={<ProfilPage />} />

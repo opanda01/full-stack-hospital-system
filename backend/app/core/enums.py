@@ -49,6 +49,7 @@ class OturumTipi(str, Enum):
 class OtpAmac(str, Enum):
     KAYIT = "KAYIT"
     GIRIS = "GIRIS"
+    SIFRE_SIFIRLAMA = "SIFRE_SIFIRLAMA"
 
 
 class ImportDurum(str, Enum):

@@ -326,3 +326,97 @@ def test_istemci_ip_trusted_proxy(monkeypatch):
 
     assert istemci_ip_al(Untrusted()) == "203.0.113.1"  # type: ignore[arg-type]
     get_settings.cache_clear()
+
+
+def test_sifre_sifirla_unknown_kimlik_no_otp(client, session):
+    r = client.post(
+        "/auth/sifre-sifirla/istek",
+        json={"kimlik": "yok-sicil-999"},
+    )
+    assert r.status_code == 200
+    assert r.json()["son_kullanma_saniye"] > 0
+    otps = session.exec(
+        select(OtpKodu).where(OtpKodu.amac == OtpAmac.SIFRE_SIFIRLAMA)
+    ).all()
+    assert len(otps) == 0
+
+
+def test_sifre_sifirla_ok_and_login(client, session, monkeypatch):
+    monkeypatch.setattr(
+        "app.features.auth.service.secrets.choice",
+        lambda seq: "4",
+    )
+    user = _make_user(
+        session,
+        email="reset@example.com",
+        tc="91000000008",
+        rol=Rol.HEMSIRE,
+    )
+    session.add(Personel(kullanici_id=user.id, sicil_no="H-300"))
+    session.commit()
+
+    istek = client.post(
+        "/auth/sifre-sifirla/istek",
+        json={"kimlik": "H-300"},
+    )
+    assert istek.status_code == 200
+    otp = session.exec(
+        select(OtpKodu).where(
+            OtpKodu.amac == OtpAmac.SIFRE_SIFIRLAMA,
+            OtpKodu.tc_kimlik_no == "91000000008",
+        )
+    ).first()
+    assert otp is not None
+
+    wrong = client.post(
+        "/auth/sifre-sifirla/onay",
+        json={
+            "kimlik": "H-300",
+            "kod": "000000",
+            "yeni_sifre": "YeniSifre9!",
+        },
+    )
+    assert wrong.status_code == 400
+
+    ok = client.post(
+        "/auth/sifre-sifirla/onay",
+        json={
+            "kimlik": "H-300",
+            "kod": "444444",
+            "yeni_sifre": "YeniSifre9!",
+        },
+    )
+    assert ok.status_code == 204
+
+    old = client.post(
+        "/auth/login",
+        json={"kimlik": "H-300", "sifre": "Test1234!"},
+    )
+    assert old.status_code == 401
+
+    new = client.post(
+        "/auth/login",
+        json={"kimlik": "H-300", "sifre": "YeniSifre9!"},
+    )
+    assert new.status_code == 200
+
+
+def test_sifre_sifirla_rate_limit(client, session, monkeypatch):
+    monkeypatch.setattr(
+        "app.features.auth.service.secrets.choice",
+        lambda seq: "5",
+    )
+    user = _make_user(
+        session,
+        email="rate-reset@example.com",
+        tc="91000000009",
+        rol=Rol.ADMIN,
+        telefon="05556667788",
+    )
+    session.add(Personel(kullanici_id=user.id, sicil_no="A-300"))
+    session.commit()
+
+    payload = {"kimlik": "rate-reset@example.com"}
+    assert client.post("/auth/sifre-sifirla/istek", json=payload).status_code == 200
+    r2 = client.post("/auth/sifre-sifirla/istek", json=payload)
+    assert r2.status_code == 429

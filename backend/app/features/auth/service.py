@@ -23,7 +23,11 @@ from app.core.security import (
     verify_password,
 )
 from app.features.auth.models import OtpKodu, RefreshToken
-from app.features.auth.schemas import OtpGonderResponse, TokenResponse
+from app.features.auth.schemas import (
+    OtpGonderResponse,
+    SifreSifirlaIstekResponse,
+    TokenResponse,
+)
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
@@ -510,3 +514,176 @@ def gecici_sifre_uret(uzunluk: int | None = None) -> str:
     n = uzunluk or settings.TEMP_SIFRE_UZUNLUK
     alfabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alfabet) for _ in range(n))
+
+
+_SIFRE_SIFIRLA_GENEL_MESAJ = (
+    "Eşleşen bir hesap varsa doğrulama kodu kayıtlı iletişim "
+    "bilgilerinize gönderildi."
+)
+
+
+def _sifre_sifirla_uygun_mu(session: Session, kullanici: Kullanici) -> bool:
+    if not kullanici.aktif_mi:
+        return False
+    rol = _rol_value(kullanici)
+    personel = session.exec(
+        select(Personel).where(Personel.kullanici_id == kullanici.id)
+    ).first()
+    if rol == Rol.HASTA and personel is None:
+        return False
+    if not kullanici.email and not kullanici.telefon:
+        return False
+    return True
+
+
+def _otp_rate_limit_hedef(kullanici: Kullanici) -> str:
+    if kullanici.telefon:
+        return kullanici.telefon
+    return f"u{kullanici.id}"
+
+
+def sifre_sifirla_istek(
+    session: Session,
+    *,
+    kimlik: str,
+    ip_adresi: str | None = None,
+) -> SifreSifirlaIstekResponse:
+    identifier = kimlik.strip()
+    genel = SifreSifirlaIstekResponse(
+        mesaj=_SIFRE_SIFIRLA_GENEL_MESAJ,
+        son_kullanma_saniye=settings.OTP_TTL_SECONDS,
+    )
+    kullanici = (
+        _resolve_kullanici_by_kimlik(session, identifier) if identifier else None
+    )
+    if kullanici is None or not _sifre_sifirla_uygun_mu(session, kullanici):
+        return genel
+
+    hedef = _otp_rate_limit_hedef(kullanici)
+    _otp_rate_limit_check(session, hedef)
+
+    kod = "".join(secrets.choice(string.digits) for _ in range(6))
+    now = datetime.now(timezone.utc)
+    son_kullanma = now + timedelta(seconds=settings.OTP_TTL_SECONDS)
+    session.add(
+        OtpKodu(
+            telefon=hedef,
+            tc_kimlik_no=kullanici.tc_kimlik_no,
+            kod_hash=hash_token(kod),
+            amac=OtpAmac.SIFRE_SIFIRLAMA,
+            deneme_sayisi=0,
+            son_kullanma=son_kullanma,
+            kullanildi_mi=False,
+            created_at=now,
+        )
+    )
+    denetim_kaydi_yaz(
+        session,
+        aksiyon="SIFRE_SIFIRLA_ISTEK",
+        actor_id=kullanici.id,
+        kaynak="auth",
+        ip_adresi=ip_adresi,
+        detay={"kimlik": identifier},
+        commit=False,
+    )
+    session.commit()
+
+    mesaj = (
+        f"Şifre sıfırlama kodunuz: {kod}. "
+        f"{settings.OTP_TTL_SECONDS // 60} dk geçerlidir."
+    )
+    bildirim = get_bildirim()
+    if kullanici.email:
+        bildirim.email_gonder(kullanici.email, "Şifre sıfırlama kodu", mesaj)
+    if kullanici.telefon:
+        bildirim.sms_gonder(kullanici.telefon, mesaj)
+
+    return genel
+
+
+def sifre_sifirla_onay(
+    session: Session,
+    *,
+    kimlik: str,
+    kod: str,
+    yeni_sifre: str,
+    ip_adresi: str | None = None,
+) -> None:
+    identifier = kimlik.strip()
+    kullanici = (
+        _resolve_kullanici_by_kimlik(session, identifier) if identifier else None
+    )
+    if kullanici is None or not _sifre_sifirla_uygun_mu(session, kullanici):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçersiz kimlik veya doğrulama kodu",
+        )
+
+    now = datetime.now(timezone.utc)
+    otps = list(
+        session.exec(
+            select(OtpKodu).where(
+                OtpKodu.tc_kimlik_no == kullanici.tc_kimlik_no,
+                OtpKodu.amac == OtpAmac.SIFRE_SIFIRLAMA,
+                OtpKodu.kullanildi_mi == False,  # noqa: E712
+            )
+        ).all()
+    )
+    otp = max(otps, key=lambda o: o.id or 0) if otps else None
+
+    if otp is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçerli doğrulama kodu bulunamadı",
+        )
+
+    son = otp.son_kullanma
+    if son.tzinfo is None:
+        son = son.replace(tzinfo=timezone.utc)
+    if son < now:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Doğrulama kodunun süresi dolmuş",
+        )
+
+    if otp.deneme_sayisi >= settings.OTP_MAX_DENEME:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Doğrulama kodu deneme limiti aşıldı",
+        )
+
+    if hash_token(kod) != otp.kod_hash:
+        otp.deneme_sayisi += 1
+        session.add(otp)
+        session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Doğrulama kodu hatalı",
+        )
+
+    otp.kullanildi_mi = True
+    session.add(otp)
+
+    kullanici.sifre_hash = hash_password(yeni_sifre)
+    kullanici.sifre_degistirmeli_mi = False
+    session.add(kullanici)
+
+    tokens = session.exec(
+        select(RefreshToken).where(
+            RefreshToken.kullanici_id == kullanici.id,
+            RefreshToken.iptal_edildi_mi == False,  # noqa: E712
+        )
+    ).all()
+    for row in tokens:
+        row.iptal_edildi_mi = True
+        session.add(row)
+
+    denetim_kaydi_yaz(
+        session,
+        aksiyon="SIFRE_SIFIRLA_ONAY",
+        actor_id=kullanici.id,
+        kaynak="auth",
+        ip_adresi=ip_adresi,
+        commit=False,
+    )
+    session.commit()

@@ -88,3 +88,30 @@ export async function kvkkOnay(onay = true): Promise<MeResponse> {
   );
   return data;
 }
+
+export type SifreSifirlaIstekResponse = {
+  mesaj: string;
+  son_kullanma_saniye: number;
+};
+
+export async function sifreSifirlaIstek(
+  kimlik: string,
+): Promise<SifreSifirlaIstekResponse> {
+  const { data } = await authClient.post<SifreSifirlaIstekResponse>(
+    "/auth/sifre-sifirla/istek",
+    { kimlik },
+  );
+  return data;
+}
+
+export async function sifreSifirlaOnay(
+  kimlik: string,
+  kod: string,
+  yeni_sifre: string,
+): Promise<void> {
+  await authClient.post("/auth/sifre-sifirla/onay", {
+    kimlik,
+    kod,
+    yeni_sifre,
+  });
+}
