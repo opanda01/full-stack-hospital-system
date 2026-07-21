@@ -40,6 +40,7 @@ Semboller:
 |------------------|-----------|:-----:|:--------------:|:------:|:-----------:|:--------:|:--------:|:-----:|
 | Kullanıcı oluştur/sil | `kullanici:olustur` / `kullanici:sil` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Personel listele | `personel:listele` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Personel import | `personel:import` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Departman oluştur | `departman:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Departman görüntüle | `departman:goruntule` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Doktor profili düzenle | `doktor:profil_duzenle` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
@@ -64,6 +65,8 @@ Semboller:
 
 1. **Rol → izin:** endpoint’e girilebilir mi? → `require_permission("randevu:goruntule")`
 2. **Nesne kapsamı:** hangi kayıtlar? → `Kapsam` + `scope.py` / service filtreleri
+
+**Oturum tipi:** JWT claim `oturum_tipi` (`personel` | `hasta`). Hasta oturumunda izin matrisi her zaman `HASTA` rolünden okunur (çift profilli personel mobil hastadan işlem yapabilir; web panelinde personel yetkileri korunur).
 
 ---
 

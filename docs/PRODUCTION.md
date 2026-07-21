@@ -18,7 +18,8 @@
 
 - Klinik kayıtlar (muayene, tetkik, randevu) hard-delete edilmez.
 - Kullanıcı silme = soft deactivate (`aktif_mi=False`) — `/kullanicilar/{id}` DELETE.
-- İleride: audit log tablosu (`actor_id`, `aksiyon`, `kaynak`, `kaynak_id`, `zaman`).
+- Audit log: `denetim_kayitlari` (`actor_id`, `aksiyon`, `kaynak`, `kaynak_id`, `ip_adresi`, `zaman`).
+  IP için `TRUSTED_PROXY_IPS` tanımlı değilse `X-Forwarded-For` yok sayılır.
 
 ## Ops
 

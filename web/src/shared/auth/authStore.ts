@@ -4,11 +4,14 @@ import * as authService from "./authService";
 
 export type CurrentUser = {
   id: number;
-  email: string;
+  email: string | null;
   ad: string;
   soyad: string;
   rol: string;
   aktif_mi: boolean;
+  kullanici_adi?: string | null;
+  sifre_degistirmeli_mi: boolean;
+  kvkk_onaylandi_mi: boolean;
 };
 
 type AuthState = {
@@ -27,9 +30,11 @@ type AuthState = {
     refreshToken?: string | null,
     currentUser?: CurrentUser | null,
   ) => void;
-  login: (email: string, sifre: string) => Promise<CurrentUser>;
+  login: (kimlik: string, sifre: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<CurrentUser>;
+  sifreDegistir: (eski: string, yeni: string) => Promise<void>;
+  kvkkOnay: () => Promise<CurrentUser>;
   hasRole: (...roles: string[]) => boolean;
   hasPermission: (...codes: string[]) => boolean;
   primaryRole: () => string | null;
@@ -66,14 +71,18 @@ export const useAuthStore = create<AuthState>()(
           permissions,
           currentUser,
         }),
-      login: async (email, sifre) => {
-        const res = await authService.login(email, sifre);
+      login: async (kimlik, sifre) => {
+        const res = await authService.login(kimlik, sifre);
         get().setAuth(
           res.access_token,
           [res.rol],
           res.permissions,
           res.refresh_token,
-          res.user,
+          {
+            ...res.user,
+            sifre_degistirmeli_mi: res.sifre_degistirmeli_mi,
+            kvkk_onaylandi_mi: res.kvkk_onaylandi_mi,
+          },
         );
         const me = await get().fetchMe();
         return me;
@@ -95,6 +104,20 @@ export const useAuthStore = create<AuthState>()(
           currentUser: me,
           roles: [me.rol],
         });
+        return me;
+      },
+      sifreDegistir: async (eski, yeni) => {
+        await authService.sifreDegistir(eski, yeni);
+        const cur = get().currentUser;
+        if (cur) {
+          set({
+            currentUser: { ...cur, sifre_degistirmeli_mi: false },
+          });
+        }
+      },
+      kvkkOnay: async () => {
+        const me = await authService.kvkkOnay(true);
+        set({ currentUser: me, roles: [me.rol] });
         return me;
       },
       hasRole: (...roles) => roles.some((r) => get().roles.includes(r)),
@@ -120,6 +143,15 @@ export const useAuthStore = create<AuthState>()(
         if (state && !state.accessToken && state.token) {
           state.accessToken = state.token;
         }
+        if (state?.currentUser) {
+          const u = state.currentUser as CurrentUser;
+          if (u.sifre_degistirmeli_mi === undefined) {
+            u.sifre_degistirmeli_mi = false;
+          }
+          if (u.kvkk_onaylandi_mi === undefined) {
+            u.kvkk_onaylandi_mi = true;
+          }
+        }
       },
     },
   ),
@@ -143,4 +175,33 @@ export const ROLE_HOME: Record<string, string> = {
 export function homeForRole(rol: string | null | undefined): string {
   if (!rol) return "/giris";
   return ROLE_HOME[rol] ?? "/giris";
+}
+
+/** İlk giriş / KVKK tamamlanmadıysa ilgili ekran, aksi halde rol ana sayfası. */
+export function postLoginPath(user: CurrentUser): string {
+  if (user.rol === "HASTA") return "/hasta-mobil";
+  if (user.sifre_degistirmeli_mi) return "/sifre-degistir";
+  if (!user.kvkk_onaylandi_mi) return "/kvkk-onay";
+  return homeForRole(user.rol);
+}
+
+export function needsOnboarding(user: CurrentUser | null | undefined): boolean {
+  if (!user || user.rol === "HASTA") return false;
+  return Boolean(user.sifre_degistirmeli_mi) || !user.kvkk_onaylandi_mi;
+}
+
+export function onboardingPath(user: CurrentUser): string {
+  if (user.sifre_degistirmeli_mi) return "/sifre-degistir";
+  if (!user.kvkk_onaylandi_mi) return "/kvkk-onay";
+  return homeForRole(user.rol);
+}
+
+export function isOnboardingApiDetail(detail: unknown): boolean {
+  if (typeof detail !== "string") return false;
+  const d = detail.toLowerCase();
+  return (
+    d.includes("kvkk") ||
+    d.includes("şifre değiştirme") ||
+    d.includes("sifre degistirme")
+  );
 }

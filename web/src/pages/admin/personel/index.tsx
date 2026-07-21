@@ -2,6 +2,7 @@
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { PersonelEkleForm } from "@/features/personel-ekle";
+import { PersonelImportPanel } from "@/features/personel-import";
 import type { Personel } from "@/entities/personel";
 
 export function PersonelYonetimiPage() {
@@ -18,6 +19,7 @@ export function PersonelYonetimiPage() {
         { to: "/kullanicilar", label: "Kullanıcılar" },
       ]}
     >
+      <PersonelImportPanel />
       <PersonelEkleForm />
       <table className="w-full border-collapse text-sm">
         <thead>
