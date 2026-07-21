@@ -51,7 +51,7 @@ def test_login_ok(client, session):
 
 
 def test_login_wrong_password(client, session):
-    _make_user(session, email="bad@example.com", tc="90000000002", rol=Rol.HASTA)
+    _make_user(session, email="bad@example.com", tc="90000000002", rol=Rol.ADMIN)
 
     r = client.post(
         "/auth/login",
@@ -65,7 +65,7 @@ def test_login_passive_user_403(client, session):
         session,
         email="pasif@example.com",
         tc="90000000007",
-        rol=Rol.HASTA,
+        rol=Rol.ADMIN,
         aktif_mi=False,
     )
 
@@ -75,6 +75,16 @@ def test_login_passive_user_403(client, session):
     )
     assert r.status_code == 403
     assert "pasif" in r.json()["detail"].lower()
+
+
+def test_login_hasta_sifre_403(client, session):
+    _make_user(session, email="hasta@example.com", tc="90000000020", rol=Rol.HASTA)
+    r = client.post(
+        "/auth/login",
+        json={"email": "hasta@example.com", "sifre": "Test1234!"},
+    )
+    assert r.status_code == 403
+    assert "OTP" in r.json()["detail"]
 
 
 def test_refresh_ok(client, session):

@@ -20,6 +20,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Admin",
         "rol": Rol.ADMIN,
         "tc": "10000000001",
+        "kullanici_adi": "admin",
+        "sicil_no": "ADM-001",
     },
     {
         "email": "bashekim@hastane.example.com",
@@ -27,6 +29,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Başhekim",
         "rol": Rol.BASHEKIM,
         "tc": "10000000002",
+        "kullanici_adi": "bashekim",
+        "sicil_no": "BH-001",
     },
     {
         "email": "mudur@hastane.example.com",
@@ -34,6 +38,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Müdür",
         "rol": Rol.MUDUR,
         "tc": "10000000008",
+        "kullanici_adi": "mudur",
+        "sicil_no": "M-001",
     },
     {
         "email": "doktor@hastane.example.com",
@@ -41,6 +47,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Doktor",
         "rol": Rol.DOKTOR,
         "tc": "10000000003",
+        "kullanici_adi": "doktor",
+        "sicil_no": "D-001",
     },
     {
         "email": "hemsire@hastane.example.com",
@@ -48,6 +56,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Hemşire",
         "rol": Rol.HEMSIRE,
         "tc": "10000000004",
+        "kullanici_adi": "hemsire",
+        "sicil_no": "H-001",
     },
     {
         "email": "ebe@hastane.example.com",
@@ -55,6 +65,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Ebe",
         "rol": Rol.EBE,
         "tc": "10000000009",
+        "kullanici_adi": "ebe",
+        "sicil_no": "E-001",
     },
     {
         "email": "laborant@hastane.example.com",
@@ -62,6 +74,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Laborant",
         "rol": Rol.LABORANT,
         "tc": "10000000007",
+        "kullanici_adi": "laborant",
+        "sicil_no": "L-001",
     },
     {
         "email": "temizlik@hastane.example.com",
@@ -69,6 +83,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Temizlik",
         "rol": Rol.TEMIZLIK_PERSONELI,
         "tc": "10000000005",
+        "kullanici_adi": "temizlik",
+        "sicil_no": "T-001",
     },
     {
         "email": "guvenlik@hastane.example.com",
@@ -76,6 +92,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Güvenlik",
         "rol": Rol.GUVENLIK,
         "tc": "10000000010",
+        "kullanici_adi": "guvenlik",
+        "sicil_no": "G-001",
     },
     {
         "email": "idari@hastane.example.com",
@@ -83,6 +101,8 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "İdari",
         "rol": Rol.IDARI_PERSONEL,
         "tc": "10000000011",
+        "kullanici_adi": "idari",
+        "sicil_no": "I-001",
     },
     {
         "email": "hasta@hastane.example.com",
@@ -94,6 +114,7 @@ DEMO_KULLANICILAR: list[dict] = [
 ]
 
 _PERSONEL_ROLLER = {
+    Rol.ADMIN,
     Rol.DOKTOR,
     Rol.HEMSIRE,
     Rol.EBE,
@@ -118,10 +139,12 @@ def seed_demo_kullanicilar(session: Session) -> None:
             select(Kullanici).where(Kullanici.email == item["email"])
         ).first()
         if existing:
-            # Idempotent: email varsa atla (duplicate oluşturma)
             kullanici = existing
+            # Eksik alanları tamamla (idempotent iyileştirme)
+            if item.get("kullanici_adi") and not kullanici.kullanici_adi:
+                kullanici.kullanici_adi = item["kullanici_adi"]
+                session.add(kullanici)
         else:
-            # TC çakışması varsa da atla
             tc_existing = session.exec(
                 select(Kullanici).where(Kullanici.tc_kimlik_no == item["tc"])
             ).first()
@@ -133,9 +156,12 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 soyad=item["soyad"],
                 email=item["email"],
                 telefon=None,
+                kullanici_adi=item.get("kullanici_adi"),
                 sifre_hash=sifre_hash,
                 rol=item["rol"],
                 aktif_mi=True,
+                sifre_degistirmeli_mi=False,
+                kvkk_onaylandi_mi=True,
             )
             session.add(kullanici)
             session.flush()
@@ -160,15 +186,34 @@ def seed_demo_kullanicilar(session: Session) -> None:
             personel = session.exec(
                 select(Personel).where(Personel.kullanici_id == kullanici.id)
             ).first()
+            target_sicil = item.get("sicil_no") or (
+                f"DEMO-{item['rol'].value}-{item['tc'][-4:]}"
+            )
             if not personel:
+                sicil_var = session.exec(
+                    select(Personel).where(Personel.sicil_no == target_sicil)
+                ).first()
+                if sicil_var and sicil_var.kullanici_id != kullanici.id:
+                    target_sicil = f"DEMO-{item['rol'].value}-{item['tc'][-4:]}"
                 personel = Personel(
                     kullanici_id=kullanici.id,
-                    sicil_no=f"DEMO-{item['rol']}-{item['tc'][-4:]}",
+                    sicil_no=target_sicil,
                     departman_id=dep.id,
-                    unvan=item["rol"],
+                    unvan=item["rol"].value,
                 )
                 session.add(personel)
                 session.flush()
+            elif item.get("sicil_no") and personel.sicil_no != item["sicil_no"]:
+                # Eski DEMO-Rol.* sicillerini hedefe güncelle
+                conflict = session.exec(
+                    select(Personel).where(
+                        Personel.sicil_no == item["sicil_no"],
+                        Personel.id != personel.id,
+                    )
+                ).first()
+                if not conflict:
+                    personel.sicil_no = item["sicil_no"]
+                    session.add(personel)
             if item["rol"] == Rol.DOKTOR:
                 doktor = session.exec(
                     select(Doktor).where(Doktor.personel_id == personel.id)

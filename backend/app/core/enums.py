@@ -39,3 +39,20 @@ YONETIM_GOREVI_TO_ROL: dict[YonetimGorevi, Rol | None] = {
 YONETIM_ROL_KODLARI: frozenset[str] = frozenset(
     {Rol.BASHEKIM.value, Rol.MUDUR.value}
 )
+
+
+class OturumTipi(str, Enum):
+    PERSONEL = "personel"
+    HASTA = "hasta"
+
+
+class OtpAmac(str, Enum):
+    KAYIT = "KAYIT"
+    GIRIS = "GIRIS"
+
+
+class ImportDurum(str, Enum):
+    BEKLEMEDE = "BEKLEMEDE"
+    ISLENIYOR = "ISLENIYOR"
+    TAMAMLANDI = "TAMAMLANDI"
+    HATA = "HATA"
