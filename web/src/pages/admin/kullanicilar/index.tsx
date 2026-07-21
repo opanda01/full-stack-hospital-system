@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AppShell, Button } from "@/shared/ui";
+import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 
@@ -31,6 +31,7 @@ const ROLLER = [
 export function KullaniciYonetimiPage() {
   const qc = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingDeaktif, setPendingDeaktif] = useState<Kullanici | null>(null);
   const { data = [], isLoading, isError, error } = useQuery({
     queryKey: ["kullanicilar"],
     queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
@@ -55,6 +56,7 @@ export function KullaniciYonetimiPage() {
     mutationFn: async (id: number) => api.delete(`/kullanicilar/${id}`),
     onSuccess: () => {
       setActionError(null);
+      setPendingDeaktif(null);
       qc.invalidateQueries({ queryKey: ["kullanicilar"] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
@@ -126,7 +128,7 @@ export function KullaniciYonetimiPage() {
                   {u.aktif_mi && (
                     <Button
                       type="button"
-                      onClick={() => deactivateMut.mutate(u.id)}
+                      onClick={() => setPendingDeaktif(u)}
                     >
                       Deaktif
                     </Button>
@@ -137,6 +139,23 @@ export function KullaniciYonetimiPage() {
           </tbody>
         </table>
       )}
+
+      <ConfirmDialog
+        open={pendingDeaktif != null}
+        title="Hesabı deaktif et"
+        description={
+          pendingDeaktif
+            ? `${pendingDeaktif.ad} ${pendingDeaktif.soyad} hesabını deaktif etmek istediğinize emin misiniz? Hesap silinmez; giriş yapamaz.`
+            : ""
+        }
+        confirmLabel="Deaktif et"
+        destructive
+        pending={deactivateMut.isPending}
+        onCancel={() => setPendingDeaktif(null)}
+        onConfirm={() => {
+          if (pendingDeaktif) deactivateMut.mutate(pendingDeaktif.id);
+        }}
+      />
     </AppShell>
   );
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
-import { AppShell, Button } from "@/shared/ui";
+import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 import { cn } from "@/shared/lib/utils";
@@ -31,6 +31,7 @@ export function DepartmanYonetimiPage() {
   const [editing, setEditing] = useState<Departman | null>(null);
   const [editAd, setEditAd] = useState("");
   const [editBirimId, setEditBirimId] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Departman | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const editTitleId = useId();
 
@@ -77,7 +78,7 @@ export function DepartmanYonetimiPage() {
         birim_id: birimId ? Number(birimId) : null,
         kat_no: null,
       }),
-    onSuccess: (_res, _vars, _ctx) => {
+    onSuccess: () => {
       setActionError(null);
       setAd("");
       if (birimId) setOpenBirimId(Number(birimId));
@@ -106,6 +107,7 @@ export function DepartmanYonetimiPage() {
     mutationFn: async (id: number) => api.delete(`/departmanlar/${id}`),
     onSuccess: () => {
       setActionError(null);
+      setPendingDelete(null);
       qc.invalidateQueries({ queryKey: ["departmanlar"] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
@@ -267,7 +269,7 @@ export function DepartmanYonetimiPage() {
             <section className="mt-6 rounded-xl border border-border bg-card p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold">
-                  {openBirimAd} — departmanlar
+                  {openBirimAd} - departmanlar
                 </h3>
                 <Button
                   type="button"
@@ -311,15 +313,7 @@ export function DepartmanYonetimiPage() {
                           size="sm"
                           variant="outline"
                           disabled={deleteMut.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `"${d.ad}" departmanını silmek istiyor musunuz?`,
-                              )
-                            ) {
-                              deleteMut.mutate(d.id);
-                            }
-                          }}
+                          onClick={() => setPendingDelete(d)}
                         >
                           Sil
                         </Button>
@@ -347,14 +341,14 @@ export function DepartmanYonetimiPage() {
           <button
             type="button"
             aria-label="Kapat"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setEditing(null)}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={editTitleId}
-            className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg"
           >
             <h2 id={editTitleId} className="text-lg font-semibold">
               Departman düzenle
@@ -383,7 +377,7 @@ export function DepartmanYonetimiPage() {
                   value={editBirimId}
                   onChange={(e) => setEditBirimId(e.target.value)}
                 >
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {sortedBirimler.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.ad}
@@ -412,6 +406,23 @@ export function DepartmanYonetimiPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title="Departmanı sil"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.ad}" departmanını silmek istediğinize emin misiniz?`
+            : ""
+        }
+        confirmLabel="Sil"
+        destructive
+        pending={deleteMut.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) deleteMut.mutate(pendingDelete.id);
+        }}
+      />
     </AppShell>
   );
 }
