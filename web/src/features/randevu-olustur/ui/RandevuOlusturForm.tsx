@@ -75,7 +75,7 @@ export function RandevuOlusturForm() {
   });
 
   return (
-    <div className="max-w-lg space-y-4 rounded border bg-white p-4">
+    <div className="max-w-lg space-y-4 rounded border bg-card p-4">
       <div>
         <p className="mb-1 text-sm font-medium">1. Departman</p>
         <select
@@ -129,7 +129,7 @@ export function RandevuOlusturForm() {
             </button>
           ))}
           {doktorId && slots.length === 0 && (
-            <p className="text-sm text-slate-500">Müsait slot yok.</p>
+            <p className="text-sm text-muted-foreground">Müsait slot yok.</p>
           )}
         </div>
       </div>
@@ -140,7 +140,7 @@ export function RandevuOlusturForm() {
       >
         Randevu oluştur
       </Button>
-      {msg && <p className="text-sm text-slate-600">{msg}</p>}
+      {msg && <p className="text-sm text-muted-foreground">{msg}</p>}
     </div>
   );
 }

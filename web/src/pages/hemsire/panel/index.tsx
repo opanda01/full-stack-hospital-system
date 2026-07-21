@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
 
@@ -24,17 +24,17 @@ export function HemsirePanelPage() {
         { to: "/sikayet", label: "Şikayet" },
       ]}
     >
-      <p className="mb-4 text-sm text-slate-600">Departmanınızdaki randevular</p>
+      <p className="mb-4 text-sm text-muted-foreground">Departmanınızdaki randevular</p>
       {isLoading ? (
         <p>Yükleniyor…</p>
       ) : (
         <ul className="space-y-2">
           {data.map((r) => (
-            <li key={r.id} className="rounded border bg-white p-3 text-sm">
+            <li key={r.id} className="rounded border bg-card p-3 text-sm">
               #{r.id} — {new Date(r.tarih_saat).toLocaleString("tr-TR")} — {r.durum}
             </li>
           ))}
-          {!data.length && <p className="text-slate-500">Kayıt yok.</p>}
+          {!data.length && <p className="text-muted-foreground">Kayıt yok.</p>}
         </ul>
       )}
     </AppShell>

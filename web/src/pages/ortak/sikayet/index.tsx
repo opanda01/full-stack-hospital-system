@@ -38,7 +38,7 @@ export function SikayetOneriPage() {
   return (
     <AppShell title="Şikayet / Öneri">
       <form
-        className="mb-6 max-w-lg space-y-3 rounded border bg-white p-4"
+        className="mb-6 max-w-lg space-y-3 rounded border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault();
           gonder.mutate();
@@ -70,17 +70,17 @@ export function SikayetOneriPage() {
 
       {canListAll && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">
+          <h2 className="mb-2 text-sm font-semibold text-foreground">
             Tüm kayıtlar
           </h2>
           <ul className="space-y-2">
             {liste.map((s) => (
-              <li key={s.id} className="rounded border bg-white p-3 text-sm">
+              <li key={s.id} className="rounded border bg-card p-3 text-sm">
                 <p className="font-medium">
                   #{s.id} {s.tur} — {s.durum}
                 </p>
-                <p className="text-slate-600">{s.icerik}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-muted-foreground">{s.icerik}</p>
+                <p className="text-xs text-muted-foreground">
                   {new Date(s.tarih).toLocaleString("tr-TR")}
                 </p>
               </li>

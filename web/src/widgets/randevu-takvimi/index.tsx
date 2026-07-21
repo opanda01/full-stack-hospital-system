@@ -1,9 +1,9 @@
-﻿import { RandevuCard } from "@/entities/randevu";
+import { RandevuCard } from "@/entities/randevu";
 import { useRandevular } from "@/entities/randevu";
 
 export function RandevuTakvimi() {
   const { data = [], isLoading } = useRandevular();
-  if (isLoading) return <p className="text-sm text-slate-500">Yükleniyor…</p>;
+  if (isLoading) return <p className="text-sm text-muted-foreground">Yükleniyor…</p>;
   const sorted = [...data].sort(
     (a, b) =>
       new Date(a.tarih_saat).getTime() - new Date(b.tarih_saat).getTime(),

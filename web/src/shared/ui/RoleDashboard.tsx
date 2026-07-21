@@ -7,6 +7,8 @@ export type DashboardMetric = {
   value: string | number;
   icon?: LucideIcon;
   renk?: MetricCardRenk;
+  /** Tıklanınca gidilecek rota */
+  to?: string;
 };
 
 const RENK_SIRASI: MetricCardRenk[] = ["success", "accent", "warning", "notr"];
@@ -31,7 +33,7 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
           Hoş geldiniz, {ad} {soyad}
         </h2>
         <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Özet göstergeler
+          Özet göstergeler — karta tıklayarak ilgili sayfaya gidebilirsiniz
         </p>
       </div>
 
@@ -43,6 +45,7 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
             value={m.value}
             icon={m.icon}
             renk={m.renk ?? RENK_SIRASI[i % RENK_SIRASI.length]}
+            to={m.to}
           />
         ))}
       </div>

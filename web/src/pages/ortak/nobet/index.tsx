@@ -61,7 +61,7 @@ export function NobetYonetimiPage() {
     >
       {canCreate && (
         <form
-          className="mb-6 flex flex-wrap gap-2 rounded border bg-white p-4"
+          className="mb-6 flex flex-wrap gap-2 rounded border bg-card p-4"
           onSubmit={(e) => {
             e.preventDefault();
             createMut.mutate();
@@ -114,13 +114,13 @@ export function NobetYonetimiPage() {
       )}
       <ul className="space-y-2">
         {nobetler.map((n) => (
-          <li key={n.id} className="rounded border bg-white px-3 py-2 text-sm">
+          <li key={n.id} className="rounded border bg-card px-3 py-2 text-sm">
             #{n.id} — personel {n.personel_id} — {n.tarih} — {n.vardiya} — dep{" "}
             {n.departman_id}
           </li>
         ))}
         {nobetler.length === 0 && (
-          <p className="text-sm text-slate-500">Nöbet kaydı yok.</p>
+          <p className="text-sm text-muted-foreground">Nöbet kaydı yok.</p>
         )}
       </ul>
     </AppShell>

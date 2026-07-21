@@ -4,9 +4,36 @@ from sqlmodel import Session
 from app.core.db import get_session
 from app.core.security import require_permission
 from app.features.departmanlar import service as dep_service
-from app.features.departmanlar.schemas import DepartmanCreate, DepartmanRead, DepartmanUpdate
+from app.features.departmanlar.schemas import (
+    BirimCreate,
+    BirimRead,
+    DepartmanCreate,
+    DepartmanRead,
+    DepartmanUpdate,
+)
 
 router = APIRouter()
+
+
+@router.get("/birimler", response_model=list[BirimRead])
+def list_birimler(
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("departman:goruntule")),
+):
+    return dep_service.list_birimler(session)
+
+
+@router.post(
+    "/birimler",
+    response_model=BirimRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_birim(
+    body: BirimCreate,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("departman:olustur")),
+):
+    return dep_service.create_birim(session, body)
 
 
 @router.get("/", response_model=list[DepartmanRead])
