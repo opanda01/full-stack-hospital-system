@@ -1,6 +1,10 @@
 export {
   useAuthStore,
   homeForRole,
+  postLoginPath,
+  needsOnboarding,
+  onboardingPath,
+  isOnboardingApiDetail,
   ROLE_HOME,
   type CurrentUser,
 } from "./authStore";
@@ -11,3 +15,4 @@ export { MOCK_USERS, type MockUser } from "./mock-users";
 export { ProtectedRoute } from "./ProtectedRoute";
 export { RoleGuard } from "./RoleGuard";
 export { RoleLayoutRoute } from "./RoleLayoutRoute";
+export { OnboardingGuard } from "./OnboardingGuard";

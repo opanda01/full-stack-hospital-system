@@ -14,20 +14,26 @@ export type TokenResponse = {
   token_type: string;
   rol: string;
   permissions?: string[];
+  oturum_tipi?: string;
+  sifre_degistirmeli_mi?: boolean;
+  kvkk_onaylandi_mi?: boolean;
 };
 
 export type MeResponse = {
   id: number;
-  email: string;
+  email: string | null;
   ad: string;
   soyad: string;
   rol: string;
   aktif_mi: boolean;
+  kullanici_adi?: string | null;
+  sifre_degistirmeli_mi?: boolean;
+  kvkk_onaylandi_mi?: boolean;
 };
 
-export async function login(email: string, sifre: string): Promise<TokenResponse> {
+export async function login(kimlik: string, sifre: string): Promise<TokenResponse> {
   const { data } = await authClient.post<TokenResponse>("/auth/login", {
-    email,
+    kimlik,
     sifre,
   });
   return data;
@@ -56,5 +62,29 @@ export async function me(): Promise<MeResponse> {
   const { data } = await authClient.get<MeResponse>("/auth/me", {
     headers: access ? { Authorization: `Bearer ${access}` } : {},
   });
+  return data;
+}
+
+export async function sifreDegistir(
+  eski_sifre: string,
+  yeni_sifre: string,
+): Promise<void> {
+  const { useAuthStore } = await import("./authStore");
+  const access = useAuthStore.getState().accessToken ?? useAuthStore.getState().token;
+  await authClient.post(
+    "/auth/sifre-degistir",
+    { eski_sifre, yeni_sifre },
+    access ? { headers: { Authorization: `Bearer ${access}` } } : undefined,
+  );
+}
+
+export async function kvkkOnay(onay = true): Promise<MeResponse> {
+  const { useAuthStore } = await import("./authStore");
+  const access = useAuthStore.getState().accessToken ?? useAuthStore.getState().token;
+  const { data } = await authClient.post<MeResponse>(
+    "/auth/kvkk-onay",
+    { onay },
+    access ? { headers: { Authorization: `Bearer ${access}` } } : undefined,
+  );
   return data;
 }

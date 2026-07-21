@@ -1,6 +1,8 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel
 
-from app.core.enums import YonetimGorevi
+from app.core.enums import ImportDurum, YonetimGorevi
 
 
 class PersonelCreate(BaseModel):
@@ -29,3 +31,22 @@ class PersonelUpdate(BaseModel):
     unvan: str | None = None
     amir_id: int | None = None
     yonetim_gorevi: YonetimGorevi | None = None
+
+
+class PersonelImportBaslatResponse(BaseModel):
+    isi_id: int
+    celery_task_id: Optional[str] = None
+    toplam: int
+
+
+class PersonelImportDurumResponse(BaseModel):
+    id: int
+    actor_id: int
+    durum: ImportDurum
+    toplam: int
+    basarili: int
+    basarisiz: int
+    hata_detay: list[Any] | None = None
+    celery_task_id: Optional[str] = None
+
+    model_config = {"from_attributes": True}

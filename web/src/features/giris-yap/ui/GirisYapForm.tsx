@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui";
-import { homeForRole, useAuthStore } from "@/shared/auth";
-import { girisSchema, type GirisFormValues } from "../model/schema";
+import { postLoginPath, useAuthStore, USE_MOCK_AUTH } from "@/shared/auth";
+import { DEV_CREDENTIALS, girisSchema, type GirisFormValues } from "../model/schema";
 
-/** LoginForm — React Hook Form + Zod */
+/** LoginForm — sicil / kullanıcı adı / e-posta + şifre */
 export function GirisYapForm() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
@@ -19,24 +19,31 @@ export function GirisYapForm() {
     formState: { errors, isSubmitting },
   } = useForm<GirisFormValues>({
     resolver: zodResolver(girisSchema),
-    defaultValues: { email: "admin@hastane.test", sifre: "Test1234!" },
+    defaultValues: {
+      kimlik: DEV_CREDENTIALS.kimlik,
+      sifre: DEV_CREDENTIALS.sifre,
+    },
   });
 
   const onSubmit = async (data: GirisFormValues) => {
     setHata(null);
     try {
-      const me = await login(data.email, data.sifre);
-      navigate(homeForRole(me.rol), { replace: true });
+      const me = await login(data.kimlik.trim(), data.sifre);
+      navigate(postLoginPath(me), { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {
         const detail = err.response?.data?.detail;
-        setHata(
-          typeof detail === "string"
-            ? detail
-            : "E-posta veya şifre hatalı",
-        );
+        if (!err.response) {
+          setHata(
+            "API'ye ulaşılamadı. Backend'in :8000 portunda çalıştığından emin olun.",
+          );
+        } else {
+          setHata(
+            typeof detail === "string" ? detail : "Kimlik veya şifre hatalı",
+          );
+        }
       } else if (err instanceof Error) {
-        setHata(err.message || "E-posta veya şifre hatalı");
+        setHata(err.message || "Kimlik veya şifre hatalı");
       } else {
         setHata("Giriş başarısız");
       }
@@ -48,19 +55,21 @@ export function GirisYapForm() {
       onSubmit={handleSubmit(onSubmit)}
       className="flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm"
     >
-      <p className="text-xs text-muted-foreground">
-        Demo: <strong>admin@hastane.test</strong> / <strong>Test1234!</strong>
+      <p className="mb-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        Test girişi — sicil: <strong>ADM-001</strong>, şifre:{" "}
+        <strong>Test1234!</strong>
+        {USE_MOCK_AUTH ? " (mock)" : ""}
       </p>
       <label className="flex flex-col gap-1 text-sm">
-        E-posta
+        Sicil no / kullanıcı adı / e-posta
         <input
           className="rounded-md border border-border px-3 py-2"
-          type="email"
+          type="text"
           autoComplete="username"
-          {...register("email")}
+          {...register("kimlik")}
         />
-        {errors.email && (
-          <span className="text-xs text-red-600">{errors.email.message}</span>
+        {errors.kimlik && (
+          <span className="text-xs text-red-600">{errors.kimlik.message}</span>
         )}
       </label>
       <label className="flex flex-col gap-1 text-sm">

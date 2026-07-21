@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from sqlmodel import Field, Relationship
@@ -13,11 +14,17 @@ class Kullanici(BaseModel, table=True):
     tc_kimlik_no: str = Field(max_length=11, unique=True, index=True)
     ad: str = Field(max_length=100)
     soyad: str = Field(max_length=100)
-    email: str = Field(max_length=255, unique=True, index=True)
+    email: Optional[str] = Field(default=None, max_length=255, unique=True, index=True)
     telefon: Optional[str] = Field(default=None, max_length=20)
-    sifre_hash: str
+    kullanici_adi: Optional[str] = Field(
+        default=None, max_length=100, unique=True, index=True
+    )
+    sifre_hash: Optional[str] = Field(default=None)
     rol: Rol = Field(default=Rol.HASTA, index=True)
     aktif_mi: bool = Field(default=True)
+    sifre_degistirmeli_mi: bool = Field(default=False)
+    kvkk_onaylandi_mi: bool = Field(default=True)
+    kvkk_onay_tarihi: Optional[datetime] = Field(default=None)
 
     roller: list[DbRol] = Relationship(
         back_populates="kullanicilar",

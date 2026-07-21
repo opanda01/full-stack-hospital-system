@@ -19,7 +19,7 @@ from app.features.randevular.models import Randevu
 from app.features.temizlik_gorevleri.models import TemizlikGorevi
 from app.features.tetkikler.models import Tetkik
 from app.main import app
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 
 @pytest.fixture(name="session")
@@ -160,14 +160,14 @@ def seeded(session: Session):
         hasta_id=ha.id,
         doktor_id=da.id,
         departman_id=dep_a.id,
-        tarih_saat=datetime.utcnow() + timedelta(days=1),
+        tarih_saat=datetime.now(timezone.utc) + timedelta(days=1),
         durum="BEKLEMEDE",
     )
     randevu_b = Randevu(
         hasta_id=hb.id,
         doktor_id=db.id,
         departman_id=dep_b.id,
-        tarih_saat=datetime.utcnow() + timedelta(days=2),
+        tarih_saat=datetime.now(timezone.utc) + timedelta(days=2),
         durum="BEKLEMEDE",
     )
     session.add_all([randevu_a, randevu_b])
