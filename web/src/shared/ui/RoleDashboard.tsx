@@ -31,7 +31,7 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
           Hoş geldiniz, {ad} {soyad}
         </h2>
         <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Özet göstergeler (örnek veri — Faz 2&apos;de bağlanacak)
+          Özet göstergeler
         </p>
       </div>
 
