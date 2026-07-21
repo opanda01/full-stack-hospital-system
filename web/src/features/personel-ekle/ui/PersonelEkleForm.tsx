@@ -2,8 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { getApiErrorMessage } from "@/shared/lib";
+import type { Personel } from "@/entities/personel";
 
-type Kullanici = { id: number; ad: string; soyad: string; email: string; rol: string };
+type Kullanici = {
+  id: number;
+  ad: string;
+  soyad: string;
+  email: string;
+  rol: string;
+};
 type Departman = { id: number; ad: string };
 
 export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
@@ -12,6 +20,7 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
   const [sicil, setSicil] = useState("");
   const [departmanId, setDepartmanId] = useState("");
   const [unvan, setUnvan] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const { data: kullanicilar = [] } = useQuery({
     queryKey: ["kullanicilar"],
@@ -21,6 +30,15 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
     queryKey: ["departmanlar"],
     queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
   });
+  const { data: personeller = [] } = useQuery({
+    queryKey: ["personel"],
+    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+  });
+
+  const personelKullaniciIds = new Set(personeller.map((p) => p.kullanici_id));
+  const uygunKullanicilar = kullanicilar.filter(
+    (k) => k.rol !== "HASTA" && !personelKullaniciIds.has(k.id),
+  );
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -31,12 +49,14 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
         unvan: unvan || null,
       }),
     onSuccess: () => {
+      setError(null);
       qc.invalidateQueries({ queryKey: ["personel"] });
       setKullaniciId("");
       setSicil("");
       setUnvan("");
       onSuccess?.();
     },
+    onError: (err) => setError(getApiErrorMessage(err)),
   });
 
   return (
@@ -54,7 +74,7 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
         required
       >
         <option value="">Kullanıcı seç</option>
-        {kullanicilar.map((k) => (
+        {uygunKullanicilar.map((k) => (
           <option key={k.id} value={k.id}>
             {k.ad} {k.soyad} ({k.rol})
           </option>
@@ -85,7 +105,14 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
         value={unvan}
         onChange={(e) => setUnvan(e.target.value)}
       />
-      <Button type="submit">Personel ekle</Button>
+      <Button type="submit" disabled={createMut.isPending}>
+        Personel ekle
+      </Button>
+      {error && (
+        <p className="text-sm text-red-600 sm:col-span-2" role="alert">
+          {error}
+        </p>
+      )}
     </form>
   );
 }
