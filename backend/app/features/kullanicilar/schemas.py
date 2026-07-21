@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 from app.core.enums import Rol
@@ -18,10 +20,13 @@ class KullaniciRead(BaseModel):
     tc_kimlik_no: str
     ad: str
     soyad: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     telefon: str | None = None
+    kullanici_adi: Optional[str] = None
     rol: Rol
     aktif_mi: bool
+    sifre_degistirmeli_mi: bool = False
+    kvkk_onaylandi_mi: bool = True
 
     model_config = {"from_attributes": True}
 

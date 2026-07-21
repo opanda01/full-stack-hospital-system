@@ -2,6 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/shared/auth/authStore";
 import { NAV_ITEMS, type Rol } from "@/shared/config/nav-items";
 import { AppShell } from "@/shared/ui/app-shell";
+import { OnboardingGuard } from "./OnboardingGuard";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RoleGuard } from "./RoleGuard";
 
@@ -15,9 +16,11 @@ type RoleLayoutRouteProps = {
 export function RoleLayoutRoute({ rol }: RoleLayoutRouteProps) {
   return (
     <ProtectedRoute>
-      <RoleGuard roller={[rol]}>
-        <RoleLayoutInner rol={rol} />
-      </RoleGuard>
+      <OnboardingGuard>
+        <RoleGuard roller={[rol]}>
+          <RoleLayoutInner rol={rol} />
+        </RoleGuard>
+      </OnboardingGuard>
     </ProtectedRoute>
   );
 }

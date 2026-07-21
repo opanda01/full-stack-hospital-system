@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { ProtectedRoute, RoleGuard, RoleLayoutRoute } from "@/shared/auth";
+import { ProtectedRoute, RoleGuard, RoleLayoutRoute, OnboardingGuard } from "@/shared/auth";
 
 import { GirisPage } from "@/pages/ortak/giris";
 import { ForbiddenPage } from "@/pages/ortak/forbidden";
@@ -11,6 +11,8 @@ import { NobetYonetimiPage } from "@/pages/ortak/nobet";
 import { SikayetOneriPage } from "@/pages/ortak/sikayet";
 import { HastaKayitPage } from "@/pages/ortak/hasta-kayit";
 import { TemizlikAtaPage } from "@/pages/ortak/temizlik-ata";
+import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
+import { KvkkOnayPage } from "@/pages/ortak/kvkk-onay";
 
 import { AdminDashboardPage } from "@/pages/admin/dashboard";
 import { KullaniciYonetimiPage } from "@/pages/admin/kullanicilar";
@@ -55,7 +57,13 @@ function Guard({
 }) {
   return (
     <ProtectedRoute>
-      {roller?.length ? <RoleGuard roller={roller}>{children}</RoleGuard> : children}
+      <OnboardingGuard>
+        {roller?.length ? (
+          <RoleGuard roller={roller}>{children}</RoleGuard>
+        ) : (
+          children
+        )}
+      </OnboardingGuard>
     </ProtectedRoute>
   );
 }
@@ -87,16 +95,8 @@ export function AppRouter() {
             </Guard>
           }
         />
-        <Route
-          path="/sifre-degistir"
-          element={
-            <PlaceholderPage
-              title="Şifre değiştir"
-              description="Şifre değiştirme ekranı yakında."
-            />
-          }
-        />
-
+        <Route path="/sifre-degistir" element={<SifreDegistirPage />} />
+        <Route path="/kvkk-onay" element={<KvkkOnayPage />} />
         {/* ADMIN */}
         <Route path="/admin" element={<RoleLayoutRoute rol="ADMIN" />}>
           <Route index element={<AdminDashboardPage />} />

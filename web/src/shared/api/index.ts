@@ -1,5 +1,9 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { useAuthStore } from "@/shared/auth";
+import {
+  isOnboardingApiDetail,
+  onboardingPath,
+  useAuthStore,
+} from "@/shared/auth";
 import * as authService from "@/shared/auth/authService";
 
 export const api = axios.create({
@@ -40,17 +44,38 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+function redirectOnboardingIfNeeded(detail: unknown) {
+  if (typeof window === "undefined") return;
+  if (!isOnboardingApiDetail(detail)) return;
+  const user = useAuthStore.getState().currentUser;
+  if (!user) return;
+  const path = onboardingPath(user);
+  if (!window.location.pathname.startsWith(path)) {
+    window.location.href = path;
+  }
+}
+
 api.interceptors.response.use(
   (res) => res,
-  async (error: AxiosError) => {
+  async (error: AxiosError<{ detail?: unknown }>) => {
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+
+    if (status === 403) {
+      redirectOnboardingIfNeeded(detail);
+      return Promise.reject(error);
+    }
+
     const original = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
-    if (error.response?.status !== 401 || !original || original._retry) {
+    if (status !== 401 || !original || original._retry) {
       return Promise.reject(error);
     }
-    // Auth endpoint'lerinde tekrar deneme
-    if (original.url?.includes("/auth/login") || original.url?.includes("/auth/refresh")) {
+    if (
+      original.url?.includes("/auth/login") ||
+      original.url?.includes("/auth/refresh")
+    ) {
       return Promise.reject(error);
     }
     original._retry = true;
@@ -59,7 +84,10 @@ api.interceptors.response.use(
     });
     const newToken = await refreshPromise;
     if (!newToken) {
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/giris")) {
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/giris")
+      ) {
         window.location.href = "/giris";
       }
       return Promise.reject(error);

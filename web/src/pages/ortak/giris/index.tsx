@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GirisYapForm } from "@/features/giris-yap";
 import {
-  homeForRole,
   MOCK_USERS,
+  postLoginPath,
   USE_MOCK_AUTH,
   useAuthStore,
 } from "@/shared/auth";
@@ -15,16 +15,14 @@ export function GirisPage() {
   const [hizliHata, setHizliHata] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  const hizliGirisYap = async (email: string, sifre: string) => {
+  const hizliGirisYap = async (kimlik: string, sifre: string) => {
     setHizliHata(null);
     setYukleniyor(true);
     try {
-      const me = await login(email, sifre);
-      navigate(homeForRole(me.rol), { replace: true });
+      const me = await login(kimlik, sifre);
+      navigate(postLoginPath(me), { replace: true });
     } catch (err) {
-      setHizliHata(
-        err instanceof Error ? err.message : "Giriş başarısız",
-      );
+      setHizliHata(err instanceof Error ? err.message : "Giriş başarısız");
     } finally {
       setYukleniyor(false);
     }
@@ -37,7 +35,7 @@ export function GirisPage() {
           Çanakkale Mehmet Akif Ersoy Devlet Hastanesi
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Hastane Bilgi Yönetim Sistemi — Web
+          Hastane Bilgi Yönetim Sistemi — Personel girişi
         </p>
       </div>
 
@@ -47,17 +45,19 @@ export function GirisPage() {
         {USE_MOCK_AUTH && (
           <div className="mt-6 rounded-lg border border-border bg-card p-4 pt-4">
             <p className="mb-2 text-xs text-muted-foreground">
-              Hızlı giriş (demo)
+              Hızlı giriş (demo — sicil ile)
             </p>
             <div className="flex flex-wrap gap-2">
-              {MOCK_USERS.map((u) => (
+              {MOCK_USERS.filter((u) => u.rol !== "HASTA").map((u) => (
                 <Button
                   key={u.id}
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={yukleniyor}
-                  onClick={() => void hizliGirisYap(u.email, u.sifre)}
+                  onClick={() =>
+                    void hizliGirisYap(u.sicil_no ?? u.email, u.sifre)
+                  }
                 >
                   {u.rol}
                 </Button>

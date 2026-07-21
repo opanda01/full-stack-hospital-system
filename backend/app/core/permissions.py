@@ -13,6 +13,7 @@ class Kapsam(str, Enum):
 def _yonetim_ortak() -> dict[str, Kapsam]:
     return {
         "personel:listele": Kapsam.GLOBAL,
+        "personel:import": Kapsam.GLOBAL,
         "departman:olustur": Kapsam.GLOBAL,
         "departman:goruntule": Kapsam.GLOBAL,
         "doktor:profil_duzenle": Kapsam.GLOBAL,
