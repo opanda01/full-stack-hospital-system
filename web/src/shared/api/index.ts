@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/shared/auth";
-import * as authApi from "@/shared/auth/authApi";
+import * as authService from "@/shared/auth/authService";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "/api",
@@ -25,7 +25,7 @@ async function refreshAccessToken(): Promise<string | null> {
     return null;
   }
   try {
-    const res = await authApi.refresh(refreshToken);
+    const res = await authService.refresh(refreshToken);
     setTokens(res.access_token, res.refresh_token);
     if (res.rol) {
       useAuthStore.setState({
