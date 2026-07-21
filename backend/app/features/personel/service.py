@@ -35,6 +35,7 @@ def _to_read(session: Session, p: Personel) -> PersonelRead:
             str(kullanici.rol) if kullanici else None
         ),
         departman_ad=departman.ad if departman else None,
+        aktif_mi=kullanici.aktif_mi if kullanici else None,
     )
 
 

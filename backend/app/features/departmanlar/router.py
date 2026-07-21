@@ -7,6 +7,7 @@ from app.features.departmanlar import service as dep_service
 from app.features.departmanlar.schemas import (
     BirimCreate,
     BirimRead,
+    BirimUpdate,
     DepartmanCreate,
     DepartmanRead,
     DepartmanUpdate,
@@ -34,6 +35,16 @@ def create_birim(
     _user=Depends(require_permission("departman:olustur")),
 ):
     return dep_service.create_birim(session, body)
+
+
+@router.patch("/birimler/{birim_id}", response_model=BirimRead)
+def update_birim(
+    birim_id: int,
+    body: BirimUpdate,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("departman:olustur")),
+):
+    return dep_service.update_birim(session, birim_id, body)
 
 
 @router.get("/", response_model=list[DepartmanRead])

@@ -47,11 +47,12 @@ Semboller:
 | Randevu oluştur | `randevu:olustur` | ✅ | ✅ | ❌ | *departman* | ❌ | ❌ | *kendi* |
 | Randevu görüntüle | `randevu:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
 | Randevu iptal | `randevu:iptal` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | *kendi* |
+| Hasta listele | `hasta:listele` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Muayene oluştur | `muayene:olustur` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Muayene görüntüle | `muayene:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
 | Tetkik iste | `tetkik:iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Tetkik sonucu gir | `tetkik:sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Tetkik görüntüle | `tetkik:goruntule` | ✅ | ❌ | *isteyen* | ❌ | ✅ | ❌ | *kendi* |
+| Tetkik görüntüle | `tetkik:goruntule` | ✅ | ✅ | *isteyen* | ❌ | ✅ | ❌ | *kendi* |
 | Nöbet oluştur | `nobet:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
 | Temizlik ata | `temizlik_gorevi:ata` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |

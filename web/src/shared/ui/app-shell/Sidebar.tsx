@@ -1,13 +1,16 @@
 import { NavLink } from "react-router-dom";
 import { Activity } from "lucide-react";
-import type { NavItem } from "@/shared/config/nav-items";
+import type { NavGroup } from "@/shared/config/nav-items";
+import { flattenNav } from "@/shared/config/nav-items";
 import { cn } from "@/shared/lib/utils";
 
 type SidebarProps = {
-  navItems: NavItem[];
+  navGroups: NavGroup[];
 };
 
-export function Sidebar({ navItems }: SidebarProps) {
+export function Sidebar({ navGroups }: SidebarProps) {
+  const navItems = flattenNav(navGroups);
+
   return (
     <aside
       className="sidebar-panel flex h-[calc(100vh-28px)] w-[224px] shrink-0 flex-col overflow-hidden rounded-[22px] px-4 py-[1.1rem] text-[color:var(--text-primary)]"

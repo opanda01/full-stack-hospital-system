@@ -5,6 +5,7 @@ from app.features.departmanlar.models import Birim, Departman
 from app.features.departmanlar.schemas import (
     BirimCreate,
     BirimRead,
+    BirimUpdate,
     DepartmanCreate,
     DepartmanRead,
     DepartmanUpdate,
@@ -34,6 +35,25 @@ def create_birim(session: Session, data: BirimCreate) -> BirimRead:
     if existing:
         raise HTTPException(status_code=400, detail="Birim adı zaten var")
     birim = Birim(**data.model_dump())
+    session.add(birim)
+    session.commit()
+    session.refresh(birim)
+    return BirimRead.model_validate(birim)
+
+
+def update_birim(session: Session, birim_id: int, data: BirimUpdate) -> BirimRead:
+    birim = session.get(Birim, birim_id)
+    if birim is None:
+        raise HTTPException(status_code=404, detail="Birim bulunamadı")
+    payload = data.model_dump(exclude_unset=True)
+    if "ad" in payload and payload["ad"] is not None:
+        conflict = session.exec(
+            select(Birim).where(Birim.ad == payload["ad"], Birim.id != birim_id)
+        ).first()
+        if conflict:
+            raise HTTPException(status_code=400, detail="Birim adı zaten var")
+    for k, v in payload.items():
+        setattr(birim, k, v)
     session.add(birim)
     session.commit()
     session.refresh(birim)
