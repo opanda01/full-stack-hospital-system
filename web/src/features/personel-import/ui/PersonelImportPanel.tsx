@@ -67,12 +67,12 @@ export function PersonelImportPanel() {
         Telefon, Email. DOKTOR satırlarında uzmanlik_alani ve diploma_no
         zorunludur.
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-3">
         <input
           ref={inputRef}
           type="file"
           accept=".csv,.xlsx,.xlsm,text/csv"
-          className="text-sm"
+          className="hidden"
           disabled={yukleniyor}
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -86,7 +86,7 @@ export function PersonelImportPanel() {
           disabled={yukleniyor}
           onClick={() => inputRef.current?.click()}
         >
-          {yukleniyor ? "Yükleniyor…" : "Dosya seç"}
+          {yukleniyor ? "Yükleniyor…" : "CSV / XLSX seç"}
         </Button>
       </div>
       {hata && <p className="mt-2 text-xs text-red-600">{hata}</p>}

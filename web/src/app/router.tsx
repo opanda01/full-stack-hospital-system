@@ -18,6 +18,7 @@ import { AdminDashboardPage } from "@/pages/admin/dashboard";
 import { KullaniciYonetimiPage } from "@/pages/admin/kullanicilar";
 import { PersonelYonetimiPage } from "@/pages/admin/personel";
 import { DepartmanYonetimiPage } from "@/pages/admin/departmanlar";
+import { DepartmanDetayPage } from "@/pages/admin/departmanlar/detay";
 import { AdminDoktorlarPage } from "@/pages/admin/doktorlar";
 import { AdminRandevularPage } from "@/pages/admin/randevular";
 import { AdminRaporlarPage } from "@/pages/admin/raporlar";
@@ -103,6 +104,7 @@ export function AppRouter() {
           <Route path="kullanicilar" element={<KullaniciYonetimiPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />} />
+          <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
           <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="randevular" element={<AdminRandevularPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
@@ -114,6 +116,7 @@ export function AppRouter() {
           <Route index element={<BashekimDashboardPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />} />
+          <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
           <Route
             path="randevular"
             element={<PlaceholderPage title="Randevular" />}
@@ -129,6 +132,7 @@ export function AppRouter() {
           <Route index element={<MudurDashboardPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />} />
+          <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
           <Route
             path="randevular"
             element={<PlaceholderPage title="Randevular" />}

@@ -53,21 +53,25 @@ export function AdminDashboardPage() {
           label: "Toplam kullanıcı",
           value: loading ? "…" : kullanicilar.length,
           icon: Users,
+          to: "/admin/kullanicilar",
         },
         {
           label: "Aktif doktor",
           value: loading ? "…" : doktorlar.length,
           icon: Stethoscope,
+          to: "/admin/doktorlar",
         },
         {
           label: "Departman",
           value: loading ? "…" : departmanlar.length,
           icon: Building2,
+          to: "/admin/departmanlar",
         },
         {
           label: "Bugünkü randevu",
           value: loading ? "…" : bugunRandevu,
           icon: CalendarClock,
+          to: "/admin/randevular",
         },
       ]}
     />

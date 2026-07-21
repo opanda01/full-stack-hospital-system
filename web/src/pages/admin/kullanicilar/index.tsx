@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
@@ -35,37 +36,6 @@ export function KullaniciYonetimiPage() {
     queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
   });
 
-  const [form, setForm] = useState({
-    tc_kimlik_no: "",
-    ad: "",
-    soyad: "",
-    email: "",
-    telefon: "",
-    sifre: "Test1234!",
-    rol: "IDARI_PERSONEL",
-  });
-
-  const createMut = useMutation({
-    mutationFn: async () =>
-      api.post("/kullanicilar/", {
-        ...form,
-        telefon: form.telefon || null,
-      }),
-    onSuccess: () => {
-      setActionError(null);
-      qc.invalidateQueries({ queryKey: ["kullanicilar"] });
-      setForm((f) => ({
-        ...f,
-        tc_kimlik_no: "",
-        ad: "",
-        soyad: "",
-        email: "",
-        telefon: "",
-      }));
-    },
-    onError: (err) => setActionError(getApiErrorMessage(err)),
-  });
-
   const patchMut = useMutation({
     mutationFn: async ({
       id,
@@ -95,63 +65,14 @@ export function KullaniciYonetimiPage() {
       title="Kullanıcı Yönetimi"
       links={[{ to: "/admin", label: "Admin" }]}
     >
-      <form
-        className="mb-6 grid max-w-2xl gap-2 rounded border bg-white p-4 sm:grid-cols-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          createMut.mutate();
-        }}
-      >
-        <input
-          className="rounded border px-3 py-2"
-          placeholder="TC"
-          value={form.tc_kimlik_no}
-          onChange={(e) => setForm({ ...form, tc_kimlik_no: e.target.value })}
-          required
-        />
-        <input
-          className="rounded border px-3 py-2"
-          placeholder="E-posta"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          className="rounded border px-3 py-2"
-          placeholder="Ad"
-          value={form.ad}
-          onChange={(e) => setForm({ ...form, ad: e.target.value })}
-          required
-        />
-        <input
-          className="rounded border px-3 py-2"
-          placeholder="Soyad"
-          value={form.soyad}
-          onChange={(e) => setForm({ ...form, soyad: e.target.value })}
-          required
-        />
-        <input
-          className="rounded border px-3 py-2"
-          placeholder="Telefon (opsiyonel)"
-          value={form.telefon}
-          onChange={(e) => setForm({ ...form, telefon: e.target.value })}
-        />
-        <select
-          className="rounded border px-3 py-2"
-          value={form.rol}
-          onChange={(e) => setForm({ ...form, rol: e.target.value })}
-        >
-          {ROLLER.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" disabled={createMut.isPending}>
-          Kullanıcı ekle
-        </Button>
-      </form>
+      <p className="mb-4 rounded border bg-muted px-3 py-2 text-sm text-foreground">
+        Yeni çalışan eklemek için{" "}
+        <Link className="font-medium underline" to="/admin/personel">
+          Personel
+        </Link>{" "}
+        sayfasını kullanın. Bu sayfa hesap listesi, rol ve deaktif işlemleri
+        içindir.
+      </p>
 
       {actionError && (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -166,7 +87,7 @@ export function KullaniciYonetimiPage() {
           {getApiErrorMessage(error)}
         </p>
       ) : data.length === 0 ? (
-        <p className="text-sm text-slate-600">Henüz kullanıcı yok.</p>
+        <p className="text-sm text-muted-foreground">Henüz kullanıcı yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>

@@ -33,10 +33,10 @@ export function LaborantPage() {
 
   return (
     <AppShell title="Laborant — Tetkik Sonuçları">
-      {msg && <p className="mb-3 text-sm text-slate-600">{msg}</p>}
+      {msg && <p className="mb-3 text-sm text-muted-foreground">{msg}</p>}
       <ul className="space-y-3">
         {data.map((t) => (
-          <li key={t.id} className="rounded border bg-white p-3 text-sm">
+          <li key={t.id} className="rounded border bg-card p-3 text-sm">
             <p>
               #{t.id} {t.tetkik_turu} — {t.durum}
             </p>
@@ -65,12 +65,12 @@ export function LaborantPage() {
               </div>
             )}
             {t.sonuc_dosyasi && (
-              <p className="mt-1 text-slate-600">Sonuç: {t.sonuc_dosyasi}</p>
+              <p className="mt-1 text-muted-foreground">Sonuç: {t.sonuc_dosyasi}</p>
             )}
           </li>
         ))}
         {data.length === 0 && (
-          <p className="text-slate-500">Bekleyen tetkik yok.</p>
+          <p className="text-muted-foreground">Bekleyen tetkik yok.</p>
         )}
       </ul>
     </AppShell>
