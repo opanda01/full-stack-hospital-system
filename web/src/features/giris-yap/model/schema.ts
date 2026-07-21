@@ -8,6 +8,6 @@ export const girisSchema = z.object({
 export type GirisFormValues = z.infer<typeof girisSchema>;
 
 export const DEV_CREDENTIALS = {
-  email: "admin@hastane.example.com",
+  email: "admin@hastane.test",
   sifre: "Test1234!",
 } as const;

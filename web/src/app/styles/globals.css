@@ -2,21 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-  --primary: 199 89% 28%;
-  --primary-foreground: 210 40% 98%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --border: 214 32% 91%;
-  --radius: 0.5rem;
+@layer base {
+  :root {
+    /* AppShell tema tokenları (varsayılan: açık) — ThemeProvider override eder */
+    --app-bg: #f4f5f3;
+    --panel-bg: #ffffff;
+    --panel-inset-bg: #f7f8f6;
+    --nav-hover-bg: #eceee9;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b68;
+    --nav-active-bg: #0f6e56;
+    --nav-active-text: #ffffff;
+    --card-success-bg: #e1f5ee;
+    --card-accent-bg: #e6f1fb;
+    --card-warning-bg: #faeeda;
+    --border-accent: #0f6e56;
+
+    /* shadcn uyumluluk */
+    --background: 90 8% 96%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 166 76% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 90 10% 94%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 90 8% 93%;
+    --muted-foreground: 60 2% 42%;
+    --accent: 90 8% 93%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 90 6% 88%;
+    --input: 90 6% 88%;
+    --ring: 166 76% 25%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--app-bg);
+    color: var(--text-primary);
+  }
+
+  /* Koyu / OLED: form kontrolleri + scrollbar */
+  :root[data-theme="koyu"],
+  :root[data-theme="oled"] {
+    color-scheme: dark;
+  }
+
+  :root[data-theme="acik"] {
+    color-scheme: light;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
+@layer components {
+  .sidebar-panel {
+    color: var(--text-primary);
+  }
+
+  .sidebar-panel nav::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-panel nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-panel nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  }
 }
