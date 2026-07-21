@@ -19,7 +19,7 @@ export function GirisYapForm() {
     formState: { errors, isSubmitting },
   } = useForm<GirisFormValues>({
     resolver: zodResolver(girisSchema),
-    defaultValues: { email: "admin@hastane.example.com", sifre: "Test1234!" },
+    defaultValues: { email: "admin@hastane.test", sifre: "Test1234!" },
   });
 
   const onSubmit = async (data: GirisFormValues) => {
@@ -35,6 +35,8 @@ export function GirisYapForm() {
             ? detail
             : "E-posta veya şifre hatalı",
         );
+      } else if (err instanceof Error) {
+        setHata(err.message || "E-posta veya şifre hatalı");
       } else {
         setHata("Giriş başarısız");
       }
@@ -44,10 +46,10 @@ export function GirisYapForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-white p-6 shadow-sm"
+      className="flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm"
     >
       <p className="text-xs text-muted-foreground">
-        Demo: <strong>admin@hastane.example.com</strong> / <strong>Test1234!</strong>
+        Demo: <strong>admin@hastane.test</strong> / <strong>Test1234!</strong>
       </p>
       <label className="flex flex-col gap-1 text-sm">
         E-posta

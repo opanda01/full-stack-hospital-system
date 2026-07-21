@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import * as authApi from "./authApi";
+import * as authService from "./authService";
 
 export type CurrentUser = {
   id: number;
@@ -67,12 +67,13 @@ export const useAuthStore = create<AuthState>()(
           currentUser,
         }),
       login: async (email, sifre) => {
-        const res = await authApi.login(email, sifre);
+        const res = await authService.login(email, sifre);
         get().setAuth(
           res.access_token,
           [res.rol],
-          res.permissions ?? [],
+          res.permissions,
           res.refresh_token,
+          res.user,
         );
         const me = await get().fetchMe();
         return me;
@@ -81,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
         const { accessToken, refreshToken } = get();
         try {
           if (accessToken && refreshToken) {
-            await authApi.logout(refreshToken);
+            await authService.logout(refreshToken);
           }
         } catch {
           // sunucu reddetse bile lokal temizle
@@ -89,7 +90,7 @@ export const useAuthStore = create<AuthState>()(
         get().clear();
       },
       fetchMe: async () => {
-        const me = await authApi.me();
+        const me = await authService.me();
         set({
           currentUser: me,
           roles: [me.rol],
@@ -132,7 +133,8 @@ export const ROLE_HOME: Record<string, string> = {
   HEMSIRE: "/hemsire",
   EBE: "/ebe",
   TEMIZLIK_PERSONELI: "/temizlik",
-  HASTA: "/hasta",
+  /** HASTA web paneline giremez — mobil uyarı sayfası */
+  HASTA: "/hasta-mobil",
   LABORANT: "/laborant",
   GUVENLIK: "/guvenlik",
   IDARI_PERSONEL: "/idari",
