@@ -6,10 +6,12 @@ from sqlmodel import Session, select
 
 from app.core.audit import denetim_kaydi_yaz
 from app.core.db import get_session
-from app.core.enums import KlinikOnayDurumu
+from app.core.enums import KlinikOnayDurumu, Rol
+from app.core.permissions import Kapsam
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
+from app.features.hastalar import service as hasta_service
 from app.features.klinik_onay.models import KlinikOnayKaydi
 from app.features.kullanicilar.models import Kullanici
 
@@ -53,15 +55,39 @@ def _to_read(row: KlinikOnayKaydi) -> KlinikOnayRead:
     )
 
 
+def _assert_erisim(
+    session: Session,
+    current_user: Kullanici,
+    row: KlinikOnayKaydi,
+    kapsam: Kapsam,
+) -> None:
+    if kapsam == Kapsam.GLOBAL:
+        return
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        if row.olusturan_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Bu kayda erişim yetkiniz yok")
+        return
+    raise HTTPException(status_code=403, detail="Klinik onay için yetkiniz yok")
+
+
 @router.get("/", response_model=list[KlinikOnayRead])
 def list_klinik_onay(
+    request: Request,
     durum: KlinikOnayDurumu | None = None,
+    tur: str | None = None,
     session: Session = Depends(get_session),
-    _user=Depends(require_permission("klinik_onay:goruntule")),
+    current_user: Kullanici = Depends(require_permission("klinik_onay:goruntule")),
 ):
     q = select(KlinikOnayKaydi).order_by(KlinikOnayKaydi.id.desc())
     if durum is not None:
         q = q.where(KlinikOnayKaydi.onay_durumu == durum)
+    if tur is not None:
+        q = q.where(KlinikOnayKaydi.tur == tur)
+    kapsam = request.state.kapsam
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        q = q.where(KlinikOnayKaydi.olusturan_id == current_user.id)
+    elif kapsam != Kapsam.GLOBAL:
+        raise HTTPException(status_code=403, detail="Klinik onay listesi için yetkiniz yok")
     return [_to_read(r) for r in session.exec(q).all()]
 
 
@@ -75,6 +101,7 @@ def get_klinik_onay(
     row = session.get(KlinikOnayKaydi, kayit_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
+    _assert_erisim(session, current_user, row, request.state.kapsam)
     if row.hasta_id:
         phi_goruntuleme_logla(
             session,
@@ -89,9 +116,18 @@ def get_klinik_onay(
 @router.post("/", response_model=KlinikOnayRead, status_code=status.HTTP_201_CREATED)
 def create_klinik_onay(
     body: KlinikOnayCreate,
+    request: Request,
     session: Session = Depends(get_session),
-    current_user: Kullanici = Depends(require_permission("klinik_onay:goruntule")),
+    current_user: Kullanici = Depends(require_permission("klinik_onay:olustur")),
 ):
+    kapsam = request.state.kapsam
+    if body.hasta_id is not None and kapsam == Kapsam.KENDI_KAYDIM:
+        if current_user.rol == Rol.DOKTOR and not hasta_service.doktor_hasta_erisim_var_mi(
+            session, current_user, body.hasta_id
+        ):
+            raise HTTPException(
+                status_code=403, detail="Bu hasta için klinik belge oluşturamazsınız"
+            )
     row = KlinikOnayKaydi(
         **body.model_dump(),
         olusturan_id=current_user.id,

@@ -20,3 +20,8 @@ from app.features.eczane.models import Ilac  # noqa: F401
 from app.features.faturalandirma.models import Fatura  # noqa: F401
 from app.features.doner_sermaye.models import DonerSermayeKayit  # noqa: F401
 from app.features.yetki_devri.models import YetkiDevriKaydi  # noqa: F401
+from app.features.konsultasyon.models import KonsultasyonIstegi  # noqa: F401
+from app.features.saglik_kurulu.models import (  # noqa: F401
+    SaglikKuruluKaydi,
+    SaglikKuruluUye,
+)

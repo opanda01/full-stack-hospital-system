@@ -5,7 +5,7 @@ from app.core.db import get_session
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler import service as muayene_service
-from app.features.muayeneler.schemas import MuayeneCreate, MuayeneRead
+from app.features.muayeneler.schemas import MuayeneCreate, MuayeneRead, MuayeneUpdate
 
 router = APIRouter()
 
@@ -19,6 +19,19 @@ def create_muayene(
 ):
     return muayene_service.create_muayene(
         session, current_user, body, request.state.kapsam
+    )
+
+
+@router.patch("/{muayene_id}", response_model=MuayeneRead)
+def update_muayene(
+    muayene_id: int,
+    body: MuayeneUpdate,
+    request: Request,
+    current_user: Kullanici = Depends(require_permission("muayene:guncelle")),
+    session: Session = Depends(get_session),
+):
+    return muayene_service.update_muayene(
+        session, current_user, muayene_id, body, request.state.kapsam
     )
 
 

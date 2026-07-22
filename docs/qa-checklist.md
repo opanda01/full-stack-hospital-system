@@ -28,4 +28,15 @@
 - [ ] Temizlik görev tamamlar / yönetim görev atar
 - [ ] Şikayet gönderilir; yönetim listeler
 
+## Faz G — Doktor klinik paneli
+- [ ] Doktor `GET /hastalar/` → 403; `/hastalar/benim` yalnızca kendi hastaları
+- [ ] Başka doktor hastası detayı → 403
+- [ ] Randevularım canlı liste + zaman dilimi (bugün / gelecek hafta / ay)
+- [ ] Muayene oluştur + güncelle; nested AppShell yok
+- [ ] Tetkiklerim: istek + sonuç görüntüleme
+- [ ] Reçete / sevk / tıbbi rapor oluştur → başhekim klinik onay kuyruğunda
+- [ ] Konsültasyon iste / kabul → hedef doktorda hasta görünür
+- [ ] Sağlık kurulu: yalnızca üye olduğu kayıtlar
+- [ ] Nav’da personel / denetim / MHRS / fatura / eczane yok
+
 Şifre (tümü): Test1234!

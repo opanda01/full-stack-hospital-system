@@ -40,3 +40,11 @@
 - Yetki duyurusu + sistem gözetim
 - Envanter: `docs/bashekim-izin-envanteri.md`
 
+## Faz G — Doktor klinik paneli (uygulandı)
+
+- Kapsam: `GET /hastalar/benim`, `hasta:goruntule` (türevsel); genel hasta listesi doktor’a kapalı
+- Canlı: randevularım, muayene (oluştur/güncelle), hastalarım, tetkiklerim
+- Reçete / sevk / tıbbi rapor → `klinik_onay:olustur` + başhekim onayı
+- Konsültasyon + sağlık kurulu (üye kapsamı)
+- Yasaklı: personel, denetim, MHRS, fatura, eczane stok, RBAC UI
+

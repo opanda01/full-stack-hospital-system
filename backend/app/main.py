@@ -30,6 +30,8 @@ from app.features.sikayet_oneri.router import router as sikayet_oneri_router
 from app.features.temizlik_gorevleri.router import router as temizlik_gorevleri_router
 from app.features.tetkikler.router import router as tetkikler_router
 from app.features.yetki_devri.router import router as yetki_devri_router
+from app.features.konsultasyon.router import router as konsultasyon_router
+from app.features.saglik_kurulu.router import router as saglik_kurulu_router
 
 settings = get_settings()
 
@@ -94,3 +96,5 @@ app.include_router(eczane_router, prefix="/eczane", tags=["eczane"])
 app.include_router(fatura_router, prefix="/faturalar", tags=["faturalandirma"])
 app.include_router(doner_router, prefix="/doner-sermaye", tags=["doner_sermaye"])
 app.include_router(yetki_devri_router, prefix="/yetki-devri", tags=["yetki_devri"])
+app.include_router(konsultasyon_router, prefix="/konsultasyonlar", tags=["konsultasyon"])
+app.include_router(saglik_kurulu_router, prefix="/saglik-kurulu", tags=["saglik_kurulu"])
