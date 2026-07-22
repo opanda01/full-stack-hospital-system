@@ -34,8 +34,15 @@ import { DoktorDashboardPage } from "@/pages/doktor/dashboard";
 import { DoktorRandevularimPage } from "@/pages/doktor/randevularim";
 import { DoktorMuayeneEkraniPage } from "@/pages/doktor/muayene";
 import { DoktorHastalarimPage } from "@/pages/doktor/hastalarim";
-import { DoktorTetkikIstePage } from "@/pages/doktor/tetkik-iste";
+import { DoktorTetkiklerimPage } from "@/pages/doktor/tetkiklerim";
 import { DoktorProfilPage } from "@/pages/doktor/profilim";
+import {
+  DoktorRecetelerPage,
+  DoktorSevlerPage,
+  DoktorTibbiRaporlarPage,
+} from "@/pages/doktor/klinik-belgeler";
+import { DoktorKonsultasyonlarPage } from "@/pages/doktor/konsultasyonlar";
+import { DoktorSaglikKuruluPage } from "@/pages/doktor/saglik-kurulu";
 
 import { HemsireDashboardPage } from "@/pages/hemsire/dashboard";
 import { HemsireDepartmanRandevulariPage } from "@/pages/hemsire/departman-randevulari";
@@ -195,8 +202,14 @@ export function AppRouter() {
           <Route index element={<DoktorDashboardPage />} />
           <Route path="randevularim" element={<DoktorRandevularimPage />} />
           <Route path="muayene" element={<DoktorMuayeneEkraniPage />} />
-          <Route path="tetkik-iste" element={<DoktorTetkikIstePage />} />
+          <Route path="tetkiklerim" element={<DoktorTetkiklerimPage />} />
+          <Route path="tetkik-iste" element={<Navigate to="/doktor/tetkiklerim" replace />} />
           <Route path="hastalarim" element={<DoktorHastalarimPage />} />
+          <Route path="receteler" element={<DoktorRecetelerPage />} />
+          <Route path="sevler" element={<DoktorSevlerPage />} />
+          <Route path="tibbi-raporlar" element={<DoktorTibbiRaporlarPage />} />
+          <Route path="konsultasyonlar" element={<DoktorKonsultasyonlarPage />} />
+          <Route path="saglik-kurulu" element={<DoktorSaglikKuruluPage />} />
           <Route path="profilim" element={<DoktorProfilPage />} />
           <Route path="profil" element={<Navigate to="/doktor/profilim" replace />} />
           <Route path="ayarlar" element={<AyarlarPage />} />

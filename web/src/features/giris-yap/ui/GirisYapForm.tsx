@@ -6,7 +6,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { postLoginPath, useAuthStore, USE_MOCK_AUTH } from "@/shared/auth";
-import { DEV_BASHEKIM_CREDENTIALS, DEV_CREDENTIALS, girisSchema, type GirisFormValues } from "../model/schema";
+import {
+  DEV_BASHEKIM_CREDENTIALS,
+  DEV_CREDENTIALS,
+  DEV_DOKTOR_CREDENTIALS,
+  girisSchema,
+  type GirisFormValues,
+} from "../model/schema";
 
 /** LoginForm — sicil / kullanıcı adı / e-posta + şifre */
 export function GirisYapForm() {
@@ -92,6 +98,21 @@ export function GirisYapForm() {
               >
                 Başhekim: <strong>{DEV_BASHEKIM_CREDENTIALS.kimlik}</strong> /{" "}
                 <strong>{DEV_BASHEKIM_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(
+                    DEV_DOKTOR_CREDENTIALS.kimlik,
+                    DEV_DOKTOR_CREDENTIALS.sifre,
+                  )
+                }
+              >
+                Doktor: <strong>{DEV_DOKTOR_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_DOKTOR_CREDENTIALS.sifre}</strong>
               </button>
             </li>
           </ul>

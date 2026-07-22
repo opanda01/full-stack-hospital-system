@@ -33,6 +33,8 @@ class HastaRead(BaseModel):
     cinsiyet: str | None = None
     kan_grubu: str | None = None
     adres: str | None = None
+    ad: str | None = None
+    soyad: str | None = None
 
     model_config = {"from_attributes": True}
 

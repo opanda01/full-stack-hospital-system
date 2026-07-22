@@ -22,7 +22,19 @@ def benim_hasta_kaydim(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(get_current_user),
 ):
-    return hasta_getir(session, current_user.id)
+    h = hasta_getir(session, current_user.id)
+    return hasta_service._hasta_to_read(session, h)
+
+
+@router.get("/benim", response_model=list[HastaRead])
+def list_benim_hastalar(
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
+):
+    return hasta_service.list_benim_hastalar(
+        session, current_user, request.state.kapsam
+    )
 
 
 @router.get("/", response_model=list[HastaRead])
@@ -33,14 +45,16 @@ def list_hastalar(
             Rol.ADMIN,
             Rol.BASHEKIM,
             Rol.MUDUR,
-            Rol.DOKTOR,
             Rol.HEMSIRE,
             Rol.EBE,
             Rol.IDARI_PERSONEL,
         )
     ),
 ):
-    return hasta_service.list_hastalar(session)
+    return [
+        hasta_service._hasta_to_read(session, h)
+        for h in hasta_service.list_hastalar(session)
+    ]
 
 
 @router.get("/{hasta_id}", response_model=HastaRead)
@@ -48,9 +62,11 @@ def get_hasta(
     hasta_id: int,
     request: Request,
     session: Session = Depends(get_session),
-    current_user: Kullanici = Depends(require_permission("hasta:listele")),
+    current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
-    hasta = hasta_service.get_hasta(session, hasta_id)
+    hasta = hasta_service.get_hasta_scoped(
+        session, current_user, hasta_id, request.state.kapsam
+    )
     phi_goruntuleme_logla(
         session,
         actor=current_user,
@@ -67,7 +83,8 @@ def create_hasta(
     session: Session = Depends(get_session),
     _user=Depends(require_role(Rol.ADMIN, Rol.IDARI_PERSONEL)),
 ):
-    return hasta_service.create_hasta_with_user(session, body)
+    h = hasta_service.create_hasta_with_user(session, body)
+    return hasta_service._hasta_to_read(session, h)
 
 
 @router.patch("/{hasta_id}", response_model=HastaRead)
@@ -77,4 +94,5 @@ def update_hasta(
     session: Session = Depends(get_session),
     _user=Depends(require_role(Rol.ADMIN, Rol.IDARI_PERSONEL)),
 ):
-    return hasta_service.update_hasta(session, hasta_id, body)
+    h = hasta_service.update_hasta(session, hasta_id, body)
+    return hasta_service._hasta_to_read(session, h)

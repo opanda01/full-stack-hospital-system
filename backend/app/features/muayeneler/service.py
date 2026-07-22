@@ -9,7 +9,7 @@ from app.core.permissions import Kapsam
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.models import MuayeneKaydi
-from app.features.muayeneler.schemas import MuayeneCreate
+from app.features.muayeneler.schemas import MuayeneCreate, MuayeneUpdate
 from app.features.randevular.models import Randevu
 
 
@@ -23,7 +23,8 @@ def create_muayene(
         doktor = doktor_getir(session, current_user.id)
         if randevu.doktor_id != doktor.id:
             raise HTTPException(
-                status_code=403, detail="Sadece kendi randevunuza muayene kaydı açabilirsiniz"
+                status_code=403,
+                detail="Sadece kendi randevunuza muayene kaydı açabilirsiniz",
             )
     existing = session.exec(
         select(MuayeneKaydi).where(MuayeneKaydi.randevu_id == data.randevu_id)
@@ -35,6 +36,36 @@ def create_muayene(
     randevu.durum = "TAMAMLANDI"
     randevu.updated_at = datetime.now(timezone.utc)
     session.add(randevu)
+    session.commit()
+    session.refresh(kayit)
+    return kayit
+
+
+def update_muayene(
+    session: Session,
+    current_user: Kullanici,
+    muayene_id: int,
+    data: MuayeneUpdate,
+    kapsam: Kapsam,
+) -> MuayeneKaydi:
+    kayit = session.get(MuayeneKaydi, muayene_id)
+    if kayit is None:
+        raise HTTPException(status_code=404, detail="Muayene bulunamadı")
+    randevu = session.get(Randevu, kayit.randevu_id)
+    if randevu is None:
+        raise HTTPException(status_code=404, detail="Randevu bulunamadı")
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        doktor = doktor_getir(session, current_user.id)
+        if randevu.doktor_id != doktor.id:
+            raise HTTPException(
+                status_code=403, detail="Sadece kendi muayenenizi düzenleyebilirsiniz"
+            )
+    elif kapsam != Kapsam.GLOBAL:
+        raise HTTPException(status_code=403, detail="Muayene güncelleme yetkiniz yok")
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(kayit, k, v)
+    kayit.updated_at = datetime.now(timezone.utc)
+    session.add(kayit)
     session.commit()
     session.refresh(kayit)
     return kayit

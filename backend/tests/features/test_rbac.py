@@ -430,3 +430,53 @@ def test_doktor_a_doktor_b_kaynak_403(client, seeded):
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 403
+
+
+def test_doktor_hasta_liste_genel_403(client, seeded):
+    r = client.get("/hastalar/", headers=auth_header(seeded["doktor_a"]))
+    assert r.status_code == 403
+
+
+def test_doktor_benim_hastalar_scoped(client, seeded):
+    r = client.get("/hastalar/benim", headers=auth_header(seeded["doktor_a"]))
+    assert r.status_code == 200
+    ids = {h["id"] for h in r.json()}
+    assert seeded["hasta_a_entity"].id in ids
+    assert seeded["hasta_b_entity"].id not in ids
+
+
+def test_doktor_baska_hasta_detay_403(client, seeded):
+    r = client.get(
+        f"/hastalar/{seeded['hasta_b_entity'].id}",
+        headers=auth_header(seeded["doktor_a"]),
+    )
+    assert r.status_code == 403
+
+
+def test_doktor_kendi_hasta_detay_200(client, seeded):
+    r = client.get(
+        f"/hastalar/{seeded['hasta_a_entity'].id}",
+        headers=auth_header(seeded["doktor_a"]),
+    )
+    assert r.status_code == 200
+
+
+def test_doktor_klinik_onay_kendi_kapsam(client, seeded):
+    body = {
+        "tur": "RECETE",
+        "hasta_id": seeded["hasta_a_entity"].id,
+        "icerik": "Parasetamol 500mg",
+    }
+    c = client.post("/klinik-onay/", json=body, headers=auth_header(seeded["doktor_a"]))
+    assert c.status_code == 201
+    r = client.get("/klinik-onay/", headers=auth_header(seeded["doktor_a"]))
+    assert r.status_code == 200
+    assert all(x["olusturan_id"] == seeded["doktor_a"].id for x in r.json())
+
+
+def test_doktor_yeni_izinler_matrisi():
+    assert kapsam_getir(Rol.DOKTOR, "muayene:guncelle") == Kapsam.KENDI_KAYDIM
+    assert kapsam_getir(Rol.DOKTOR, "hasta:goruntule") == Kapsam.KENDI_KAYDIM
+    assert kapsam_getir(Rol.DOKTOR, "klinik_onay:olustur") == Kapsam.KENDI_KAYDIM
+    assert kapsam_getir(Rol.DOKTOR, "konsultasyon:olustur") == Kapsam.KENDI_KAYDIM
+    assert kapsam_getir(Rol.DOKTOR, "saglik_kurulu:goruntule") == Kapsam.KENDI_KAYDIM

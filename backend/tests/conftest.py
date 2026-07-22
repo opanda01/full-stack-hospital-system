@@ -225,5 +225,7 @@ def seeded(session: Session):
         "gorev_a": gorev_a,
         "gorev_b": gorev_b,
         "doktor_a_entity": da,
+        "doktor_b_entity": db,
         "hasta_a_entity": ha,
+        "hasta_b_entity": hb,
     }

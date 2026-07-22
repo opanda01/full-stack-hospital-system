@@ -88,3 +88,10 @@ class EntegrasyonDurumKod(str, Enum):
     UYARI = "UYARI"
     HATA = "HATA"
     BILINMIYOR = "BILINMIYOR"
+
+
+class KonsultasyonDurumu(str, Enum):
+    BEKLEMEDE = "BEKLEMEDE"
+    KABUL = "KABUL"
+    RED = "RED"
+    TAMAMLANDI = "TAMAMLANDI"
