@@ -87,6 +87,8 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
       qc.invalidateQueries({ queryKey: ["personel"] });
       qc.invalidateQueries({ queryKey: ["kullanicilar"] });
       qc.invalidateQueries({ queryKey: ["doktorlar"] });
+      qc.invalidateQueries({ queryKey: ["erisim-talepleri"] });
+      qc.invalidateQueries({ queryKey: ["bashekim-ozet"] });
       onSuccess?.();
     },
     onError: (err) => setError(getApiErrorMessage(err)),
@@ -100,6 +102,9 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
         createMut.mutate();
       }}
     >
+      <p className="sm:col-span-2 text-sm text-muted-foreground">
+        Yeni personel Başhekim erişim onayına düşer; onaylanana kadar giriş yapamaz.
+      </p>
       <p className="sm:col-span-2 text-sm text-muted-foreground">
         Tek formda hesap + personel kaydı oluşturulur. Doktor seçilirse uzmanlık
         bilgileri de kaydedilir.

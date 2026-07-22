@@ -1,11 +1,12 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.core.enums import Rol
+from app.core.enums import ErisimDurumu, PersonelKaynakTipi, Rol
 from app.core.security import hash_password
 from app.features.departmanlar.models import Departman
 from app.features.doktorlar.models import Doktor
 from app.features.kullanicilar.models import Kullanici
+from app.features.personel.erisim_service import apply_erisim_durumu
 from app.features.personel.models import Personel
 from app.features.personel.schemas import (
     PersonelCreate,
@@ -36,6 +37,17 @@ def _to_read(session: Session, p: Personel) -> PersonelRead:
         ),
         departman_ad=departman.ad if departman else None,
         aktif_mi=kullanici.aktif_mi if kullanici else None,
+        erisim_durumu=(
+            kullanici.erisim_durumu.value
+            if kullanici and isinstance(kullanici.erisim_durumu, ErisimDurumu)
+            else (str(kullanici.erisim_durumu) if kullanici else None)
+        ),
+        kaynak_tipi=(
+            kullanici.erisim_kaynak_tipi.value
+            if kullanici and isinstance(kullanici.erisim_kaynak_tipi, PersonelKaynakTipi)
+            else None
+        ),
+        firma_adi=kullanici.erisim_firma_adi if kullanici else None,
     )
 
 
@@ -109,6 +121,14 @@ def create_personel_with_user(
                 detail="Departman bulunamadı",
             )
 
+    if data.kaynak_tipi == PersonelKaynakTipi.DIS_FIRMA and not (
+        data.firma_adi or ""
+    ).strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Dış firma personeli için firma_adi zorunludur",
+        )
+
     kullanici = Kullanici(
         tc_kimlik_no=data.tc_kimlik_no,
         ad=data.ad,
@@ -117,10 +137,12 @@ def create_personel_with_user(
         telefon=data.telefon,
         sifre_hash=hash_password(data.sifre),
         rol=data.rol,
-        aktif_mi=True,
-        sifre_degistirmeli_mi=False,
-        kvkk_onaylandi_mi=True,
+        erisim_kaynak_tipi=data.kaynak_tipi,
+        erisim_firma_adi=(data.firma_adi or "").strip() or None,
+        sifre_degistirmeli_mi=True,
+        kvkk_onaylandi_mi=False,
     )
+    apply_erisim_durumu(kullanici, ErisimDurumu.BEKLEMEDE)
     session.add(kullanici)
     session.flush()
 

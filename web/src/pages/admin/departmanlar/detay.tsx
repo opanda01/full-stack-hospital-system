@@ -1,8 +1,8 @@
 import { useEffect, useId, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Users } from "lucide-react";
-import { AppShell, Button } from "@/shared/ui";
+import { Building2, Users, X } from "lucide-react";
+import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 import type { Personel } from "@/entities/personel";
@@ -18,15 +18,18 @@ type Departman = {
   kat_no: number | null;
 };
 
+/** Liste üzerinde popup; kapanınca parent state (açık birim) korunur. */
 export function DepartmanDetayPage() {
   const { departmanId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const id = Number(departmanId);
-  const listPath =
-    location.pathname.replace(/\/\d+\/?$/, "") || "/admin/departmanlar";
   const roleRoot =
     "/" + (location.pathname.split("/").filter(Boolean)[0] ?? "admin");
+  const listPath = `${roleRoot}/departmanlar`;
+
+  const close = () => navigate(listPath);
 
   const [editing, setEditing] = useState(false);
   const [editAd, setEditAd] = useState("");
@@ -35,6 +38,7 @@ export function DepartmanDetayPage() {
   const [editAciklama, setEditAciklama] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const editTitleId = useId();
+  const panelTitleId = useId();
 
   const {
     data: departmanlar = [],
@@ -112,158 +116,194 @@ export function DepartmanDetayPage() {
   });
 
   useEffect(() => {
-    if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setEditing(false);
+      if (e.key !== "Escape") return;
+      if (editing) setEditing(false);
+      else navigate(listPath);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing]);
+  }, [editing, listPath, navigate]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   return (
-    <AppShell
-      title={departman?.ad ?? "Departman"}
-      links={[
-        { to: roleRoot, label: "Ana" },
-        { to: listPath, label: "Departmanlar" },
-      ]}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      role="presentation"
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link
-          to={listPath}
-          className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent"
-        >
-          ← Departmanlara dön
-        </Link>
-        {departman && (
-          <Button type="button" size="sm" variant="outline" onClick={openEdit}>
-            Düzenle
-          </Button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <p>Yükleniyor…</p>
-      ) : isError ? (
-        <p className="text-sm text-red-600" role="alert">
-          {getApiErrorMessage(error)}
-        </p>
-      ) : !departman ? (
-        <p className="text-sm text-muted-foreground">Departman bulunamadı.</p>
-      ) : (
-        <div className="space-y-6">
-          <section className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-start gap-3">
-              <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: "var(--panel-inset-bg)",
-                  color: "var(--nav-active-bg)",
-                }}
-              >
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">{departman.ad}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {departman.birim_ad
-                    ? `${departman.birim_ad} birimi`
-                    : "Birim atanmamış"}
-                </p>
-              </div>
-            </div>
-
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Birim</dt>
-                <dd className="font-medium">{departman.birim_ad ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Kategori</dt>
-                <dd className="font-medium">{departman.kategori ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Kat</dt>
-                <dd className="font-medium">
-                  {departman.kat_no != null ? departman.kat_no : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Personel sayısı</dt>
-                <dd className="font-medium">{gorevliler.length}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">Açıklama</dt>
-                <dd className="mt-0.5 font-medium">
-                  {departman.aciklama?.trim()
-                    ? departman.aciklama
-                    : "Bu departman için açıklama girilmemiş."}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="rounded-xl border border-border bg-card p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <Users
-                className="h-4 w-4"
-                style={{ color: "var(--nav-active-bg)" }}
-              />
-              <h3 className="text-base font-semibold">
-                Görevli personel ({gorevliler.length})
-              </h3>
-            </div>
-
-            {gorevliler.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Bu departmanda kayıtlı personel yok.
-              </p>
-            ) : (
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-2">Sicil</th>
-                    <th>Ad Soyad</th>
-                    <th>Rol</th>
-                    <th>Unvan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gorevliler.map((p) => (
-                    <tr key={p.id} className="border-b">
-                      <td className="py-2">{p.sicil_no}</td>
-                      <td>
-                        {p.ad || p.soyad
-                          ? `${p.ad ?? ""} ${p.soyad ?? ""}`.trim()
-                          : `Kullanıcı #${p.kullanici_id}`}
-                      </td>
-                      <td>{p.rol ?? "—"}</td>
-                      <td>{p.unvan ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <button
+        type="button"
+        aria-label="Kapat"
+        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+        onClick={close}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={panelTitleId}
+        className="relative z-10 flex max-h-[min(90vh,880px)] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+          <div className="min-w-0">
+            <h2 id={panelTitleId} className="truncate text-lg font-semibold">
+              {departman?.ad ?? "Departman"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {departman?.birim_ad
+                ? `${departman.birim_ad} birimi`
+                : "Departman detayı"}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {departman && (
+              <Button type="button" size="sm" variant="outline" onClick={openEdit}>
+                Düzenle
+              </Button>
             )}
-          </section>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-label="Kapat"
+              onClick={close}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      )}
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {isLoading ? (
+            <p>Yükleniyor…</p>
+          ) : isError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {getApiErrorMessage(error)}
+            </p>
+          ) : !departman ? (
+            <p className="text-sm text-muted-foreground">Departman bulunamadı.</p>
+          ) : (
+            <div className="space-y-5">
+              <section className="rounded-2xl border border-border bg-background/60 p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                    style={{
+                      background: "var(--panel-inset-bg)",
+                      color: "var(--nav-active-bg)",
+                    }}
+                  >
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">{departman.ad}</h3>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {departman.birim_ad
+                        ? `${departman.birim_ad} birimi`
+                        : "Birim atanmamış"}
+                    </p>
+                  </div>
+                </div>
+
+                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-muted-foreground">Birim</dt>
+                    <dd className="font-medium">{departman.birim_ad ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Kategori</dt>
+                    <dd className="font-medium">{departman.kategori ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Kat</dt>
+                    <dd className="font-medium">
+                      {departman.kat_no != null ? departman.kat_no : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Personel sayısı</dt>
+                    <dd className="font-medium">{gorevliler.length}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted-foreground">Açıklama</dt>
+                    <dd className="mt-0.5 font-medium">
+                      {departman.aciklama?.trim()
+                        ? departman.aciklama
+                        : "Bu departman için açıklama girilmemiş."}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="rounded-2xl border border-border bg-background/60 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Users
+                    className="h-4 w-4"
+                    style={{ color: "var(--nav-active-bg)" }}
+                  />
+                  <h3 className="text-base font-semibold">
+                    Görevli personel ({gorevliler.length})
+                  </h3>
+                </div>
+
+                {gorevliler.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Bu departmanda kayıtlı personel yok.
+                  </p>
+                ) : (
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="py-2">Sicil</th>
+                        <th>Ad Soyad</th>
+                        <th>Rol</th>
+                        <th>Unvan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gorevliler.map((p) => (
+                        <tr key={p.id} className="border-b">
+                          <td className="py-2">{p.sicil_no}</td>
+                          <td>
+                            {p.ad || p.soyad
+                              ? `${p.ad ?? ""} ${p.soyad ?? ""}`.trim()
+                              : `Kullanıcı #${p.kullanici_id}`}
+                          </td>
+                          <td>{p.rol ?? "—"}</td>
+                          <td>{p.unvan ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
 
       {editing && departman && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           role="presentation"
         >
           <button
             type="button"
             aria-label="Kapat"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setEditing(false)}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={editTitleId}
-            className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-lg"
           >
             <h2 id={editTitleId} className="text-lg font-semibold">
               Departman düzenle
@@ -338,6 +378,6 @@ export function DepartmanDetayPage() {
           </div>
         </div>
       )}
-    </AppShell>
+    </div>
   );
 }

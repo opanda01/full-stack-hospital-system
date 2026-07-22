@@ -256,10 +256,13 @@ def process_import_row(
             kullanici_adi=kullanici_adi,
             sifre_hash=hash_password(temp),
             rol=rol,
-            aktif_mi=True,
             sifre_degistirmeli_mi=True,
             kvkk_onaylandi_mi=False,
         )
+        from app.core.enums import ErisimDurumu
+        from app.features.personel.erisim_service import apply_erisim_durumu
+
+        apply_erisim_durumu(kullanici, ErisimDurumu.BEKLEMEDE)
         session.add(kullanici)
         session.flush()
         _notify_credentials(kullanici, temp, email, telefon)

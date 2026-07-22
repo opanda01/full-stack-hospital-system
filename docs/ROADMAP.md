@@ -30,10 +30,13 @@
 - `oturum_tipi=hasta` token kullanımı
 - `/auth/register` kaldırma tarihi (`Sunset`)
 
-## Faz E — Ops sertleştirme
+## Faz F — Başhekim paneli (uygulandı)
 
-- [x] Uygulama login rate limit (`LOGIN_RATE_LIMIT_PER_MINUTE`) — WAF hâlâ önerilir
-- [x] CORS allowlist (`CORS_ORIGINS`)
-- [x] Audit retention + liste (`AUDIT_RETENTION_DAYS` + `GET /denetim/`; UI: `/admin/denetim`)
-- [x] Salt-okunur RBAC UI (`/admin/rbac`)
-- [ ] İsteğe bağlı DB `roller`/`izinler` sync (şu an kod matrisi kaynak gerçeği)
+- Personel erişim onayı (`erisim_durumu`, onay/red/bypass audit)
+- BASHEKIM / MUDUR izin ayrımı + gözetim dashboard (`/bashekim/ozet`, TTL)
+- PHI görüntüleme audit (`KAYIT_GORUNTULEME`)
+- MHRS kapasite, E-Nabız/SGK mock entegrasyon, klinik onay kuyruğu
+- Eczane / fatura / döner görüntüleme
+- Yetki duyurusu + sistem gözetim
+- Envanter: `docs/bashekim-izin-envanteri.md`
+

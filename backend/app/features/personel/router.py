@@ -6,8 +6,11 @@ from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel import import_service
+from app.features.personel import erisim_service
 from app.features.personel import service as personel_service
 from app.features.personel.schemas import (
+    ErisimGerekceBody,
+    ErisimTalepRead,
     PersonelCreate,
     PersonelImportBaslatResponse,
     PersonelImportDurumResponse,
@@ -15,6 +18,7 @@ from app.features.personel.schemas import (
     PersonelUpdate,
     PersonelWithUserCreate,
 )
+from app.core.enums import ErisimDurumu
 
 router = APIRouter()
 
@@ -99,3 +103,64 @@ def import_durum(
     _user=Depends(require_permission("personel:import")),
 ):
     return import_service.get_import_isi(session, isi_id)
+
+
+@router.get("/erisim-talepleri", response_model=list[ErisimTalepRead])
+def list_erisim_talepleri(
+    durum: ErisimDurumu | None = None,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("personel:listele")),
+):
+    return erisim_service.list_erisim_talepleri(session, durum=durum)
+
+
+@router.post("/erisim-talepleri/{personel_id}/onayla", response_model=ErisimTalepRead)
+def onayla_erisim(
+    personel_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("personel:onayla")),
+):
+    return erisim_service.onayla_erisim_kayit(
+        session,
+        personel_id,
+        actor=current_user,
+        ip_adresi=istemci_ip_al(request),
+    )
+
+
+@router.post("/erisim-talepleri/{personel_id}/reddet", response_model=ErisimTalepRead)
+def reddet_erisim(
+    personel_id: int,
+    body: ErisimGerekceBody,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("personel:onayla")),
+):
+    return erisim_service.reddet_erisim(
+        session,
+        personel_id,
+        actor=current_user,
+        gerekce=body.gerekce,
+        ip_adresi=istemci_ip_al(request),
+    )
+
+
+@router.post(
+    "/erisim-talepleri/{personel_id}/bypass-onayla",
+    response_model=ErisimTalepRead,
+)
+def bypass_onayla_erisim(
+    personel_id: int,
+    body: ErisimGerekceBody,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("personel:onay_bypass")),
+):
+    return erisim_service.bypass_onayla(
+        session,
+        personel_id,
+        actor=current_user,
+        gerekce=body.gerekce,
+        ip_adresi=istemci_ip_al(request),
+    )

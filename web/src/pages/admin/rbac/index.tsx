@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Rol = { id: number; kod: string; ad: string };
 type IzinDetay = { kod: string; kapsam?: string; ad?: string };
 
 export function AdminRbacPage() {
+  const root = roleRootFromPath(useLocation().pathname);
   const [seciliRol, setSeciliRol] = useState("ADMIN");
   const {
     data: roller = [],
@@ -27,10 +30,10 @@ export function AdminRbacPage() {
   });
 
   return (
-    <AppShell title="Roller ve izinler" links={[{ to: "/admin", label: "Admin" }]}>
+    <AppShell title="Roller ve izinler" links={[{ to: root, label: "Ana" }]}>
       <p className="mb-4 text-sm text-muted-foreground">
-        İzin matrisi kod tabanlıdır (salt okunur). Değişiklik için backend
-        güncellemesi gerekir.
+        İzin matrisi kod tabanlıdır (salt okunur). Başhekim / Müdür ayrımı için
+        docs/bashekim-izin-envanteri.md.
       </p>
       {isLoading ? (
         <p>Yükleniyor…</p>

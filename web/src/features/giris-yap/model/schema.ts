@@ -13,3 +13,9 @@ export const DEV_CREDENTIALS = {
   kimlik: "ADM-001",
   sifre: "Test1234!",
 } as const;
+
+export const DEV_BASHEKIM_CREDENTIALS = {
+  kimlik: "BH-001",
+  sifre: "Test1234!",
+  label: "Başhekim",
+} as const;

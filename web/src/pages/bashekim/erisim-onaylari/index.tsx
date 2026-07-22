@@ -1,0 +1,1 @@
+export { BashekimErisimOnaylariPage } from "../dashboard";
