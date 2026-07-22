@@ -7,6 +7,6 @@ import {
 /** Shared hemsire/ebe page components: `/hemsire` or `/ebe` from URL (or rol). */
 export function useRoleBasePath(): string {
   const { pathname } = useLocation();
-  const rol = useAuthStore((s) => s.user?.rol);
+  const rol = useAuthStore((s) => s.currentUser?.rol);
   return roleBasePathFromPathname(pathname, rol);
 }
