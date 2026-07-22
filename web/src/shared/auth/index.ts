@@ -1,6 +1,7 @@
 export {
   useAuthStore,
   homeForRole,
+  roleBasePathFromPathname,
   postLoginPath,
   needsOnboarding,
   onboardingPath,
@@ -8,6 +9,7 @@ export {
   ROLE_HOME,
   type CurrentUser,
 } from "./authStore";
+export { useRoleBasePath } from "./useRoleBasePath";
 export * as authApi from "./authApi";
 export * as authService from "./authService";
 export { USE_MOCK_AUTH } from "./authService";

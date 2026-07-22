@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Hasta = {
@@ -23,6 +24,7 @@ type Yatis = {
 };
 
 export function HemsireHastaAramaPage() {
+  const base = useRoleBasePath();
   const [q, setQ] = useState("");
   const [kapsam, setKapsam] = useState<"yatan" | "tumu">("yatan");
   const [submitted, setSubmitted] = useState({ q: "", kapsam: "yatan" as "yatan" | "tumu" });
@@ -132,7 +134,7 @@ export function HemsireHastaAramaPage() {
               {aktifYatis ? (
                 <p>
                   Aktif yatış: {aktifYatis.protokol_no}{" "}
-                  <Link className="underline" to="/hemsire/servis-takip">
+                  <Link className="underline" to={`${base}/servis-takip`}>
                     Servis takip
                   </Link>
                 </p>
@@ -141,10 +143,10 @@ export function HemsireHastaAramaPage() {
               )}
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button asChild size="sm" variant="outline">
-                  <Link to={`/hemsire/tetkikler?hasta_id=${secili.id}`}>Tetkikler</Link>
+                  <Link to={`${base}/tetkikler?hasta_id=${secili.id}`}>Tetkikler</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/hemsire/epikriz">Epikriz</Link>
+                  <Link to={`${base}/epikriz`}>Epikriz</Link>
                 </Button>
               </div>
             </div>

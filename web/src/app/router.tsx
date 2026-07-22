@@ -249,6 +249,14 @@ export function AppRouter() {
         {/* EBE */}
         <Route path="/ebe" element={<RoleLayoutRoute rol="EBE" />}>
           <Route index element={<EbeDashboardPage />} />
+          <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
+          <Route path="order-takip" element={<HemsireOrderTakipPage />} />
+          <Route path="tetkikler" element={<HemsireTetkiklerPage />} />
+          <Route path="epikriz" element={<HemsireEpikrizPage />} />
+          <Route path="ilac-talep" element={<HemsireIlacTalepPage />} />
+          <Route path="gorevler" element={<HemsireGorevlerPage />} />
+          <Route path="vardiya-devir" element={<HemsireVardiyaDevirPage />} />
           <Route
             path="departman-randevulari"
             element={<HemsireDepartmanRandevulariPage />}

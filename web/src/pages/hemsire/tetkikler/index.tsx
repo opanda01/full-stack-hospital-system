@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { Input } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Tetkik = {
@@ -15,6 +16,7 @@ type Tetkik = {
 type Hasta = { id: number; ad?: string | null; soyad?: string | null };
 
 export function HemsireTetkiklerPage() {
+  const base = useRoleBasePath();
   const [params] = useSearchParams();
   const [durumFiltre, setDurumFiltre] = useState("");
   const [arama, setArama] = useState("");
@@ -99,7 +101,7 @@ export function HemsireTetkiklerPage() {
                   <td className="px-3 py-2">
                     <Link
                       className="underline"
-                      to={`/hemsire/hasta-arama?q=${t.hasta_id}`}
+                      to={`${base}/hasta-arama?q=${t.hasta_id}`}
                     >
                       {hastaLabel.get(t.hasta_id) ?? `#${t.hasta_id}`}
                     </Link>
