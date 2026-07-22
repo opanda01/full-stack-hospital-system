@@ -60,3 +60,12 @@
 - Web: `/hemsire/servis-takip`, `/ilac-talep`, `/gorevler`, `/vardiya-devir`, `/departman-randevulari`
 - İzinler: `yatis:*`, `vital:*`, `ilac_uygulama:*`, `hemsire_gorev:*`, `vardiya_devir:*`, `panel_bildirim:*`, `ilac_talep:*` (HEMSIRE/EBE)
 
+## Faz I — Hemşire klinik görünürlük (uygulandı)
+
+- Hasta arama: `GET /hastalar/?q=&kapsam=yatan|tumu`; `hasta:goruntule` DEPARTMANIM; UI `/hemsire/hasta-arama`
+- Epikriz: model `/epikriz` (TASLAK/ONAYLANDI); hemşire oluşturur, doktor `/doktor/epikriz` onaylar
+- Tetkik listesi: `tetkik:goruntule` DEPARTMANIM; `/hemsire/tetkikler` + servis-takip sekmesi
+- Order takibi (composite): Tetkik + MAR + ilaç talep; `GET /yatis/ilac-uygulamalari`; `/hemsire/order-takip`
+- Randevu: hasta adı, zaman filtreleri, oluştur formu
+- Dashboard: bekleyen order kartı
+

@@ -153,6 +153,76 @@ def list_ilac_uygulamalari(session: Session, yatis_id: int) -> list[IlacUygulama
     )
 
 
+def list_ilac_uygulamalari_toplu(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    durum: str | None = None,
+    kapsam: str | None = "benim",
+) -> list[dict]:
+    """Aktif yatışlara ait MAR satırları (order kuyruğu için)."""
+    from sqlalchemy import or_
+
+    from app.features.yatis.models import Servis
+    from app.features.hastalar.models import Hasta
+    from app.features.kullanicilar.models import Kullanici as KullaniciModel
+
+    q = (
+        select(IlacUygulama, YatisKaydi)
+        .join(YatisKaydi, YatisKaydi.id == IlacUygulama.yatis_id)
+        .where(YatisKaydi.aktif_mi == True)  # noqa: E712
+    )
+    if durum:
+        q = q.where(IlacUygulama.durum == durum)
+
+    if kapsam == "benim":
+        pid = personel_id_of(session, current_user)
+        p = session.exec(
+            select(Personel).where(Personel.kullanici_id == current_user.id)
+        ).first()
+        if pid is None or p is None:
+            return []
+        servis_ids: list[int] = []
+        if p.departman_id is not None:
+            servis_ids = list(
+                session.exec(
+                    select(Servis.id).where(Servis.departman_id == p.departman_id)
+                ).all()
+            )
+        conds = [YatisKaydi.sorumlu_hemsire_id == pid]
+        if servis_ids:
+            conds.append(YatisKaydi.servis_id.in_(servis_ids))
+        q = q.where(or_(*conds))
+
+    rows = session.exec(q.order_by(IlacUygulama.planlanan_saat)).all()
+    out: list[dict] = []
+    for uygulama, yatis in rows:
+        hasta = session.get(Hasta, yatis.hasta_id)
+        ad = ""
+        if hasta:
+            k = session.get(KullaniciModel, hasta.kullanici_id)
+            if k:
+                ad = f"{k.ad} {k.soyad}".strip()
+        out.append(
+            {
+                "id": uygulama.id,
+                "yatis_id": uygulama.yatis_id,
+                "hasta_id": yatis.hasta_id,
+                "hasta_ad_soyad": ad or f"Hasta #{yatis.hasta_id}",
+                "protokol_no": yatis.protokol_no,
+                "ilac_adi": uygulama.ilac_adi,
+                "doz": uygulama.doz,
+                "kullanim_sekli": uygulama.kullanim_sekli,
+                "planlanan_saat": uygulama.planlanan_saat,
+                "durum": uygulama.durum,
+                "uygulayan_hemsire_id": uygulama.uygulayan_hemsire_id,
+                "uygulandi_at": uygulama.uygulandi_at,
+                "notlar": uygulama.notlar,
+            }
+        )
+    return out
+
+
 def create_ilac_uygulama(session: Session, yatis_id: int, data: dict) -> IlacUygulama:
     _yatis_or_404(session, yatis_id)
     row = IlacUygulama(

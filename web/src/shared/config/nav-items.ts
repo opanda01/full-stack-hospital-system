@@ -27,6 +27,9 @@ import {
   UsersRound,
   NotebookPen,
   ListTodo,
+  Search,
+  ListOrdered,
+  ScrollText,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -154,6 +157,7 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       items: [
         { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
         { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
+        { label: "Epikriz onay", path: "/doktor/epikriz", icon: ScrollText },
         { label: "Reçeteler", path: "/doktor/receteler", icon: Pill },
         { label: "Sevkler", path: "/doktor/sevler", icon: Send },
         { label: "Tıbbi raporlar", path: "/doktor/tibbi-raporlar", icon: FileText },
@@ -189,6 +193,10 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       path: "/hemsire/servis-takip",
       icon: HeartPulse,
     },
+    { label: "Hasta Arama", path: "/hemsire/hasta-arama", icon: Search },
+    { label: "Order Takibi", path: "/hemsire/order-takip", icon: ListOrdered },
+    { label: "Tetkikler", path: "/hemsire/tetkikler", icon: FlaskConical },
+    { label: "Epikriz", path: "/hemsire/epikriz", icon: ScrollText },
     {
       label: "İlaç/Malzeme Talep",
       path: "/hemsire/ilac-talep",

@@ -214,6 +214,12 @@ class IlacUygulamaRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class IlacUygulamaListeItem(IlacUygulamaRead):
+    hasta_id: int
+    hasta_ad_soyad: str
+    protokol_no: str
+
+
 class HastaNotCreate(BaseModel):
     metin: str = Field(max_length=2000)
 

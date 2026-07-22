@@ -141,3 +141,8 @@ class PanelBildirimTipi(str, Enum):
     KONSULTASYON = "KONSULTASYON"
     GOREV = "GOREV"
     GENEL = "GENEL"
+
+
+class EpikrizDurumu(str, Enum):
+    TASLAK = "TASLAK"
+    ONAYLANDI = "ONAYLANDI"
