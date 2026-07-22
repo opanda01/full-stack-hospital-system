@@ -47,6 +47,10 @@ import { DoktorSaglikKuruluPage } from "@/pages/doktor/saglik-kurulu";
 import { HemsireDashboardPage } from "@/pages/hemsire/dashboard";
 import { HemsireDepartmanRandevulariPage } from "@/pages/hemsire/departman-randevulari";
 import { HemsirePanelPage } from "@/pages/hemsire/panel";
+import { HemsireServisTakipPage } from "@/pages/hemsire/servis-takip";
+import { HemsireIlacTalepPage } from "@/pages/hemsire/ilac-talep";
+import { HemsireGorevlerPage } from "@/pages/hemsire/gorevler";
+import { HemsireVardiyaDevirPage } from "@/pages/hemsire/vardiya-devir";
 
 import { LaborantDashboardPage } from "@/pages/laborant/dashboard";
 import { LaborantBekleyenPage } from "@/pages/laborant/bekleyen";
@@ -218,6 +222,10 @@ export function AppRouter() {
         {/* HEMSIRE */}
         <Route path="/hemsire" element={<RoleLayoutRoute rol="HEMSIRE" />}>
           <Route index element={<HemsireDashboardPage />} />
+          <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="ilac-talep" element={<HemsireIlacTalepPage />} />
+          <Route path="gorevler" element={<HemsireGorevlerPage />} />
+          <Route path="vardiya-devir" element={<HemsireVardiyaDevirPage />} />
           <Route
             path="departman-randevulari"
             element={<HemsireDepartmanRandevulariPage />}

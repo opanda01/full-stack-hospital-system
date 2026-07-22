@@ -480,3 +480,21 @@ def test_doktor_yeni_izinler_matrisi():
     assert kapsam_getir(Rol.DOKTOR, "klinik_onay:olustur") == Kapsam.KENDI_KAYDIM
     assert kapsam_getir(Rol.DOKTOR, "konsultasyon:olustur") == Kapsam.KENDI_KAYDIM
     assert kapsam_getir(Rol.DOKTOR, "saglik_kurulu:goruntule") == Kapsam.KENDI_KAYDIM
+
+
+def test_hemsire_yatis_izinler_matrisi():
+    assert kapsam_getir(Rol.HEMSIRE, "yatis:goruntule") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.HEMSIRE, "yatis:islem") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.HEMSIRE, "ilac_talep:olustur") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.HEMSIRE, "eczane:goruntule") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.LABORANT, "yatis:goruntule") == Kapsam.YOK
+
+
+def test_yatis_liste_hemsire_200(client, seeded):
+    r = client.get("/yatis/kayitlar", headers=auth_header(seeded["hemsire"]))
+    assert r.status_code == 200
+
+
+def test_yatis_liste_laborant_403(client, seeded):
+    r = client.get("/yatis/kayitlar", headers=auth_header(seeded["laborant"]))
+    assert r.status_code == 403

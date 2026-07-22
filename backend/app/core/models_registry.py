@@ -25,3 +25,21 @@ from app.features.saglik_kurulu.models import (  # noqa: F401
     SaglikKuruluKaydi,
     SaglikKuruluUye,
 )
+from app.features.yatis.models import (  # noqa: F401
+    AmeliyatBilgisi,
+    HastaIslemLogu,
+    HastaNotu,
+    HemsireGorevi,
+    IlacUygulama,
+    IzinHareketi,
+    PanelBildirim,
+    Refakatci,
+    Servis,
+    ServisHareketi,
+    VardiyaDevirNotu,
+    VitalBulgu,
+    Yatak,
+    YatakHareketi,
+    YatisKaydi,
+)
+from app.features.ilac_talep.models import IlacTalebi, IlacTalepKalemi  # noqa: F401

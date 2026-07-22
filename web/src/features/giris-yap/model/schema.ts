@@ -25,3 +25,9 @@ export const DEV_DOKTOR_CREDENTIALS = {
   sifre: "Test1234!",
   label: "Doktor",
 } as const;
+
+export const DEV_HEMSIRE_CREDENTIALS = {
+  kimlik: "H-001",
+  sifre: "Test1234!",
+  label: "Hemşire",
+} as const;

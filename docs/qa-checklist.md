@@ -39,4 +39,17 @@
 - [ ] Sağlık kurulu: yalnızca üye olduğu kayıtlar
 - [ ] Nav’da personel / denetim / MHRS / fatura / eczane yok
 
+## Faz H — Hemşire servis yatış
+- [ ] hemsire@hastane.example.com (H-001 / Test1234!) → `/hemsire/servis-takip` varsayılan `kapsam=benim`
+- [ ] Kolonlar: protokol, ad soyad, yaş, cinsiyet, yatak/oda, yatış, gün, doktor, durum
+- [ ] ACIL/KRITIK kırmızı, BEKLEYEN_TETKIK sarı satır
+- [ ] Detay sekmeleri: Vital (ekle), MAR (Verildi/Atlandı), Servis, Konsültasyon, Notlar
+- [ ] Taburcu / nakil / izin / doktor değiştir / kontrol → işlem logu
+- [ ] `/hemsire/ilac-talep`: kalem bazlı liste + Acil; stok / verilen sekmeleri
+- [ ] `/hemsire/gorevler` toggle; `/hemsire/vardiya-devir` not ekle
+- [ ] Topbar zil: okunmamış bildirim badge; tıklayınca okundu
+- [ ] Dashboard: yatan / görev / ilaç / randevu / nöbet sayıları dolu (— değil)
+- [ ] `/hemsire/departman-randevulari` canlı liste
+- [ ] Laborant `GET /yatis/kayitlar` → 403
+
 Şifre (tümü): Test1234!
