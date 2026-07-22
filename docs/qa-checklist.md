@@ -61,4 +61,11 @@
 - [ ] Dashboard “Bekleyen order” kartı dolu
 - [ ] HEMSIRE `GET /tetkikler/` 200 (departman kapsamı)
 
+## Faz J — EBE panel paritesi
+- [ ] ebe@hastane.example.com / Test1234! → `/ebe` dashboard canlı kartlar
+- [ ] Nav’da HEMSIRE ile aynı 11 menü (path kökü `/ebe`)
+- [ ] `/ebe/servis-takip` listeler; dashboard kart linkleri `/ebe/...` (hemsire’ye kaçmaz)
+- [ ] `/ebe/hasta-arama`, `/order-takip`, `/tetkikler`, `/epikriz`, `/ilac-talep`, `/gorevler`, `/vardiya-devir` açılır
+- [ ] Laborant `GET /yatis/kayitlar` → 403 (değişmez)
+
 Şifre (tümü): Test1234!

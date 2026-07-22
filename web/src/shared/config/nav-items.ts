@@ -218,6 +218,26 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   EBE: asSingleGroup([
     { label: "Dashboard", path: "/ebe", icon: LayoutDashboard },
     {
+      label: "Servis Hasta Takip",
+      path: "/ebe/servis-takip",
+      icon: HeartPulse,
+    },
+    { label: "Hasta Arama", path: "/ebe/hasta-arama", icon: Search },
+    { label: "Order Takibi", path: "/ebe/order-takip", icon: ListOrdered },
+    { label: "Tetkikler", path: "/ebe/tetkikler", icon: FlaskConical },
+    { label: "Epikriz", path: "/ebe/epikriz", icon: ScrollText },
+    {
+      label: "İlaç/Malzeme Talep",
+      path: "/ebe/ilac-talep",
+      icon: Pill,
+    },
+    { label: "Görevler", path: "/ebe/gorevler", icon: ListTodo },
+    {
+      label: "Vardiya Devir",
+      path: "/ebe/vardiya-devir",
+      icon: NotebookPen,
+    },
+    {
       label: "Departman Randevuları",
       path: "/ebe/departman-randevulari",
       icon: CalendarClock,

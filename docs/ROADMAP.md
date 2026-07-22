@@ -69,3 +69,11 @@
 - Randevu: hasta adı, zaman filtreleri, oluştur formu
 - Dashboard: bekleyen order kartı
 
+## Faz J — EBE panel paritesi (uygulandı)
+
+- Backend izinleri zaten HEMSIRE ≡ EBE; yeni API/migration yok
+- Web: hemsire sayfa bileşenleri `/ebe` altına mount (sayfa kopyası yok)
+- `useRoleBasePath` / `roleBasePathFromPathname` — dashboard ve klinik linkler `/ebe/...` veya `/hemsire/...`
+- Nav paritesi: servis-takip, hasta-arama, order, tetkik, epikriz, ilaç talep, görev, vardiya, randevu, nöbet
+- Demo: `ebe@hastane.example.com` / Test1234!
+

@@ -177,6 +177,21 @@ export function homeForRole(rol: string | null | undefined): string {
   return ROLE_HOME[rol] ?? "/giris";
 }
 
+/**
+ * Klinik sayfalar HEMSIRE/EBE altında paylaşılır.
+ * pathname kökünü tercih eder; yoksa rol ana sayfası.
+ */
+export function roleBasePathFromPathname(
+  pathname: string,
+  rol?: string | null,
+): string {
+  if (pathname.startsWith("/ebe")) return "/ebe";
+  if (pathname.startsWith("/hemsire")) return "/hemsire";
+  if (rol === "EBE") return "/ebe";
+  if (rol === "HEMSIRE") return "/hemsire";
+  return "/hemsire";
+}
+
 /** İlk giriş / KVKK tamamlanmadıysa ilgili ekran, aksi halde rol ana sayfası. */
 export function postLoginPath(user: CurrentUser): string {
   if (user.rol === "HASTA") return "/hasta-mobil";

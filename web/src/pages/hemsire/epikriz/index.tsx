@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Epikriz = {
@@ -20,6 +21,7 @@ type Yatis = { id: number; protokol_no: string; hasta_ad_soyad: string; hasta_id
 
 export function HemsireEpikrizPage() {
   const qc = useQueryClient();
+  const base = useRoleBasePath();
   const [yatisId, setYatisId] = useState("");
   const [sikayet, setSikayet] = useState("");
   const [fizik, setFizik] = useState("");
@@ -170,7 +172,7 @@ export function HemsireEpikrizPage() {
               {e.tani && <p className="mt-1 text-muted-foreground">Tanı: {e.tani}</p>}
               <Link
                 className="mt-1 inline-block text-xs text-primary underline"
-                to={`/hemsire/servis-takip`}
+                to={`${base}/servis-takip`}
               >
                 Servis takip
               </Link>

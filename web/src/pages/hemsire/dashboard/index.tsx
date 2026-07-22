@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useRoleBasePath } from "@/shared/auth";
 import { RoleDashboard } from "@/shared/ui/RoleDashboard";
 import { api } from "@/shared/api";
 
@@ -20,6 +21,8 @@ type Mar = { id: number; durum: string };
 type Talep = { id: number; durum: string };
 
 export function HemsireDashboardPage() {
+  const base = useRoleBasePath();
+
   const { data: yatislar = [] } = useQuery({
     queryKey: ["yatis-kayitlar-aktif-count"],
     queryFn: async () =>
@@ -104,43 +107,43 @@ export function HemsireDashboardPage() {
           label: "Yatan hasta",
           value: yatislar.length,
           icon: Users,
-          to: "/hemsire/servis-takip",
+          to: `${base}/servis-takip`,
         },
         {
           label: "Bekleyen order",
           value: bekleyenOrder,
           icon: ListOrdered,
-          to: "/hemsire/order-takip",
+          to: `${base}/order-takip`,
         },
         {
           label: "Bekleyen görev",
           value: bekleyenGorev,
           icon: ListTodo,
-          to: "/hemsire/gorevler",
+          to: `${base}/gorevler`,
         },
         {
           label: "Bekleyen ilaç isteği",
           value: bekleyenIlac,
           icon: ClipboardList,
-          to: "/hemsire/ilac-talep",
+          to: `${base}/ilac-talep`,
         },
         {
           label: "İlaç/malzeme talep",
           value: talepler.length,
           icon: Pill,
-          to: "/hemsire/ilac-talep",
+          to: `${base}/ilac-talep`,
         },
         {
           label: "Departman randevusu",
           value: randevular.length,
           icon: CalendarClock,
-          to: "/hemsire/departman-randevulari",
+          to: `${base}/departman-randevulari`,
         },
         {
           label: "Nöbet çizelgesi",
           value: nobetler.length,
           icon: CalendarDays,
-          to: "/hemsire/nobet",
+          to: `${base}/nobet`,
         },
       ]}
     />

@@ -3,6 +3,7 @@ import { MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/shared/api";
+import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 import {
   Button,
@@ -107,6 +108,7 @@ function fmtDate(v: string | null | undefined) {
 
 export function HemsireServisTakipPage() {
   const qc = useQueryClient();
+  const base = useRoleBasePath();
   const [kapsamBenim, setKapsamBenim] = useState(true);
   const [servisId, setServisId] = useState("");
   const [doktorId, setDoktorId] = useState("");
@@ -474,7 +476,7 @@ export function HemsireServisTakipPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link to={`/hemsire/ilac-talep?yatis_id=${k.id}&hasta_id=${k.hasta_id}`}>
+                          <Link to={`${base}/ilac-talep?yatis_id=${k.id}&hasta_id=${k.hasta_id}`}>
                             İlaç/Malzeme Talep
                           </Link>
                         </DropdownMenuItem>
