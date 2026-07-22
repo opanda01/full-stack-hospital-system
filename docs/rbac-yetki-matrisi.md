@@ -48,11 +48,18 @@ Semboller:
 | Randevu görüntüle | `randevu:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
 | Randevu iptal | `randevu:iptal` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | *kendi* |
 | Hasta listele | `hasta:listele` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hasta görüntüle (türevsel) | `hasta:goruntule` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Muayene oluştur | `muayene:olustur` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Muayene güncelle | `muayene:guncelle` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Muayene görüntüle | `muayene:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | *kendi* |
 | Tetkik iste | `tetkik:iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Tetkik sonucu gir | `tetkik:sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Tetkik görüntüle | `tetkik:goruntule` | ✅ | ✅ | *isteyen* | ❌ | ✅ | ❌ | *kendi* |
+| Klinik onay görüntüle | `klinik_onay:goruntule` | ✅ | ✅ (başhekim) | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Klinik onay oluştur | `klinik_onay:olustur` | ✅ | ✅ (başhekim) | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Klinik onay onayla | `klinik_onay:onayla` | ✅ | ✅ (başhekim) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Konsültasyon | `konsultasyon:olustur/goruntule/yanitla` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Sağlık kurulu görüntüle | `saglik_kurulu:goruntule` | ✅ | ✅ (başhekim) | *üye* | ❌ | ❌ | ❌ | ❌ |
 | Nöbet oluştur | `nobet:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
 | Temizlik ata | `temizlik_gorevi:ata` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
