@@ -48,3 +48,15 @@
 - Konsültasyon + sağlık kurulu (üye kapsamı)
 - Yasaklı: personel, denetim, MHRS, fatura, eczane stok, RBAC UI
 
+## Faz H — Hemşire servis yatış paneli (uygulandı)
+
+- Servis / yatak / yatış kaydı + hareketler (servis, yatak, izin, ameliyat) + refakatçi
+- `GET /yatis/kayitlar?kapsam=benim` (kendi servis / sorumlu hemşire); klinik durum satır renklendirmesi
+- Hasta işlemleri: taburcu, nakil, izin, doktor/hemşire değiştir, kontrol, refakatçi → `HastaIslemLogu`
+- Klinik: vital bulgular, MAR (`ilac_uygulamalari`), hasta notları; kritik vital → `PanelBildirim` + `klinik_durum=KRITIK`
+- Görevler + vardiya devir notları; panel bildirimleri (Topbar zil)
+- Depodan ilaç/malzeme talep (`/ilac-talepleri`, kalem satırları + `acil_mi`); durum: YENI / ONAY_BEKLIYOR / ONAYLANDI / VERILDI
+- Dashboard: yatan / görev / ilaç / randevu / nöbet canlı sayılar; departman randevuları listesi
+- Web: `/hemsire/servis-takip`, `/ilac-talep`, `/gorevler`, `/vardiya-devir`, `/departman-randevulari`
+- İzinler: `yatis:*`, `vital:*`, `ilac_uygulama:*`, `hemsire_gorev:*`, `vardiya_devir:*`, `panel_bildirim:*`, `ilac_talep:*` (HEMSIRE/EBE)
+

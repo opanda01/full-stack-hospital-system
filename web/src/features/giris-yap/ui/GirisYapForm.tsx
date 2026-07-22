@@ -10,6 +10,7 @@ import {
   DEV_BASHEKIM_CREDENTIALS,
   DEV_CREDENTIALS,
   DEV_DOKTOR_CREDENTIALS,
+  DEV_HEMSIRE_CREDENTIALS,
   girisSchema,
   type GirisFormValues,
 } from "../model/schema";
@@ -113,6 +114,21 @@ export function GirisYapForm() {
               >
                 Doktor: <strong>{DEV_DOKTOR_CREDENTIALS.kimlik}</strong> /{" "}
                 <strong>{DEV_DOKTOR_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(
+                    DEV_HEMSIRE_CREDENTIALS.kimlik,
+                    DEV_HEMSIRE_CREDENTIALS.sifre,
+                  )
+                }
+              >
+                Hemşire: <strong>{DEV_HEMSIRE_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_HEMSIRE_CREDENTIALS.sifre}</strong>
               </button>
             </li>
           </ul>

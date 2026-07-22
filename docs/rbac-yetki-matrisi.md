@@ -62,6 +62,15 @@ Semboller:
 | Sağlık kurulu görüntüle | `saglik_kurulu:goruntule` | ✅ | ✅ (başhekim) | *üye* | ❌ | ❌ | ❌ | ❌ |
 | Nöbet oluştur | `nobet:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
+| Yatış görüntüle | `yatis:goruntule` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Yatış işlem | `yatis:islem` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Vital görüntüle/oluştur | `vital:goruntule` / `:olustur` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| İlaç uygulama (MAR) | `ilac_uygulama:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Hemşire görev | `hemsire_gorev:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Vardiya devir | `vardiya_devir:goruntule` / `:olustur` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Panel bildirim | `panel_bildirim:goruntule` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| İlaç talep görüntüle/oluştur/durum | `ilac_talep:goruntule` / `:olustur` / `:durum_guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Eczane stok görüntüle | `eczane:goruntule` | ✅ | ✅ (başhekim) | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Temizlik ata | `temizlik_gorevi:ata` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Temizlik görüntüle/güncelle | `temizlik_gorevi:goruntule` / `temizlik_gorevi:guncelle` | ✅ | ✅ | ❌ | ❌ | ❌ | *kendi* | ❌ |
 | Şikayet gönder | `sikayet_oneri:gonder` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |

@@ -95,3 +95,49 @@ class KonsultasyonDurumu(str, Enum):
     KABUL = "KABUL"
     RED = "RED"
     TAMAMLANDI = "TAMAMLANDI"
+
+
+class KlinikDurum(str, Enum):
+    NORMAL = "NORMAL"
+    KRITIK = "KRITIK"
+    ACIL = "ACIL"
+    BEKLEYEN_TETKIK = "BEKLEYEN_TETKIK"
+
+
+class YatisIslemTipi(str, Enum):
+    TABURCU = "TABURCU"
+    NAKIL = "NAKIL"
+    IZIN = "IZIN"
+    DOKTOR_DEGISTIR = "DOKTOR_DEGISTIR"
+    HEMSIRE_DEGISTIR = "HEMSIRE_DEGISTIR"
+    KONTROL_TOGGLE = "KONTROL_TOGGLE"
+    REFAKATCI_KAYDET = "REFAKATCI_KAYDET"
+
+
+class IlacTalepDurumu(str, Enum):
+    YENI = "YENI"
+    ONAY_BEKLIYOR = "ONAY_BEKLIYOR"
+    ONAYLANDI = "ONAYLANDI"
+    VERILDI = "VERILDI"
+
+
+class KullanimSekli(str, Enum):
+    ORAL = "ORAL"
+    IV = "IV"
+    IM = "IM"
+    SUBKUTAN = "SUBKUTAN"
+
+
+class IlacUygulamaDurumu(str, Enum):
+    BEKLIYOR = "BEKLIYOR"
+    VERILDI = "VERILDI"
+    ATLANDI = "ATLANDI"
+    REDDEDILDI = "REDDEDILDI"
+
+
+class PanelBildirimTipi(str, Enum):
+    KRITIK_VITAL = "KRITIK_VITAL"
+    ILAC_TALEP = "ILAC_TALEP"
+    KONSULTASYON = "KONSULTASYON"
+    GOREV = "GOREV"
+    GENEL = "GENEL"

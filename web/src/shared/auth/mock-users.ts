@@ -50,7 +50,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "4",
-    email: "hemsire@hastane.test",
+    email: "hemsire@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Hemşire",

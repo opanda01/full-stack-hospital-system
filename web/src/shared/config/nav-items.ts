@@ -25,6 +25,8 @@ import {
   FileText,
   Send,
   UsersRound,
+  NotebookPen,
+  ListTodo,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -182,6 +184,22 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ],
   HEMSIRE: asSingleGroup([
     { label: "Dashboard", path: "/hemsire", icon: LayoutDashboard },
+    {
+      label: "Servis Hasta Takip",
+      path: "/hemsire/servis-takip",
+      icon: HeartPulse,
+    },
+    {
+      label: "İlaç/Malzeme Talep",
+      path: "/hemsire/ilac-talep",
+      icon: Pill,
+    },
+    { label: "Görevler", path: "/hemsire/gorevler", icon: ListTodo },
+    {
+      label: "Vardiya Devir",
+      path: "/hemsire/vardiya-devir",
+      icon: NotebookPen,
+    },
     {
       label: "Departman Randevuları",
       path: "/hemsire/departman-randevulari",

@@ -9,6 +9,7 @@ from app.core.db import engine
 from app.core.seed_bashekim import seed_bashekim_demo
 from app.core.seed_doktor import seed_doktor_panel
 from app.core.seed_hastane import seed_hastane_referans
+from app.core.seed_hemsire_yatis import seed_hemsire_yatis
 from app.core.seed_ornek_islemler import seed_ornek_islemler
 from app.core.seed_rbac import DEMO_SIFRE, seed_demo_kullanicilar
 from sqlmodel import Session
@@ -21,8 +22,9 @@ def main() -> None:
         seed_ornek_islemler(session)
         seed_bashekim_demo(session)
         seed_doktor_panel(session)
+        seed_hemsire_yatis(session)
     print(
-        f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor demo seed tamamlandı "
+        f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor/hemsire demo seed tamamlandı "
         f"(şifre: {DEMO_SIFRE})."
     )
 
