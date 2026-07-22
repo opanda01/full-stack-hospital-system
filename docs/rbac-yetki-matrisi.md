@@ -77,6 +77,12 @@ Semboller:
 | Temizlik görüntüle/güncelle | `temizlik_gorevi:goruntule` / `temizlik_gorevi:guncelle` | ✅ | ✅ | ❌ | ❌ | ❌ | *kendi* | ❌ |
 | Şikayet gönder | `sikayet_oneri:gonder` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Şikayet tümünü gör | `sikayet_oneri:tumunu_goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Güvenlik olay görüntüle | `guvenlik_olay:goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Güvenlik olay oluştur/güncelle | `guvenlik_olay:olustur` / `:guncelle` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Ziyaretçi / kayıp eşya / devriye görüntüle | `guvenlik_ziyaretci:goruntule` / `kayip_esya:goruntule` / `guvenlik_devriye:goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Refakatçi sorgula | `refakatci:sorgula` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**Ek rol `GUVENLIK`:** `nobet:goruntule` (kendi), `sikayet_oneri:gonder`, `guvenlik_olay:*`, `guvenlik_ziyaretci:*`, `kayip_esya:*`, `guvenlik_devriye:goruntule/olustur`, `refakatci:sorgula`, `guvenlik:ozet`.
 
 ---
 

@@ -10,6 +10,8 @@ import {
   DEV_BASHEKIM_CREDENTIALS,
   DEV_CREDENTIALS,
   DEV_DOKTOR_CREDENTIALS,
+  DEV_EBE_CREDENTIALS,
+  DEV_GUVENLIK_CREDENTIALS,
   DEV_HEMSIRE_CREDENTIALS,
   girisSchema,
   type GirisFormValues,
@@ -129,6 +131,36 @@ export function GirisYapForm() {
               >
                 Hemşire: <strong>{DEV_HEMSIRE_CREDENTIALS.kimlik}</strong> /{" "}
                 <strong>{DEV_HEMSIRE_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(
+                    DEV_EBE_CREDENTIALS.kimlik,
+                    DEV_EBE_CREDENTIALS.sifre,
+                  )
+                }
+              >
+                Ebe: <strong>{DEV_EBE_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_EBE_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(
+                    DEV_GUVENLIK_CREDENTIALS.kimlik,
+                    DEV_GUVENLIK_CREDENTIALS.sifre,
+                  )
+                }
+              >
+                Güvenlik: <strong>{DEV_GUVENLIK_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_GUVENLIK_CREDENTIALS.sifre}</strong>
               </button>
             </li>
           </ul>

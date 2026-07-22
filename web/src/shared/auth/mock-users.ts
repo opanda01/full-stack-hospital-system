@@ -94,7 +94,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "8",
-    email: "ebe@hastane.test",
+    email: "ebe@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Ebe",
@@ -105,7 +105,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "9",
-    email: "guvenlik@hastane.test",
+    email: "guvenlik@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Güvenlik",

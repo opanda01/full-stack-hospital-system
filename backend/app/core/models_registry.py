@@ -44,3 +44,9 @@ from app.features.yatis.models import (  # noqa: F401
 )
 from app.features.ilac_talep.models import IlacTalebi, IlacTalepKalemi  # noqa: F401
 from app.features.epikriz.models import Epikriz  # noqa: F401
+from app.features.guvenlik.models import (  # noqa: F401
+    GuvenlikDevriye,
+    GuvenlikOlayi,
+    GuvenlikZiyaretci,
+    KayipEsya,
+)

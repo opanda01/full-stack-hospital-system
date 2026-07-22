@@ -418,6 +418,18 @@ def test_guvenlik_sikayet_gonder_matrisi():
     assert kapsam_getir(Rol.GUVENLIK, "randevu:olustur") == Kapsam.YOK
 
 
+def test_guvenlik_panel_izin_matrisi():
+    assert kapsam_getir(Rol.GUVENLIK, "guvenlik_olay:olustur") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.GUVENLIK, "guvenlik_ziyaretci:goruntule") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.GUVENLIK, "kayip_esya:guncelle") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.GUVENLIK, "guvenlik_devriye:olustur") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.GUVENLIK, "refakatci:sorgula") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.GUVENLIK, "nobet:goruntule") == Kapsam.KENDI_KAYDIM
+    assert kapsam_getir(Rol.GUVENLIK, "hasta:listele") == Kapsam.YOK
+    assert kapsam_getir(Rol.MUDUR, "guvenlik_olay:goruntule") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.MUDUR, "guvenlik_olay:olustur") == Kapsam.YOK
+
+
 def test_idari_personel_izin_matrisi():
     assert kapsam_getir(Rol.IDARI_PERSONEL, "sikayet_oneri:gonder") != Kapsam.YOK
     assert kapsam_getir(Rol.IDARI_PERSONEL, "kullanici:sil") == Kapsam.YOK

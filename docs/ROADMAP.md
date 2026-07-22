@@ -77,3 +77,12 @@
 - Nav paritesi: servis-takip, hasta-arama, order, tetkik, epikriz, ilaç talep, görev, vardiya, randevu, nöbet
 - Demo: `ebe@hastane.example.com` / Test1234!
 
+## Faz K — Güvenlik paneli (uygulandı)
+
+- Rol `GUVENLIK`: olay / ziyaretçi / kayıp eşya / devriye / refakatçi sorgula + nöbet + şikayet
+- Backend: `backend/app/features/guvenlik/` (`/guvenlik/*`), migration `011_guvenlik_paneli`
+- Kod tipleri: BEYAZ / MAVİ / PEMBE / KIRMIZI / GRİ / GENEL; durum: AÇIK → MÜDAHALE → ÇÖZÜLDÜ
+- Web: `/guvenlik` dashboard (canlı `/guvenlik/ozet`) + olaylar, ziyaretçiler, kayıp-eşya, devriyeler, refakatçi-sorgula
+- Yönetim gözetimi: ADMIN/BASHEKIM/MUDUR olay-ziyaretçi-kayıp-eşya-devriye **görüntüleme**
+- Kapsam dışı: CCTV / turnike / Bakanlık Beyaz Kod portal entegrasyonu
+

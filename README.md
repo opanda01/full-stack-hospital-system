@@ -118,6 +118,6 @@ alembic upgrade head
 python -m app.core.seed_cli
 ```
 
-Demo şifre: `Test1234!` — örn. `admin@hastane.example.com`, `doktor@hastane.example.com`, `hasta@hastane.example.com`, `laborant@hastane.example.com`, `mudur@hastane.example.com`.
+Demo şifre: `Test1234!` — örn. `admin@hastane.example.com`, `doktor@hastane.example.com`, `hemsire@hastane.example.com` (`H-001`), `ebe@hastane.example.com` (`E-001`), `guvenlik@hastane.example.com` (`G-001`), `hasta@hastane.example.com`, `laborant@hastane.example.com`, `mudur@hastane.example.com`.
 
 Shared types: [`packages/shared-types/README.md`](packages/shared-types/README.md) · Production: [`docs/PRODUCTION.md`](docs/PRODUCTION.md)
