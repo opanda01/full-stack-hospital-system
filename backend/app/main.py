@@ -1,9 +1,14 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.core.models_registry  # noqa: F401
+from app.core.config import get_settings
+from app.core.enums import Rol
 from app.core.errors import register_exception_handlers
+from app.core.login_rate_limit import LoginRateLimitMiddleware
+from app.core.security import require_role
 
+from app.features.auth.denetim_router import router as denetim_router
 from app.features.auth.router import router as auth_router
 from app.features.departmanlar.router import router as departmanlar_router
 from app.features.doktorlar.router import router as doktorlar_router
@@ -18,19 +23,23 @@ from app.features.sikayet_oneri.router import router as sikayet_oneri_router
 from app.features.temizlik_gorevleri.router import router as temizlik_gorevleri_router
 from app.features.tetkikler.router import router as tetkikler_router
 
+settings = get_settings()
+
 app = FastAPI(
     title="Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS",
     version="0.1.0",
     description="Hastane Bilgi Yönetim Sistemi API",
 )
 
+_cors = settings.cors_origin_list
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(LoginRateLimitMiddleware)
 
 register_exception_handlers(app)
 
@@ -40,7 +49,21 @@ def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "hastane-backend"}
 
 
+@app.get("/sistem/bilgi")
+def sistem_bilgi(_user=Depends(require_role(Rol.ADMIN))) -> dict[str, str | int]:
+    """Salt-okunur sistem özeti (admin ayarlar UI)."""
+    return {
+        "bildirim_backend": settings.BILDIRIM_BACKEND,
+        "cors_origins": settings.CORS_ORIGINS,
+        "login_rate_limit_per_minute": settings.LOGIN_RATE_LIMIT_PER_MINUTE,
+        "audit_retention_days": settings.AUDIT_RETENTION_DAYS,
+        "otp_ttl_seconds": settings.OTP_TTL_SECONDS,
+        "access_token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+    }
+
+
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(denetim_router, prefix="/denetim", tags=["denetim"])
 app.include_router(rbac_router, prefix="/rbac", tags=["rbac"])
 app.include_router(kullanicilar_router, prefix="/kullanicilar", tags=["kullanicilar"])
 app.include_router(departmanlar_router, prefix="/departmanlar", tags=["departmanlar"])

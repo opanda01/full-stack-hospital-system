@@ -26,9 +26,23 @@ class Settings(BaseSettings):
 
     BILDIRIM_BACKEND: str = "console"
     TEMP_SIFRE_UZUNLUK: int = 12
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     # Virgülle ayrılmış; boş = X-Forwarded-For hiç okunmaz
     TRUSTED_PROXY_IPS: str = ""
+
+    # CORS: virgülle ayrılmış origin listesi; "*" tümüne izin (yalnızca geliştirme)
+    CORS_ORIGINS: str = "*"
+
+    # Dakikada IP başına login denemesi; 0 = kapalı
+    LOGIN_RATE_LIMIT_PER_MINUTE: int = 20
+
+    # Denetim kayıtlarının listelenen / saklanan max yaşı (gün); 0 = sınırsız
+    AUDIT_RETENTION_DAYS: int = 365
 
     # RFC 8594 Sunset — örn. "Sat, 01 Jan 2027 00:00:00 GMT"
     AUTH_REGISTER_SUNSET: str = "Sat, 01 Jan 2027 00:00:00 GMT"
@@ -40,6 +54,13 @@ class Settings(BaseSettings):
         return frozenset(
             p.strip() for p in self.TRUSTED_PROXY_IPS.split(",") if p.strip()
         )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        raw = self.CORS_ORIGINS.strip()
+        if not raw or raw == "*":
+            return ["*"]
+        return [p.strip() for p in raw.split(",") if p.strip()]
 
 
 @lru_cache

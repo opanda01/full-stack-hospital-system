@@ -4,14 +4,15 @@ import { ProtectedRoute, RoleGuard, RoleLayoutRoute, OnboardingGuard } from "@/s
 import { GirisPage } from "@/pages/ortak/giris";
 import { ForbiddenPage } from "@/pages/ortak/forbidden";
 import { HastaMobilPage } from "@/pages/ortak/hasta-mobil";
-import { PlaceholderPage } from "@/pages/ortak/placeholder";
 import { ProfilPage } from "@/pages/ortak/profil";
 import { AyarlarPage } from "@/pages/ortak/ayarlar";
 import { NobetYonetimiPage } from "@/pages/ortak/nobet";
 import { SikayetOneriPage } from "@/pages/ortak/sikayet";
 import { HastaKayitPage } from "@/pages/ortak/hasta-kayit";
+import { AdminHastalarPage } from "@/pages/admin/hastalar";
 import { TemizlikAtaPage } from "@/pages/ortak/temizlik-ata";
 import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
+import { SifreSifirlaPage } from "@/pages/ortak/sifre-sifirla";
 import { KvkkOnayPage } from "@/pages/ortak/kvkk-onay";
 
 import { AdminDashboardPage } from "@/pages/admin/dashboard";
@@ -23,6 +24,10 @@ import { AdminDoktorlarPage } from "@/pages/admin/doktorlar";
 import { AdminRandevularPage } from "@/pages/admin/randevular";
 import { AdminRaporlarPage } from "@/pages/admin/raporlar";
 import { AdminAyarlarPage } from "@/pages/admin/ayarlar";
+import { AdminDenetimPage } from "@/pages/admin/denetim";
+import { AdminRbacPage } from "@/pages/admin/rbac";
+import { AdminMuayenelerPage } from "@/pages/admin/muayeneler";
+import { AdminTetkiklerPage } from "@/pages/admin/tetkikler";
 import { homeForRole, useAuthStore } from "@/shared/auth";
 
 import { DoktorDashboardPage } from "@/pages/doktor/dashboard";
@@ -85,6 +90,7 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<Navigate to="/giris" replace />} />
         <Route path="/giris" element={<GirisPage />} />
+        <Route path="/sifre-sifirla" element={<SifreSifirlaPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/hasta-mobil" element={<HastaMobilPage />} />
         <Route path="/profil" element={<ProfilPage />} />
@@ -107,6 +113,18 @@ export function AppRouter() {
           <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
           <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="randevular" element={<AdminRandevularPage />} />
+          <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route
+            path="hasta-kayit"
+            element={<Navigate to="/admin/hastalar" replace />}
+          />
+          <Route path="nobet" element={<NobetYonetimiPage />} />
+          <Route path="temizlik" element={<TemizlikAtaPage />} />
+          <Route path="sikayet" element={<SikayetOneriPage />} />
+          <Route path="muayeneler" element={<AdminMuayenelerPage />} />
+          <Route path="tetkikler" element={<AdminTetkiklerPage />} />
+          <Route path="denetim" element={<AdminDenetimPage />} />
+          <Route path="rbac" element={<AdminRbacPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
           <Route path="ayarlar" element={<AdminAyarlarPage />} />
         </Route>
@@ -115,15 +133,17 @@ export function AppRouter() {
         <Route path="/bashekim" element={<RoleLayoutRoute rol="BASHEKIM" />}>
           <Route index element={<BashekimDashboardPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
+          <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />} />
           <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
-          <Route
-            path="randevular"
-            element={<PlaceholderPage title="Randevular" />}
-          />
+          <Route path="randevular" element={<AdminRandevularPage />} />
+          <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route path="muayeneler" element={<AdminMuayenelerPage />} />
+          <Route path="tetkikler" element={<AdminTetkiklerPage />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="temizlik" element={<TemizlikAtaPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
+          <Route path="raporlar" element={<AdminRaporlarPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -131,15 +151,17 @@ export function AppRouter() {
         <Route path="/mudur" element={<RoleLayoutRoute rol="MUDUR" />}>
           <Route index element={<MudurDashboardPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
+          <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />} />
           <Route path="departmanlar/:departmanId" element={<DepartmanDetayPage />} />
-          <Route
-            path="randevular"
-            element={<PlaceholderPage title="Randevular" />}
-          />
+          <Route path="randevular" element={<AdminRandevularPage />} />
+          <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route path="muayeneler" element={<AdminMuayenelerPage />} />
+          <Route path="tetkikler" element={<AdminTetkiklerPage />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="temizlik" element={<TemizlikAtaPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
+          <Route path="raporlar" element={<AdminRaporlarPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 

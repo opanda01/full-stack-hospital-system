@@ -101,3 +101,21 @@ class DeprecatedRegisterResponse(BaseModel):
     )
 
     model_config = {"from_attributes": True}
+
+
+class SifreSifirlaIstekRequest(BaseModel):
+    kimlik: str = Field(min_length=2, max_length=255)
+
+
+class SifreSifirlaIstekResponse(BaseModel):
+    mesaj: str = (
+        "Eşleşen bir hesap varsa doğrulama kodu kayıtlı iletişim "
+        "bilgilerinize gönderildi."
+    )
+    son_kullanma_saniye: int
+
+
+class SifreSifirlaOnayRequest(BaseModel):
+    kimlik: str = Field(min_length=2, max_length=255)
+    kod: str = Field(min_length=6, max_length=6)
+    yeni_sifre: str = Field(min_length=8)

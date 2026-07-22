@@ -19,9 +19,10 @@
 
 ## Faz C — Bildirim production
 
-- Gerçek SMS / e-posta adaptörleri (`BILDIRIM_BACKEND`)
-- Import için **batch / rate-limited kuyruk** (2000 satır × ayrı API call riski)
-- Retry / DLQ
+- [x] E-posta: `BILDIRIM_BACKEND=smtp` + `SMTP_*` (`smtplib`)
+- [ ] Gerçek SMS gateway adaptörü (SMTP yalnızca e-posta)
+- [ ] Import için **batch / rate-limited kuyruk** (2000 satır × ayrı API call riski)
+- [ ] Retry / DLQ
 
 ## Faz D — Hasta mobil istemci
 
@@ -31,7 +32,8 @@
 
 ## Faz E — Ops sertleştirme
 
-- WAF / reverse-proxy login rate limit
-- CORS allowlist
-- Audit retention politikası
-- İsteğe bağlı DB `roller`/`izinler` sync (şu an kod matrisi kaynak gerçeği)
+- [x] Uygulama login rate limit (`LOGIN_RATE_LIMIT_PER_MINUTE`) — WAF hâlâ önerilir
+- [x] CORS allowlist (`CORS_ORIGINS`)
+- [x] Audit retention + liste (`AUDIT_RETENTION_DAYS` + `GET /denetim/`; UI: `/admin/denetim`)
+- [x] Salt-okunur RBAC UI (`/admin/rbac`)
+- [ ] İsteğe bağlı DB `roller`/`izinler` sync (şu an kod matrisi kaynak gerçeği)

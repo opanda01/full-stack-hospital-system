@@ -8,6 +8,13 @@ class BirimCreate(BaseModel):
     aciklama: str | None = None
 
 
+class BirimUpdate(BaseModel):
+    ad: str | None = None
+    kod: str | None = None
+    sira: int | None = None
+    aciklama: str | None = None
+
+
 class BirimRead(BaseModel):
     id: int
     ad: str

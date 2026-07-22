@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
-import { Button } from "@/shared/ui";
+import { AuthLayout, Button } from "@/shared/ui";
 import { homeForRole, ProtectedRoute, useAuthStore } from "@/shared/auth";
 
 function KvkkOnayInner() {
@@ -37,15 +37,12 @@ function KvkkOnayInner() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h1 className="text-xl font-semibold">KVKK açık rıza onayı</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Merhaba {currentUser?.ad} {currentUser?.soyad}. Sistemi kullanmaya
-          devam etmek için kişisel verilerinizin işlenmesine ilişkin aydınlatma
-          metnini okuyup onaylamanız gerekmektedir.
-        </p>
-        <div className="mt-4 max-h-48 overflow-y-auto rounded-md border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+    <AuthLayout
+      title="KVKK açık rıza onayı"
+      subtitle={`Merhaba ${currentUser?.ad ?? ""} ${currentUser?.soyad ?? ""}. Sistemi kullanmaya devam etmek için kişisel verilerinizin işlenmesine ilişkin aydınlatma metnini okuyup onaylamanız gerekmektedir.`}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
           <p>
             6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında kimlik,
             iletişim ve iş süreçlerine ilişkin verileriniz hastane bilgi
@@ -58,7 +55,7 @@ function KvkkOnayInner() {
             reddetmeniz halinde personel paneline giriş sağlayamazsınız.
           </p>
         </div>
-        <label className="mt-4 flex items-start gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             className="mt-1"
@@ -70,9 +67,16 @@ function KvkkOnayInner() {
             ediyorum.
           </span>
         </label>
-        {hata && <p className="mt-2 text-xs text-red-600">{hata}</p>}
+        {hata && (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            {hata}
+          </div>
+        )}
         <Button
-          className="mt-4 w-full"
+          className="w-full"
           type="button"
           disabled={yukleniyor}
           onClick={() => void gonder()}
@@ -80,7 +84,7 @@ function KvkkOnayInner() {
           {yukleniyor ? "Kaydediliyor…" : "Onayla ve devam et"}
         </Button>
       </div>
-    </main>
+    </AuthLayout>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { GirisYapForm } from "@/features/giris-yap";
 import {
   MOCK_USERS,
@@ -7,13 +7,17 @@ import {
   USE_MOCK_AUTH,
   useAuthStore,
 } from "@/shared/auth";
-import { Button } from "@/shared/ui/button";
+import { AuthLayout, Button } from "@/shared/ui";
 
 export function GirisPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useAuthStore((s) => s.login);
   const [hizliHata, setHizliHata] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const sifreSifirlandi = Boolean(
+    (location.state as { sifreSifirlandi?: boolean } | null)?.sifreSifirlandi,
+  );
 
   const hizliGirisYap = async (kimlik: string, sifre: string) => {
     setHizliHata(null);
@@ -29,21 +33,12 @@ export function GirisPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-primary">
-          Çanakkale Mehmet Akif Ersoy Devlet Hastanesi
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Hastane Bilgi Yönetim Sistemi — Personel girişi
-        </p>
-      </div>
-
-      <div className="w-full max-w-sm">
-        <GirisYapForm />
-
-        {USE_MOCK_AUTH && (
-          <div className="mt-6 rounded-lg border border-border bg-card p-4 pt-4">
+    <AuthLayout
+      title="Personel girişi"
+      subtitle="Hesabınıza sicil numarası, kullanıcı adı veya e-posta ile giriş yapın."
+      footer={
+        USE_MOCK_AUTH ? (
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="mb-2 text-xs text-muted-foreground">
               Hızlı giriş (demo — sicil ile)
             </p>
@@ -64,11 +59,26 @@ export function GirisPage() {
               ))}
             </div>
             {hizliHata && (
-              <p className="mt-2 text-xs text-red-600">{hizliHata}</p>
+              <div
+                role="alert"
+                className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+              >
+                {hizliHata}
+              </div>
             )}
           </div>
-        )}
-      </div>
-    </main>
+        ) : undefined
+      }
+    >
+      {sifreSifirlandi && (
+        <div
+          role="status"
+          className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+        >
+          Şifreniz güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
+        </div>
+      )}
+      <GirisYapForm />
+    </AuthLayout>
   );
 }

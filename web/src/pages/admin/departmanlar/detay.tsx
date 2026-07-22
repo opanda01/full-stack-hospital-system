@@ -1,12 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Users } from "lucide-react";
-import { AppShell } from "@/shared/ui";
+import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 import type { Personel } from "@/entities/personel";
 
+type Birim = { id: number; ad: string; kod: string | null; sira: number };
 type Departman = {
   id: number;
   ad: string;
@@ -20,11 +21,20 @@ type Departman = {
 export function DepartmanDetayPage() {
   const { departmanId } = useParams();
   const location = useLocation();
+  const qc = useQueryClient();
   const id = Number(departmanId);
   const listPath =
     location.pathname.replace(/\/\d+\/?$/, "") || "/admin/departmanlar";
   const roleRoot =
     "/" + (location.pathname.split("/").filter(Boolean)[0] ?? "admin");
+
+  const [editing, setEditing] = useState(false);
+  const [editAd, setEditAd] = useState("");
+  const [editBirimId, setEditBirimId] = useState("");
+  const [editKatNo, setEditKatNo] = useState("");
+  const [editAciklama, setEditAciklama] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const editTitleId = useId();
 
   const {
     data: departmanlar = [],
@@ -34,6 +44,12 @@ export function DepartmanDetayPage() {
   } = useQuery({
     queryKey: ["departmanlar"],
     queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
+  });
+
+  const { data: birimler = [] } = useQuery({
+    queryKey: ["birimler"],
+    queryFn: async () =>
+      (await api.get<Birim[]>("/departmanlar/birimler")).data,
   });
 
   const {
@@ -56,9 +72,53 @@ export function DepartmanDetayPage() {
     [personeller, id],
   );
 
+  const sortedBirimler = useMemo(
+    () => [...birimler].sort((a, b) => a.sira - b.sira),
+    [birimler],
+  );
+
   const isLoading = depLoading || perLoading;
   const isError = depError || perError;
   const error = depErr ?? perErr;
+
+  const openEdit = () => {
+    if (!departman) return;
+    setEditAd(departman.ad);
+    setEditBirimId(
+      departman.birim_id != null ? String(departman.birim_id) : "",
+    );
+    setEditKatNo(departman.kat_no != null ? String(departman.kat_no) : "");
+    setEditAciklama(departman.aciklama ?? "");
+    setActionError(null);
+    setEditing(true);
+  };
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      const kat = editKatNo.trim();
+      return api.patch(`/departmanlar/${id}`, {
+        ad: editAd.trim(),
+        birim_id: editBirimId ? Number(editBirimId) : null,
+        kat_no: kat === "" ? null : Number(kat),
+        aciklama: editAciklama.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      setActionError(null);
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ["departmanlar"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
+  });
+
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEditing(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing]);
 
   return (
     <AppShell
@@ -68,13 +128,18 @@ export function DepartmanDetayPage() {
         { to: listPath, label: "Departmanlar" },
       ]}
     >
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <Link
           to={listPath}
           className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent"
         >
           ← Departmanlara dön
         </Link>
+        {departman && (
+          <Button type="button" size="sm" variant="outline" onClick={openEdit}>
+            Düzenle
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -180,6 +245,97 @@ export function DepartmanDetayPage() {
               </table>
             )}
           </section>
+        </div>
+      )}
+
+      {editing && departman && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="presentation"
+        >
+          <button
+            type="button"
+            aria-label="Kapat"
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setEditing(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={editTitleId}
+            className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+          >
+            <h2 id={editTitleId} className="text-lg font-semibold">
+              Departman düzenle
+            </h2>
+            <form
+              className="mt-4 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateMut.mutate();
+              }}
+            >
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Ad</span>
+                <input
+                  className="w-full rounded-md border border-border px-3 py-2"
+                  value={editAd}
+                  onChange={(e) => setEditAd(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </label>
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Birim</span>
+                <select
+                  className="w-full rounded-md border border-border px-3 py-2"
+                  value={editBirimId}
+                  onChange={(e) => setEditBirimId(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {sortedBirimler.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.ad}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Kat</span>
+                <input
+                  type="number"
+                  className="w-full rounded-md border border-border px-3 py-2"
+                  value={editKatNo}
+                  onChange={(e) => setEditKatNo(e.target.value)}
+                />
+              </label>
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Açıklama</span>
+                <textarea
+                  className="min-h-[80px] w-full rounded-md border border-border px-3 py-2"
+                  value={editAciklama}
+                  onChange={(e) => setEditAciklama(e.target.value)}
+                />
+              </label>
+              {actionError && (
+                <p className="text-sm text-red-600" role="alert">
+                  {actionError}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditing(false)}
+                >
+                  Vazgeç
+                </Button>
+                <Button type="submit" disabled={updateMut.isPending}>
+                  {updateMut.isPending ? "Kaydediliyor…" : "Kaydet"}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </AppShell>

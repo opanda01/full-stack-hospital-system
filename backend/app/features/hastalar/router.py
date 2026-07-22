@@ -29,7 +29,13 @@ def list_hastalar(
     session: Session = Depends(get_session),
     _user=Depends(
         require_role(
-            Rol.ADMIN, Rol.DOKTOR, Rol.HEMSIRE, Rol.EBE, Rol.IDARI_PERSONEL
+            Rol.ADMIN,
+            Rol.BASHEKIM,
+            Rol.MUDUR,
+            Rol.DOKTOR,
+            Rol.HEMSIRE,
+            Rol.EBE,
+            Rol.IDARI_PERSONEL,
         )
     ),
 ):

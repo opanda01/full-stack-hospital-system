@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AppShell, Button, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 import { PersonelEkleForm } from "@/features/personel-ekle";
 import { PersonelImportPanel } from "@/features/personel-import";
 import type { Personel } from "@/entities/personel";
@@ -11,6 +12,9 @@ import type { Personel } from "@/entities/personel";
 type Departman = { id: number; ad: string; birim_ad?: string | null };
 
 export function PersonelYonetimiPage() {
+  const location = useLocation();
+  const roleRoot = roleRootFromPath(location.pathname);
+  const isAdmin = roleRoot === "/admin";
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Personel | null>(null);
   const [editDepartmanId, setEditDepartmanId] = useState("");
@@ -36,7 +40,7 @@ export function PersonelYonetimiPage() {
   const departmanOptions = useMemo(
     () =>
       departmanlar.map((d) => {
-        const label = d.birim_ad ? `${d.birim_ad} · ${d.ad}` : d.ad;
+        const label = d.birim_ad ? `${d.birim_ad} � ${d.ad}` : d.ad;
         return {
           value: String(d.id),
           label,
@@ -84,25 +88,24 @@ export function PersonelYonetimiPage() {
       : `Sicil ${editing.sicil_no}`
     : "";
 
+  const links = [{ to: roleRoot, label: "Ana" }];
+  if (isAdmin) {
+    links.push({ to: "/admin/kullanicilar", label: "Kullan?c?lar" });
+  }
+
   return (
-    <AppShell
-      title="Personel Yönetimi"
-      links={[
-        { to: "/admin", label: "Admin" },
-        { to: "/admin/kullanicilar", label: "Kullanıcılar" },
-      ]}
-    >
+    <AppShell title="Personel Y�netimi" links={links}>
       <PersonelImportPanel />
       <PersonelEkleForm />
 
       {isLoading ? (
-        <p>Yükleniyor…</p>
+        <p>Y�kleniyor?</p>
       ) : isError ? (
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
       ) : personeller.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Henüz personel yok.</p>
+        <p className="text-sm text-muted-foreground">Hen�z personel yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -110,6 +113,7 @@ export function PersonelYonetimiPage() {
               <th className="py-2">Sicil</th>
               <th>Ad Soyad</th>
               <th>Rol</th>
+              <th>Durum</th>
               <th>Departman</th>
               <th>Unvan</th>
               <th />
@@ -122,11 +126,12 @@ export function PersonelYonetimiPage() {
                 <td>
                   {p.ad || p.soyad
                     ? `${p.ad ?? ""} ${p.soyad ?? ""}`.trim()
-                    : `Kullanıcı #${p.kullanici_id}`}
+                    : `Kullan?c? #${p.kullanici_id}`}
                 </td>
-                <td>{p.rol ?? "—"}</td>
-                <td>{p.departman_ad ?? "—"}</td>
-                <td>{p.unvan ?? "—"}</td>
+                <td>{p.rol ?? "?"}</td>
+                <td>{p.aktif_mi === false ? "Pasif" : "Aktif"}</td>
+                <td>{p.departman_ad ?? "?"}</td>
+                <td>{p.unvan ?? "?"}</td>
                 <td className="py-2">
                   <Button
                     type="button"
@@ -134,7 +139,7 @@ export function PersonelYonetimiPage() {
                     variant="outline"
                     onClick={() => openEdit(p)}
                   >
-                    Düzenle
+                    D�zenle
                   </Button>
                 </td>
               </tr>
@@ -143,13 +148,15 @@ export function PersonelYonetimiPage() {
         </table>
       )}
 
-      <p className="mt-4 text-sm text-muted-foreground">
-        Hesap listesi için{" "}
-        <Link className="underline" to="/admin/kullanicilar">
-          Kullanıcılar
-        </Link> 
-        sayfasına bakın.
-      </p>
+      {isAdmin ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Hesap listesi i�in{" "}
+          <Link className="underline" to="/admin/kullanicilar">
+            Kullan?c?lar
+          </Link>{" "}
+          sayfas?na bak?n.
+        </p>
+      ) : null}
 
       {editing && (
         <div
@@ -169,11 +176,11 @@ export function PersonelYonetimiPage() {
             className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
           >
             <h2 id={titleId} className="text-lg font-semibold">
-              Personel düzenle
+              Personel d�zenle
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {adSoyad} · {editing.sicil_no}
-              {editing.rol ? ` · ${editing.rol}` : ""}
+              {adSoyad} � {editing.sicil_no}
+              {editing.rol ? ` � ${editing.rol}` : ""}
             </p>
 
             <form
@@ -189,8 +196,8 @@ export function PersonelYonetimiPage() {
                   options={departmanOptions}
                   value={editDepartmanId}
                   onChange={setEditDepartmanId}
-                  placeholder={"Departman ara ve seç…"}
-                  emptyLabel="Eşleşen departman yok"
+                  placeholder="Departman ara ve se�?"
+                  emptyLabel="E?le?en departman yok"
                 />
               </label>
 
@@ -200,7 +207,7 @@ export function PersonelYonetimiPage() {
                   className="w-full rounded-md border border-border px-3 py-2"
                   value={editUnvan}
                   onChange={(e) => setEditUnvan(e.target.value)}
-                  placeholder="Örn. Uzman Hemşire"
+                  placeholder="�rn. Uzman Hem?ire"
                 />
               </label>
 
@@ -216,10 +223,10 @@ export function PersonelYonetimiPage() {
                   variant="outline"
                   onClick={() => setEditing(null)}
                 >
-                  Vazgeç
+                  Vazge�
                 </Button>
                 <Button type="submit" disabled={updateMut.isPending}>
-                  {updateMut.isPending ? "Kaydediliyor…" : "Kaydet"}
+                  {updateMut.isPending ? "Kaydediliyor?" : "Kaydet"}
                 </Button>
               </div>
             </form>

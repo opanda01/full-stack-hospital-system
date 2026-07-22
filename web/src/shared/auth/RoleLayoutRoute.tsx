@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/shared/auth/authStore";
-import { NAV_ITEMS, type Rol } from "@/shared/config/nav-items";
+import { NAV_GROUPS, type Rol } from "@/shared/config/nav-items";
 import { AppShell } from "@/shared/ui/app-shell";
 import { OnboardingGuard } from "./OnboardingGuard";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -11,7 +11,7 @@ type RoleLayoutRouteProps = {
 };
 
 /**
- * AppShell'i ilgili rolün NAV_ITEMS'ı ile sarmalar; alt route'lar <Outlet /> ile gelir.
+ * AppShell'i ilgili rolün NAV_GROUPS'ı ile sarmalar; alt route'lar <Outlet /> ile gelir.
  */
 export function RoleLayoutRoute({ rol }: RoleLayoutRouteProps) {
   return (
@@ -38,7 +38,7 @@ function RoleLayoutInner({ rol }: { rol: Rol }) {
   }
 
   return (
-    <AppShell navItems={NAV_ITEMS[rol]} currentUser={currentUser}>
+    <AppShell navGroups={NAV_GROUPS[rol]} currentUser={currentUser}>
       <Outlet />
     </AppShell>
   );

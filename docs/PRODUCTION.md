@@ -20,10 +20,14 @@
 - Kullanıcı silme = soft deactivate (`aktif_mi=False`) — `/kullanicilar/{id}` DELETE.
 - Audit log: `denetim_kayitlari` (`actor_id`, `aksiyon`, `kaynak`, `kaynak_id`, `ip_adresi`, `zaman`).
   IP için `TRUSTED_PROXY_IPS` tanımlı değilse `X-Forwarded-For` yok sayılır.
+  Listeleme: `GET /denetim/` (ADMIN). Saklama: `AUDIT_RETENTION_DAYS`.
 
 ## Ops
 
 - [ ] Health check: `GET /health`
+- [ ] Login rate limit: `LOGIN_RATE_LIMIT_PER_MINUTE` (+ WAF önerilir)
+- [ ] `CORS_ORIGINS` yalnızca bilinen origin’ler
+- [ ] Bildirim: `BILDIRIM_BACKEND=console|log|smtp`
 - [ ] Alembic migrations deploy pipeline’da `upgrade head`
 - [ ] Backup / restore prosedürü
 - [ ] Log aggregation (uygulama + access)

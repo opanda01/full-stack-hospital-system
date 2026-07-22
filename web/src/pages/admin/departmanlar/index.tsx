@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
-import { AppShell, Button } from "@/shared/ui";
+import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 import { cn } from "@/shared/lib/utils";
@@ -25,14 +25,19 @@ export function DepartmanYonetimiPage() {
     "/" + (location.pathname.split("/").filter(Boolean)[0] ?? "admin");
   const [ad, setAd] = useState("");
   const [birimId, setBirimId] = useState("");
+  const [birimAd, setBirimAd] = useState("");
   const [openBirimId, setOpenBirimId] = useState<number | "birimsiz" | null>(
     null,
   );
   const [editing, setEditing] = useState<Departman | null>(null);
   const [editAd, setEditAd] = useState("");
   const [editBirimId, setEditBirimId] = useState("");
+  const [editingBirim, setEditingBirim] = useState<Birim | null>(null);
+  const [editBirimAd, setEditBirimAd] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Departman | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const editTitleId = useId();
+  const editBirimTitleId = useId();
 
   const { data: birimler = [] } = useQuery({
     queryKey: ["birimler"],
@@ -70,6 +75,36 @@ export function DepartmanYonetimiPage() {
       ? "Birimsiz"
       : sortedBirimler.find((b) => b.id === openBirimId)?.ad;
 
+  const createBirimMut = useMutation({
+    mutationFn: async () =>
+      api.post("/departmanlar/birimler", {
+        ad: birimAd.trim(),
+        sira: birimler.length,
+      }),
+    onSuccess: () => {
+      setActionError(null);
+      setBirimAd("");
+      qc.invalidateQueries({ queryKey: ["birimler"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
+  });
+
+  const updateBirimMut = useMutation({
+    mutationFn: async () => {
+      if (!editingBirim) return;
+      return api.patch(`/departmanlar/birimler/${editingBirim.id}`, {
+        ad: editBirimAd.trim(),
+      });
+    },
+    onSuccess: () => {
+      setActionError(null);
+      setEditingBirim(null);
+      qc.invalidateQueries({ queryKey: ["birimler"] });
+      qc.invalidateQueries({ queryKey: ["departmanlar"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
+  });
+
   const createMut = useMutation({
     mutationFn: async () =>
       api.post("/departmanlar/", {
@@ -77,7 +112,7 @@ export function DepartmanYonetimiPage() {
         birim_id: birimId ? Number(birimId) : null,
         kat_no: null,
       }),
-    onSuccess: (_res, _vars, _ctx) => {
+    onSuccess: () => {
       setActionError(null);
       setAd("");
       if (birimId) setOpenBirimId(Number(birimId));
@@ -106,19 +141,23 @@ export function DepartmanYonetimiPage() {
     mutationFn: async (id: number) => api.delete(`/departmanlar/${id}`),
     onSuccess: () => {
       setActionError(null);
+      setPendingDelete(null);
       qc.invalidateQueries({ queryKey: ["departmanlar"] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
   });
 
   useEffect(() => {
-    if (!editing) return;
+    if (!editing && !editingBirim) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setEditing(null);
+      if (e.key === "Escape") {
+        setEditing(null);
+        setEditingBirim(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing]);
+  }, [editing, editingBirim]);
 
   const openEdit = (d: Departman) => {
     setEditing(d);
@@ -127,17 +166,46 @@ export function DepartmanYonetimiPage() {
     setActionError(null);
   };
 
+  const openEditBirim = (b: Birim) => {
+    setEditingBirim(b);
+    setEditBirimAd(b.ad);
+    setActionError(null);
+  };
+
   const birimsizCount = byBirimId.get("birimsiz")?.length ?? 0;
 
   return (
     <AppShell
-      title="Departman Yönetimi"
+      title={"Departman Y\u00f6netimi"}
       links={[{ to: roleRoot, label: "Ana" }]}
     >
       <p className="mb-4 text-sm text-muted-foreground">
-        Önce birime tıklayın; altındaki departmanlar açılır. Departman adına
-        tıklayınca personel ve kısa bilgilere gidersiniz.
+        {
+          "\u00d6nce birime t\u0131klay\u0131n; alt\u0131ndaki departmanlar a\u00e7\u0131l\u0131r. Departman ad\u0131na t\u0131klay\u0131nca personel ve k\u0131sa bilgilere gidersiniz."
+        }
       </p>
+
+      <form
+        className="mb-3 flex flex-wrap gap-2 rounded-lg border border-border bg-card p-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          createBirimMut.mutate();
+        }}
+      >
+        <input
+          className="min-w-[200px] flex-1 rounded-md border border-border px-3 py-2"
+          placeholder={"Yeni birim ad\u0131"}
+          value={birimAd}
+          onChange={(e) => setBirimAd(e.target.value)}
+          required
+        />
+        <Button
+          type="submit"
+          disabled={createBirimMut.isPending || !birimAd.trim()}
+        >
+          Birim ekle
+        </Button>
+      </form>
 
       <form
         className="mb-6 flex flex-wrap gap-2 rounded-lg border border-border bg-card p-4"
@@ -152,7 +220,7 @@ export function DepartmanYonetimiPage() {
           onChange={(e) => setBirimId(e.target.value)}
           required
         >
-          <option value="">Birim seç</option>
+          <option value="">{"Birim se\u00e7"}</option>
           {sortedBirimler.map((b) => (
             <option key={b.id} value={b.id}>
               {b.ad}
@@ -161,7 +229,7 @@ export function DepartmanYonetimiPage() {
         </select>
         <input
           className="min-w-[200px] flex-1 rounded-md border border-border px-3 py-2"
-          placeholder="Departman / poliklinik adı"
+          placeholder={"Departman / poliklinik ad\u0131"}
           value={ad}
           onChange={(e) => setAd(e.target.value)}
           required
@@ -171,14 +239,14 @@ export function DepartmanYonetimiPage() {
         </Button>
       </form>
 
-      {actionError && !editing && (
+      {actionError && !editing && !editingBirim && (
         <p className="mb-4 text-sm text-red-600" role="alert">
           {actionError}
         </p>
       )}
 
       {isLoading ? (
-        <p>Yükleniyor…</p>
+        <p>{"Y\u00fckleniyor\u2026"}</p>
       ) : isError ? (
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
@@ -190,20 +258,22 @@ export function DepartmanYonetimiPage() {
               const count = byBirimId.get(b.id)?.length ?? 0;
               const open = openBirimId === b.id;
               return (
-                <button
+                <div
                   key={b.id}
-                  type="button"
-                  onClick={() => setOpenBirimId(open ? null : b.id)}
                   className={cn(
                     "rounded-xl border p-4 text-left transition",
-                    "bg-card hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                    "bg-card",
                     open
                       ? "border-[var(--border-accent)] ring-1 ring-[var(--border-accent)]"
                       : "border-border",
                   )}
-                  style={{ outlineColor: "var(--border-accent)" }}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setOpenBirimId(open ? null : b.id)}
+                    className="flex w-full items-start justify-between gap-3 text-left hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    style={{ outlineColor: "var(--border-accent)" }}
+                  >
                     <div className="flex items-start gap-3">
                       <div
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -227,8 +297,18 @@ export function DepartmanYonetimiPage() {
                         open && "rotate-180",
                       )}
                     />
+                  </button>
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditBirim(b)}
+                    >
+                      {"Birimi d\u00fczenle"}
+                    </Button>
                   </div>
-                </button>
+                </div>
               );
             })}
 
@@ -267,7 +347,7 @@ export function DepartmanYonetimiPage() {
             <section className="mt-6 rounded-xl border border-border bg-card p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold">
-                  {openBirimAd} — departmanlar
+                  {openBirimAd} - departmanlar
                 </h3>
                 <Button
                   type="button"
@@ -281,7 +361,7 @@ export function DepartmanYonetimiPage() {
 
               {openDepartmanlar.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Bu birimde henüz departman yok.
+                  {"Bu birimde hen\u00fcz departman yok."}
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
@@ -304,22 +384,14 @@ export function DepartmanYonetimiPage() {
                           variant="outline"
                           onClick={() => openEdit(d)}
                         >
-                          Düzenle
+                          {"D\u00fczenle"}
                         </Button>
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           disabled={deleteMut.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `"${d.ad}" departmanını silmek istiyor musunuz?`,
-                              )
-                            ) {
-                              deleteMut.mutate(d.id);
-                            }
-                          }}
+                          onClick={() => setPendingDelete(d)}
                         >
                           Sil
                         </Button>
@@ -333,7 +405,7 @@ export function DepartmanYonetimiPage() {
 
           {data.length === 0 && (
             <p className="mt-4 text-sm text-muted-foreground">
-              Henüz departman yok.
+              {"Hen\u00fcz departman yok."}
             </p>
           )}
         </>
@@ -347,17 +419,17 @@ export function DepartmanYonetimiPage() {
           <button
             type="button"
             aria-label="Kapat"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setEditing(null)}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={editTitleId}
-            className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg"
           >
             <h2 id={editTitleId} className="text-lg font-semibold">
-              Departman düzenle
+              {"Departman d\u00fczenle"}
             </h2>
             <form
               className="mt-4 space-y-3"
@@ -383,7 +455,7 @@ export function DepartmanYonetimiPage() {
                   value={editBirimId}
                   onChange={(e) => setEditBirimId(e.target.value)}
                 >
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {sortedBirimler.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.ad}
@@ -402,16 +474,92 @@ export function DepartmanYonetimiPage() {
                   variant="outline"
                   onClick={() => setEditing(null)}
                 >
-                  Vazgeç
+                  {"Vazge\u00e7"}
                 </Button>
                 <Button type="submit" disabled={updateMut.isPending}>
-                  {updateMut.isPending ? "Kaydediliyor…" : "Kaydet"}
+                  {updateMut.isPending ? "Kaydediliyor\u2026" : "Kaydet"}
                 </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {editingBirim && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="presentation"
+        >
+          <button
+            type="button"
+            aria-label="Kapat"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setEditingBirim(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={editBirimTitleId}
+            className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg"
+          >
+            <h2 id={editBirimTitleId} className="text-lg font-semibold">
+              {"Birim d\u00fczenle"}
+            </h2>
+            <form
+              className="mt-4 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateBirimMut.mutate();
+              }}
+            >
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Ad</span>
+                <input
+                  className="w-full rounded-md border border-border px-3 py-2"
+                  value={editBirimAd}
+                  onChange={(e) => setEditBirimAd(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </label>
+              {actionError && (
+                <p className="text-sm text-red-600" role="alert">
+                  {actionError}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingBirim(null)}
+                >
+                  {"Vazge\u00e7"}
+                </Button>
+                <Button type="submit" disabled={updateBirimMut.isPending}>
+                  {updateBirimMut.isPending ? "Kaydediliyor\u2026" : "Kaydet"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title={"Departman\u0131 sil"}
+        description={
+          pendingDelete
+            ? `"${pendingDelete.ad}" departman\u0131n\u0131 silmek istedi\u011finize emin misiniz?`
+            : ""
+        }
+        confirmLabel="Sil"
+        destructive
+        pending={deleteMut.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) deleteMut.mutate(pendingDelete.id);
+        }}
+      />
     </AppShell>
   );
 }

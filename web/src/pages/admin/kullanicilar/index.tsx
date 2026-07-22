@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AppShell, Button } from "@/shared/ui";
+import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 
@@ -28,13 +28,28 @@ const ROLLER = [
   "HASTA",
 ];
 
+type DurumFiltre = "hepsi" | "aktif" | "pasif";
+
 export function KullaniciYonetimiPage() {
   const qc = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingDeaktif, setPendingDeaktif] = useState<Kullanici | null>(null);
+  const [rolFiltre, setRolFiltre] = useState("");
+  const [durumFiltre, setDurumFiltre] = useState<DurumFiltre>("hepsi");
+
   const { data = [], isLoading, isError, error } = useQuery({
     queryKey: ["kullanicilar"],
     queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
   });
+
+  const filtered = useMemo(() => {
+    return data.filter((u) => {
+      if (rolFiltre && u.rol !== rolFiltre) return false;
+      if (durumFiltre === "aktif" && !u.aktif_mi) return false;
+      if (durumFiltre === "pasif" && u.aktif_mi) return false;
+      return true;
+    });
+  }, [data, rolFiltre, durumFiltre]);
 
   const patchMut = useMutation({
     mutationFn: async ({
@@ -55,7 +70,20 @@ export function KullaniciYonetimiPage() {
     mutationFn: async (id: number) => api.delete(`/kullanicilar/${id}`),
     onSuccess: () => {
       setActionError(null);
+      setPendingDeaktif(null);
       qc.invalidateQueries({ queryKey: ["kullanicilar"] });
+      qc.invalidateQueries({ queryKey: ["personel"] });
+    },
+    onError: (err) => setActionError(getApiErrorMessage(err)),
+  });
+
+  const activateMut = useMutation({
+    mutationFn: async (id: number) =>
+      api.patch(`/kullanicilar/${id}/durum`, { aktif_mi: true }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["kullanicilar"] });
+      qc.invalidateQueries({ queryKey: ["personel"] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
   });
@@ -74,6 +102,30 @@ export function KullaniciYonetimiPage() {
         içindir.
       </p>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        <select
+          className="rounded-md border border-border px-3 py-2 text-sm"
+          value={rolFiltre}
+          onChange={(e) => setRolFiltre(e.target.value)}
+        >
+          <option value="">Tüm roller</option>
+          {ROLLER.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+        <select
+          className="rounded-md border border-border px-3 py-2 text-sm"
+          value={durumFiltre}
+          onChange={(e) => setDurumFiltre(e.target.value as DurumFiltre)}
+        >
+          <option value="hepsi">Tüm durumlar</option>
+          <option value="aktif">Aktif</option>
+          <option value="pasif">Pasif</option>
+        </select>
+      </div>
+
       {actionError && (
         <p className="mb-4 text-sm text-red-600" role="alert">
           {actionError}
@@ -86,8 +138,8 @@ export function KullaniciYonetimiPage() {
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
-      ) : data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Henüz kullanıcı yok.</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Eşleşen kullanıcı yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -100,7 +152,7 @@ export function KullaniciYonetimiPage() {
             </tr>
           </thead>
           <tbody>
-            {data.map((u) => (
+            {filtered.map((u) => (
               <tr key={u.id} className="border-b">
                 <td className="py-2">
                   {u.ad} {u.soyad}
@@ -122,13 +174,24 @@ export function KullaniciYonetimiPage() {
                   </select>
                 </td>
                 <td>{u.aktif_mi ? "Aktif" : "Pasif"}</td>
-                <td>
-                  {u.aktif_mi && (
+                <td className="py-2">
+                  {u.aktif_mi ? (
                     <Button
                       type="button"
-                      onClick={() => deactivateMut.mutate(u.id)}
+                      size="sm"
+                      onClick={() => setPendingDeaktif(u)}
                     >
                       Deaktif
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={activateMut.isPending}
+                      onClick={() => activateMut.mutate(u.id)}
+                    >
+                      Aktifleştir
                     </Button>
                   )}
                 </td>
@@ -137,6 +200,23 @@ export function KullaniciYonetimiPage() {
           </tbody>
         </table>
       )}
+
+      <ConfirmDialog
+        open={pendingDeaktif != null}
+        title="Hesabı deaktif et"
+        description={
+          pendingDeaktif
+            ? `${pendingDeaktif.ad} ${pendingDeaktif.soyad} hesabını deaktif etmek istediğinize emin misiniz? Hesap silinmez; giriş yapamaz.`
+            : ""
+        }
+        confirmLabel="Deaktif et"
+        destructive
+        pending={deactivateMut.isPending}
+        onCancel={() => setPendingDeaktif(null)}
+        onConfirm={() => {
+          if (pendingDeaktif) deactivateMut.mutate(pendingDeaktif.id);
+        }}
+      />
     </AppShell>
   );
 }

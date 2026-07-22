@@ -1,17 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 import type { Randevu } from "@/entities/randevu";
 import type { Doktor } from "@/entities/doktor";
+import { AdminRandevuOlusturForm } from "./AdminRandevuOlusturForm";
 
 type Hasta = { id: number; tc_kimlik_no: string; kullanici_id: number };
 type Kullanici = { id: number; ad: string; soyad: string };
 type Departman = { id: number; ad: string };
 
 export function AdminRandevularPage() {
+  const roleRoot = roleRootFromPath(useLocation().pathname);
   const {
     data: randevular = [],
     isLoading,
@@ -68,7 +72,9 @@ export function AdminRandevularPage() {
   }, [departmanlar]);
 
   return (
-    <AppShell title="Randevular" links={[{ to: "/admin", label: "Admin" }]}>
+    <AppShell title="Randevular" links={[{ to: roleRoot, label: "Ana" }]}>
+      <AdminRandevuOlusturForm />
+
       {isLoading ? (
         <p>Yükleniyor…</p>
       ) : isError ? (

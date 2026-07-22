@@ -11,4 +11,5 @@
   email?: string | null;
   rol?: string | null;
   departman_ad?: string | null;
+  aktif_mi?: boolean | null;
 };

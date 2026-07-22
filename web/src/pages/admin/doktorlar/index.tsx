@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 import type { Doktor } from "@/entities/doktor";
 
 export function AdminDoktorlarPage() {
+  const location = useLocation();
+  const roleRoot = roleRootFromPath(location.pathname);
   const qc = useQueryClient();
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({
@@ -42,10 +45,10 @@ export function AdminDoktorlarPage() {
   });
 
   return (
-    <AppShell title="Doktorlar" links={[{ to: "/admin", label: "Admin" }]}>
+    <AppShell title="Doktorlar" links={[{ to: roleRoot, label: "Ana" }]}>
       <p className="mb-4 rounded border bg-muted px-3 py-2 text-sm text-foreground">
         Yeni doktor eklemek için{" "}
-        <Link className="font-medium underline" to="/admin/personel">
+        <Link className="font-medium underline" to={`${roleRoot}/personel`}>
           Personel
         </Link>{" "}
         sayfasında rol olarak DOKTOR seçin. Bu sayfa liste ve düzenleme içindir.

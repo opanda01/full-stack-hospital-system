@@ -27,6 +27,7 @@ class PersonelRead(BaseModel):
     email: str | None = None
     rol: str | None = None
     departman_ad: str | None = None
+    aktif_mi: bool | None = None
 
     model_config = {"from_attributes": True}
 
