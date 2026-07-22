@@ -2,7 +2,13 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, EmailStr, model_validator
 
-from app.core.enums import ImportDurum, Rol, YonetimGorevi
+from app.core.enums import (
+    ErisimDurumu,
+    ImportDurum,
+    PersonelKaynakTipi,
+    Rol,
+    YonetimGorevi,
+)
 
 
 class PersonelCreate(BaseModel):
@@ -28,6 +34,9 @@ class PersonelRead(BaseModel):
     rol: str | None = None
     departman_ad: str | None = None
     aktif_mi: bool | None = None
+    erisim_durumu: str | None = None
+    kaynak_tipi: str | None = None
+    firma_adi: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -48,6 +57,8 @@ class PersonelWithUserCreate(BaseModel):
     uzmanlik_alani: str | None = None
     diploma_no: str | None = None
     online_randevu_acik_mi: bool = True
+    kaynak_tipi: PersonelKaynakTipi = PersonelKaynakTipi.KURUM
+    firma_adi: str | None = None
 
     @model_validator(mode="after")
     def personel_rol_ve_doktor(self) -> "PersonelWithUserCreate":
@@ -58,7 +69,32 @@ class PersonelWithUserCreate(BaseModel):
                 raise ValueError(
                     "Doktor rolü için uzmanlik_alani ve diploma_no zorunlu"
                 )
+        if self.kaynak_tipi == PersonelKaynakTipi.DIS_FIRMA and not (
+            self.firma_adi or ""
+        ).strip():
+            raise ValueError("Dış firma personeli için firma_adi zorunludur")
         return self
+
+
+class ErisimGerekceBody(BaseModel):
+    gerekce: str
+
+
+class ErisimTalepRead(BaseModel):
+    personel_id: int
+    kullanici_id: int
+    sicil_no: str
+    ad: str | None = None
+    soyad: str | None = None
+    email: str | None = None
+    rol: str | None = None
+    erisim_durumu: ErisimDurumu | str
+    aktif_mi: bool
+    kaynak_tipi: str | None = None
+    firma_adi: str | None = None
+    red_gerekce: str | None = None
+    onaylayan_id: int | None = None
+    onay_tarihi: Any | None = None
 
 
 class PersonelUpdate(BaseModel):

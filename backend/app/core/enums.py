@@ -57,3 +57,34 @@ class ImportDurum(str, Enum):
     ISLENIYOR = "ISLENIYOR"
     TAMAMLANDI = "TAMAMLANDI"
     HATA = "HATA"
+
+
+class ErisimDurumu(str, Enum):
+    """Personel sistem erişimi — tek kaynak; aktif_mi bundan türetilir."""
+
+    BEKLEMEDE = "BEKLEMEDE"
+    ONAYLANDI = "ONAYLANDI"
+    REDDEDILDI = "REDDEDILDI"
+
+
+class PersonelKaynakTipi(str, Enum):
+    KURUM = "KURUM"
+    DIS_FIRMA = "DIS_FIRMA"
+
+
+class KlinikOnayDurumu(str, Enum):
+    BEKLEMEDE = "BEKLEMEDE"
+    ONAYLANDI = "ONAYLANDI"
+    REDDEDILDI = "REDDEDILDI"
+
+
+class EntegrasyonSistem(str, Enum):
+    ENABIZ = "ENABIZ"
+    SGK_PROVIZYON = "SGK_PROVIZYON"
+
+
+class EntegrasyonDurumKod(str, Enum):
+    SAGLIKLI = "SAGLIKLI"
+    UYARI = "UYARI"
+    HATA = "HATA"
+    BILINMIYOR = "BILINMIYOR"

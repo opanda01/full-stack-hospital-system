@@ -13,3 +13,10 @@ from app.features.tetkikler.models import Tetkik  # noqa: F401
 from app.features.nobet_cizelgesi.models import NobetCizelgesi  # noqa: F401
 from app.features.temizlik_gorevleri.models import TemizlikGorevi  # noqa: F401
 from app.features.sikayet_oneri.models import SikayetOneri  # noqa: F401
+from app.features.mhrs.models import MhrsKapasite  # noqa: F401
+from app.features.entegrasyonlar.models import EntegrasyonDurum  # noqa: F401
+from app.features.klinik_onay.models import KlinikOnayKaydi  # noqa: F401
+from app.features.eczane.models import Ilac  # noqa: F401
+from app.features.faturalandirma.models import Fatura  # noqa: F401
+from app.features.doner_sermaye.models import DonerSermayeKayit  # noqa: F401
+from app.features.yetki_devri.models import YetkiDevriKaydi  # noqa: F401

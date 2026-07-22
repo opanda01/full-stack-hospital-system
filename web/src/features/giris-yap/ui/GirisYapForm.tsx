@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { postLoginPath, useAuthStore, USE_MOCK_AUTH } from "@/shared/auth";
-import { DEV_CREDENTIALS, girisSchema, type GirisFormValues } from "../model/schema";
+import { DEV_BASHEKIM_CREDENTIALS, DEV_CREDENTIALS, girisSchema, type GirisFormValues } from "../model/schema";
 
 /** LoginForm — sicil / kullanıcı adı / e-posta + şifre */
 export function GirisYapForm() {
@@ -18,6 +18,7 @@ export function GirisYapForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<GirisFormValues>({
     resolver: zodResolver(girisSchema),
@@ -26,6 +27,12 @@ export function GirisYapForm() {
       sifre: DEV_CREDENTIALS.sifre,
     },
   });
+
+  const fillTest = (kimlik: string, sifre: string) => {
+    setValue("kimlik", kimlik, { shouldValidate: true });
+    setValue("sifre", sifre, { shouldValidate: true });
+    setHata(null);
+  };
 
   const onSubmit = async (data: GirisFormValues) => {
     setHata(null);
@@ -59,9 +66,35 @@ export function GirisYapForm() {
           <summary className="cursor-pointer select-none font-medium">
             Test girişi{USE_MOCK_AUTH ? " (mock)" : ""}
           </summary>
-          <p className="mt-2">
-            Sicil: <strong>ADM-001</strong>, şifre: <strong>Test1234!</strong>
-          </p>
+          <ul className="mt-2 space-y-1.5">
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(DEV_CREDENTIALS.kimlik, DEV_CREDENTIALS.sifre)
+                }
+              >
+                Admin: <strong>{DEV_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() =>
+                  fillTest(
+                    DEV_BASHEKIM_CREDENTIALS.kimlik,
+                    DEV_BASHEKIM_CREDENTIALS.sifre,
+                  )
+                }
+              >
+                Başhekim: <strong>{DEV_BASHEKIM_CREDENTIALS.kimlik}</strong> /{" "}
+                <strong>{DEV_BASHEKIM_CREDENTIALS.sifre}</strong>
+              </button>
+            </li>
+          </ul>
         </details>
       )}
 

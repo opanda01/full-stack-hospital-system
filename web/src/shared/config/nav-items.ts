@@ -16,6 +16,12 @@ import {
   CalendarDays,
   Sparkles,
   Shield,
+  UserCheck,
+  Network,
+  Pill,
+  Receipt,
+  Wallet,
+  Activity,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -54,6 +60,7 @@ function asSingleGroup(items: NavItem[]): NavGroup[] {
 const ADMIN_ITEMS: NavItem[] = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
   { label: "Kullanıcılar", path: "/admin/kullanicilar", icon: Users },
+  { label: "Erişim onayları", path: "/admin/erisim-onaylari", icon: UserCheck },
   { label: "Personel", path: "/admin/personel", icon: IdCard },
   { label: "Doktorlar", path: "/admin/doktorlar", icon: Stethoscope },
   { label: "Departmanlar", path: "/admin/departmanlar", icon: Building2 },
@@ -72,8 +79,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: "Ayarlar", path: "/admin/ayarlar", icon: Settings },
 ];
 
-/** Klinik + operasyon (Admin-only hariç) — Başhekim / Müdür. */
-function yonetimKlinikItems(root: "/bashekim" | "/mudur"): NavItem[] {
+function mudurItems(root: "/mudur"): NavItem[] {
   return [
     { label: "Dashboard", path: root, icon: LayoutDashboard },
     { label: "Personel", path: `${root}/personel`, icon: IdCard },
@@ -95,10 +101,40 @@ function yonetimKlinikItems(root: "/bashekim" | "/mudur"): NavItem[] {
   ];
 }
 
+function bashekimGroups(): NavGroup[] {
+  const root = "/bashekim";
+  return [
+    {
+      items: [
+        { label: "Dashboard", path: root, icon: LayoutDashboard },
+        { label: "Erişim onayları", path: `${root}/erisim-onaylari`, icon: UserCheck },
+        { label: "Personel", path: `${root}/personel`, icon: IdCard },
+        { label: "Doktorlar", path: `${root}/doktorlar`, icon: Stethoscope },
+        { label: "Departmanlar", path: `${root}/departmanlar`, icon: Building2 },
+        { label: "Randevular", path: `${root}/randevular`, icon: CalendarClock },
+        { label: "Hastalar", path: `${root}/hastalar`, icon: HeartPulse },
+        { label: "Muayeneler", path: `${root}/muayeneler`, icon: ClipboardList },
+        { label: "Tetkikler", path: `${root}/tetkikler`, icon: FlaskConical },
+        { label: "Klinik onaylar", path: `${root}/klinik-onaylar`, icon: Activity },
+        { label: "MHRS kapasite", path: `${root}/mhrs-kapasite`, icon: Network },
+        { label: "Entegrasyonlar", path: `${root}/entegrasyonlar`, icon: Network },
+        { label: "Eczane", path: `${root}/eczane`, icon: Pill },
+        { label: "Faturalandırma", path: `${root}/faturalandirma`, icon: Receipt },
+        { label: "Döner sermaye", path: `${root}/doner-sermaye`, icon: Wallet },
+        { label: "Nöbet", path: `${root}/nobet`, icon: CalendarDays },
+        { label: "Temizlik", path: `${root}/temizlik`, icon: Sparkles },
+        { label: "Şikayet/Öneri", path: `${root}/sikayet`, icon: MessageSquareWarning },
+        { label: "Raporlar", path: `${root}/raporlar`, icon: BarChart3 },
+        { label: "Ayarlar", path: `${root}/ayarlar`, icon: Settings },
+      ],
+    },
+  ];
+}
+
 export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ADMIN: asSingleGroup(ADMIN_ITEMS),
-  BASHEKIM: asSingleGroup(yonetimKlinikItems("/bashekim")),
-  MUDUR: asSingleGroup(yonetimKlinikItems("/mudur")),
+  BASHEKIM: bashekimGroups(),
+  MUDUR: asSingleGroup(mudurItems("/mudur")),
   DOKTOR: asSingleGroup([
     { label: "Dashboard", path: "/doktor", icon: LayoutDashboard },
     { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },

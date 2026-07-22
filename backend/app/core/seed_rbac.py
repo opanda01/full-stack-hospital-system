@@ -6,10 +6,11 @@ Her rol için 1 demo kullanıcı; email varsa atlanır (idempotent).
 
 from sqlmodel import Session, select
 
-from app.core.enums import Rol
+from app.core.enums import ErisimDurumu, Rol
 from app.core.security import hash_password
 import app.core.models_registry  # noqa: F401
 from app.features.kullanicilar.models import Kullanici
+from app.features.personel.erisim_service import apply_erisim_durumu
 
 DEMO_SIFRE = "Test1234!"
 
@@ -159,10 +160,10 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 kullanici_adi=item.get("kullanici_adi"),
                 sifre_hash=sifre_hash,
                 rol=item["rol"],
-                aktif_mi=True,
                 sifre_degistirmeli_mi=False,
                 kvkk_onaylandi_mi=True,
             )
+            apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
             session.add(kullanici)
             session.flush()
 

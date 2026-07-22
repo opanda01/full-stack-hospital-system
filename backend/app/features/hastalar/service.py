@@ -1,11 +1,12 @@
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.enums import Rol
+from app.core.enums import ErisimDurumu, Rol
 from app.core.security import hash_password
 from app.features.hastalar.models import Hasta
 from app.features.hastalar.schemas import HastaCreate, HastaCreateWithUser, HastaUpdate
 from app.features.kullanicilar.models import Kullanici
+from app.features.personel.erisim_service import apply_erisim_durumu
 
 
 def list_hastalar(session: Session) -> list[Hasta]:
@@ -54,8 +55,8 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
         telefon=data.telefon,
         sifre_hash=hash_password(data.sifre),
         rol=Rol.HASTA,
-        aktif_mi=True,
     )
+    apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
     session.add(kullanici)
     session.flush()
     h = Hasta(

@@ -10,7 +10,8 @@ class Kapsam(str, Enum):
     YOK = "YOK"
 
 
-def _yonetim_ortak() -> dict[str, Kapsam]:
+def _mudur_izinleri() -> dict[str, Kapsam]:
+    """Müdür operasyon izinleri — `_yonetim_ortak` envanteri korunur."""
     return {
         "personel:listele": Kapsam.GLOBAL,
         "personel:import": Kapsam.GLOBAL,
@@ -27,17 +28,40 @@ def _yonetim_ortak() -> dict[str, Kapsam]:
         "nobet:goruntule": Kapsam.GLOBAL,
         "temizlik_gorevi:ata": Kapsam.GLOBAL,
         "temizlik_gorevi:goruntule": Kapsam.GLOBAL,
+        "temizlik_gorevi:guncelle": Kapsam.GLOBAL,
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
         "sikayet_oneri:tumunu_goruntule": Kapsam.GLOBAL,
     }
 
 
+def _bashekim_izinleri() -> dict[str, Kapsam]:
+    """Başhekim = Müdür ops + gözetim / onay / HBYS view."""
+    izinler = _mudur_izinleri()
+    izinler.update(
+        {
+            "personel:onayla": Kapsam.GLOBAL,
+            "denetim:goruntule": Kapsam.GLOBAL,
+            "bashekim:ozet": Kapsam.GLOBAL,
+            "mhrs:yonet": Kapsam.GLOBAL,
+            "entegrasyon:goruntule": Kapsam.GLOBAL,
+            "klinik_onay:goruntule": Kapsam.GLOBAL,
+            "klinik_onay:onayla": Kapsam.GLOBAL,
+            "eczane:goruntule": Kapsam.GLOBAL,
+            "fatura:goruntule": Kapsam.GLOBAL,
+            "doner:goruntule": Kapsam.GLOBAL,
+            "yetki:devret": Kapsam.GLOBAL,
+            "sistem:gozetim": Kapsam.GLOBAL,
+        }
+    )
+    return izinler
+
+
 # İzin matrisi: {rol: {kaynak_aksiyon: kapsam}}
-# Belge: docs/rbac-yetki-matrisi.md
+# Belge: docs/rbac-yetki-matrisi.md, docs/bashekim-izin-envanteri.md
 IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
     Rol.ADMIN: {"*": Kapsam.GLOBAL},
-    Rol.BASHEKIM: _yonetim_ortak(),
-    Rol.MUDUR: _yonetim_ortak(),
+    Rol.BASHEKIM: _bashekim_izinleri(),
+    Rol.MUDUR: _mudur_izinleri(),
     Rol.DOKTOR: {
         "departman:goruntule": Kapsam.GLOBAL,
         "doktor:profil_duzenle": Kapsam.KENDI_KAYDIM,
@@ -47,6 +71,7 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "muayene:goruntule": Kapsam.KENDI_KAYDIM,
         "tetkik:iste": Kapsam.KENDI_KAYDIM,
         "tetkik:goruntule": Kapsam.KENDI_KAYDIM,
+        "klinik_onay:goruntule": Kapsam.KENDI_KAYDIM,
         "nobet:goruntule": Kapsam.KENDI_KAYDIM,
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
     },
@@ -107,6 +132,9 @@ def kapsam_getir(rol: Rol | str, kaynak_aksiyon: str) -> Kapsam:
     rol_izinleri = IZIN_MATRISI.get(rol, {})
     if "*" in rol_izinleri:
         return rol_izinleri["*"]
+    # ADMIN wildcard dışında açık bypass izni
+    if kaynak_aksiyon == "personel:onay_bypass" and rol == Rol.ADMIN:
+        return Kapsam.GLOBAL
     return rol_izinleri.get(kaynak_aksiyon, Kapsam.YOK)
 
 
@@ -115,7 +143,9 @@ def izin_var_mi(rol: Rol | str, kaynak_aksiyon: str) -> bool:
 
 
 def tum_izin_kodlari() -> list[str]:
-    kodlar: set[str] = set()
+    kodlar: set[str] = {
+        "personel:onay_bypass",
+    }
     for matris in IZIN_MATRISI.values():
         for kod in matris:
             if kod != "*":

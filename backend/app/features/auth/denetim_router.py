@@ -1,4 +1,4 @@
-"""Denetim kaydı listeleme (ADMIN)."""
+"""Denetim kaydı listeleme (ADMIN + BASHEKIM denetim:goruntule)."""
 
 from datetime import datetime, timedelta, timezone
 
@@ -8,8 +8,7 @@ from sqlmodel import Session, col, select
 
 from app.core.config import get_settings
 from app.core.db import get_session
-from app.core.enums import Rol
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.features.auth.models import DenetimKaydi
 
 router = APIRouter()
@@ -33,7 +32,7 @@ def list_denetim(
     aksiyon: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
-    _user=Depends(require_role(Rol.ADMIN)),
+    _user=Depends(require_permission("denetim:goruntule")),
 ):
     retention = settings.AUDIT_RETENTION_DAYS
     q = select(DenetimKaydi)

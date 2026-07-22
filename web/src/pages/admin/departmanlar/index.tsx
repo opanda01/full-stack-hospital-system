@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
 import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
@@ -20,9 +20,9 @@ type Departman = {
 export function DepartmanYonetimiPage() {
   const qc = useQueryClient();
   const location = useLocation();
-  const basePath = location.pathname.replace(/\/$/, "");
   const roleRoot =
     "/" + (location.pathname.split("/").filter(Boolean)[0] ?? "admin");
+  const listPath = `${roleRoot}/departmanlar`;
   const [ad, setAd] = useState("");
   const [birimId, setBirimId] = useState("");
   const [birimAd, setBirimAd] = useState("");
@@ -181,7 +181,7 @@ export function DepartmanYonetimiPage() {
     >
       <p className="mb-4 text-sm text-muted-foreground">
         {
-          "\u00d6nce birime t\u0131klay\u0131n; alt\u0131ndaki departmanlar a\u00e7\u0131l\u0131r. Departman ad\u0131na t\u0131klay\u0131nca personel ve k\u0131sa bilgilere gidersiniz."
+          "Önce birime tıklayın; altındaki departmanlar açılır. Departman adına tıklayınca detay penceresi açılır — kapatınca liste kaldığınız yerde kalır."
         }
       </p>
 
@@ -371,7 +371,7 @@ export function DepartmanYonetimiPage() {
                       className="flex flex-wrap items-center justify-between gap-2 py-3"
                     >
                       <Link
-                        to={`${basePath}/${d.id}`}
+                        to={`${listPath}/${d.id}`}
                         className="font-medium hover:underline"
                         style={{ color: "var(--nav-active-bg)" }}
                       >
@@ -560,6 +560,9 @@ export function DepartmanYonetimiPage() {
           if (pendingDelete) deleteMut.mutate(pendingDelete.id);
         }}
       />
+
+      {/* Detay route: liste mount kalır, accordion state korunur */}
+      <Outlet />
     </AppShell>
   );
 }

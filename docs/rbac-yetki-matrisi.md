@@ -87,3 +87,11 @@ python -m app.core.seed_cli
 ```
 
 Demo kullanıcılar oluşturulur; izinler kod matrisinden gelir (DB `rol_izinler` senkronu yoktur).
+
+## 6. Başhekim ayrımı (2026-07)
+
+- `BASHEKIM` ≠ `MUDUR`: bkz. [`docs/bashekim-izin-envanteri.md`](bashekim-izin-envanteri.md)
+- Personel erişim: `erisim_durumu` tek kaynak; `aktif_mi` transition ile türetilir
+- Onay: `personel:onayla`; Admin bypass: `personel:onay_bypass` + `PERSONEL_ERISIM_ONAY_BYPASS` audit + zorunlu gerekçe
+- PHI detay okuma: `KAYIT_GORUNTULEME` denetim event
+- Denetim listesi: `denetim:goruntule` (ADMIN `*` + BASHEKIM)

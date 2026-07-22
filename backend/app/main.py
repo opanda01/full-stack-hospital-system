@@ -10,10 +10,17 @@ from app.core.security import require_role
 
 from app.features.auth.denetim_router import router as denetim_router
 from app.features.auth.router import router as auth_router
+from app.features.bashekim.router import router as bashekim_router
 from app.features.departmanlar.router import router as departmanlar_router
 from app.features.doktorlar.router import router as doktorlar_router
+from app.features.doner_sermaye.router import router as doner_router
+from app.features.eczane.router import router as eczane_router
+from app.features.entegrasyonlar.router import router as entegrasyon_router
+from app.features.faturalandirma.router import router as fatura_router
 from app.features.hastalar.router import router as hastalar_router
+from app.features.klinik_onay.router import router as klinik_onay_router
 from app.features.kullanicilar.router import router as kullanicilar_router
+from app.features.mhrs.router import router as mhrs_router
 from app.features.muayeneler.router import router as muayeneler_router
 from app.features.nobet_cizelgesi.router import router as nobet_cizelgesi_router
 from app.features.personel.router import router as personel_router
@@ -22,6 +29,7 @@ from app.features.rbac.router import router as rbac_router
 from app.features.sikayet_oneri.router import router as sikayet_oneri_router
 from app.features.temizlik_gorevleri.router import router as temizlik_gorevleri_router
 from app.features.tetkikler.router import router as tetkikler_router
+from app.features.yetki_devri.router import router as yetki_devri_router
 
 settings = get_settings()
 
@@ -78,3 +86,11 @@ app.include_router(
     temizlik_gorevleri_router, prefix="/temizlik-gorevleri", tags=["temizlik_gorevleri"]
 )
 app.include_router(sikayet_oneri_router, prefix="/sikayet-oneri", tags=["sikayet_oneri"])
+app.include_router(bashekim_router, prefix="/bashekim", tags=["bashekim"])
+app.include_router(mhrs_router, prefix="/mhrs", tags=["mhrs"])
+app.include_router(entegrasyon_router, prefix="/entegrasyonlar", tags=["entegrasyonlar"])
+app.include_router(klinik_onay_router, prefix="/klinik-onay", tags=["klinik_onay"])
+app.include_router(eczane_router, prefix="/eczane", tags=["eczane"])
+app.include_router(fatura_router, prefix="/faturalar", tags=["faturalandirma"])
+app.include_router(doner_router, prefix="/doner-sermaye", tags=["doner_sermaye"])
+app.include_router(yetki_devri_router, prefix="/yetki-devri", tags=["yetki_devri"])

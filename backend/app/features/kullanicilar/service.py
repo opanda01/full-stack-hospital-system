@@ -1,10 +1,14 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.core.enums import Rol
+from app.core.enums import ErisimDurumu, Rol
 from app.core.security import hash_password
 from app.features.kullanicilar.models import Kullanici
 from app.features.kullanicilar.schemas import KullaniciCreate, KullaniciUpdate
+from app.features.personel.erisim_service import (
+    apply_erisim_durumu,
+    set_durum_via_erisim,
+)
 
 
 def list_kullanicilar(
@@ -43,8 +47,9 @@ def create_kullanici(session: Session, data: KullaniciCreate) -> Kullanici:
         telefon=data.telefon,
         sifre_hash=hash_password(data.sifre),
         rol=data.rol,
-        aktif_mi=True,
     )
+    # Admin hard-create: onaylı kabul (acil teknik hesap)
+    apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
     session.add(kullanici)
     session.commit()
     session.refresh(kullanici)
@@ -74,12 +79,7 @@ def set_rol(session: Session, kullanici_id: int, rol: Rol) -> Kullanici:
 
 
 def set_durum(session: Session, kullanici_id: int, aktif_mi: bool) -> Kullanici:
-    kullanici = get_kullanici(session, kullanici_id)
-    kullanici.aktif_mi = aktif_mi
-    session.add(kullanici)
-    session.commit()
-    session.refresh(kullanici)
-    return kullanici
+    return set_durum_via_erisim(session, kullanici_id, aktif_mi)
 
 
 def deactivate_kullanici(session: Session, kullanici_id: int) -> Kullanici:

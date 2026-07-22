@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Denetim = {
   id: number;
@@ -15,6 +17,7 @@ type Denetim = {
 };
 
 export function AdminDenetimPage() {
+  const root = roleRootFromPath(useLocation().pathname);
   const [aksiyon, setAksiyon] = useState("");
   const [kaynak, setKaynak] = useState("");
 
@@ -34,9 +37,9 @@ export function AdminDenetimPage() {
   }, [data, aksiyon, kaynak]);
 
   return (
-    <AppShell title="Denetim kayıtları" links={[{ to: "/admin", label: "Admin" }]}>
+    <AppShell title="Denetim kayıtları" links={[{ to: root, label: "Ana" }]}>
       <p className="mb-4 text-sm text-muted-foreground">
-        Son işlem kayıtları (saklama süresi sunucu ayarına bağlıdır).
+        Son işlem kayıtları (PHI görüntüleme, erişim onay/bypass dahil).
       </p>
       <div className="mb-4 flex flex-wrap gap-3">
         <label className="space-y-1 text-sm">
