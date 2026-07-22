@@ -13,10 +13,13 @@ router = APIRouter()
 @router.get("/", response_model=list[TetkikRead])
 def list_tetkikler(
     request: Request,
+    hasta_id: int | None = None,
     current_user: Kullanici = Depends(require_permission("tetkik:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return tetkik_service.listele(session, current_user, request.state.kapsam)
+    return tetkik_service.listele(
+        session, current_user, request.state.kapsam, hasta_id=hasta_id
+    )
 
 
 @router.get("/{tetkik_id}", response_model=TetkikRead)

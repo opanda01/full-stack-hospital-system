@@ -91,7 +91,7 @@ type Mar = {
 };
 type NotRow = { id: number; metin: string; yazar_id: number; created_at: string };
 
-type DetayTab = "vital" | "mar" | "servis" | "konsultasyon" | "notlar";
+type DetayTab = "vital" | "mar" | "servis" | "konsultasyon" | "notlar" | "tetkik";
 type IslemDialog = { tip: "NAKIL" } | { tip: "IZIN" } | { tip: "DOKTOR_DEGISTIR" } | null;
 
 function rowClass(durum: string) {
@@ -216,6 +216,18 @@ export function HemsireServisTakipPage() {
     enabled: selectedId != null && tab === "notlar",
     queryFn: async () =>
       (await api.get<NotRow[]>(`/yatis/kayitlar/${selectedId}/notlar`)).data,
+  });
+
+  const { data: hastaTetkikler = [] } = useQuery({
+    queryKey: ["yatis-tetkik", detay?.hasta_id],
+    enabled: tab === "tetkik" && !!detay?.hasta_id,
+    queryFn: async () =>
+      (
+        await api.get<{ id: number; tetkik_turu: string; durum: string }[]>(
+          "/tetkikler/",
+          { params: { hasta_id: detay!.hasta_id } },
+        )
+      ).data,
   });
 
   const { data: yataklar = [] } = useQuery({
@@ -531,6 +543,7 @@ export function HemsireServisTakipPage() {
                 ["mar", "İlaç Uygulama"],
                 ["servis", "Servis Hareketleri"],
                 ["konsultasyon", "Konsültasyonlar"],
+                ["tetkik", "Tetkikler"],
                 ["notlar", "Notlar"],
               ] as const
             ).map(([key, label]) => (
@@ -692,6 +705,19 @@ export function HemsireServisTakipPage() {
               ))}
               {!konsultasyonlar.length && (
                 <li className="text-muted-foreground">Kayıt yok</li>
+              )}
+            </ul>
+          )}
+
+          {tab === "tetkik" && (
+            <ul className="space-y-2 text-sm">
+              {hastaTetkikler.map((t) => (
+                <li key={t.id} className="rounded border px-3 py-2">
+                  {t.tetkik_turu} — {t.durum}
+                </li>
+              ))}
+              {!hastaTetkikler.length && (
+                <li className="text-muted-foreground">Tetkik yok</li>
               )}
             </ul>
           )}

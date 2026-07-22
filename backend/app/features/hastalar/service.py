@@ -1,8 +1,9 @@
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, KonsultasyonDurumu, Rol
-from app.core.lookups import doktor_getir
+from app.core.lookups import doktor_getir, personel_getir
 from app.core.permissions import Kapsam
 from app.core.security import hash_password
 from app.features.hastalar.models import Hasta
@@ -21,6 +22,102 @@ from app.features.tetkikler.models import Tetkik
 
 def list_hastalar(session: Session) -> list[Hasta]:
     return list(session.exec(select(Hasta).order_by(Hasta.id)).all())
+
+
+def hemsire_erisebilir_hasta_idler(
+    session: Session, current_user: Kullanici, *, sadece_yatan: bool = False
+) -> set[int]:
+    """Departman kapsamı: aktif yatış (servis departmanı / sorumlu hemşire) ∪ randevu."""
+    personel = personel_getir(session, current_user.id)
+    ids: set[int] = set()
+
+    from app.features.yatis.models import Servis, YatisKaydi
+
+    yatis_q = select(YatisKaydi).where(YatisKaydi.aktif_mi == True)  # noqa: E712
+    for y in session.exec(yatis_q).all():
+        if y.sorumlu_hemsire_id == personel.id:
+            ids.add(y.hasta_id)
+            continue
+        if personel.departman_id is None:
+            continue
+        servis = session.get(Servis, y.servis_id)
+        if servis and servis.departman_id == personel.departman_id:
+            ids.add(y.hasta_id)
+
+    if not sadece_yatan and personel.departman_id is not None:
+        for hid in session.exec(
+            select(Randevu.hasta_id).where(
+                Randevu.departman_id == personel.departman_id
+            )
+        ).all():
+            if hid is not None:
+                ids.add(hid)
+
+    return ids
+
+
+def search_hastalar(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    q: str | None = None,
+    kapsam_filtre: str | None = None,
+    limit: int = 50,
+) -> list[HastaRead]:
+    """q: TC / ad / soyad / protokol; kapsam_filtre: yatan | tumu."""
+    sadece_yatan = (kapsam_filtre or "").lower() == "yatan"
+    rol = current_user.rol
+
+    if rol in (Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR, Rol.IDARI_PERSONEL):
+        allowed: set[int] | None = None
+        if sadece_yatan:
+            from app.features.yatis.models import YatisKaydi
+
+            allowed = {
+                hid
+                for hid in session.exec(
+                    select(YatisKaydi.hasta_id).where(YatisKaydi.aktif_mi == True)  # noqa: E712
+                ).all()
+                if hid is not None
+            }
+    elif rol in (Rol.HEMSIRE, Rol.EBE):
+        allowed = hemsire_erisebilir_hasta_idler(
+            session, current_user, sadece_yatan=sadece_yatan
+        )
+    else:
+        raise HTTPException(status_code=403, detail="Hasta arama yetkiniz yok")
+
+    query = select(Hasta).join(Kullanici, Kullanici.id == Hasta.kullanici_id)
+    if allowed is not None:
+        if not allowed:
+            return []
+        query = query.where(Hasta.id.in_(allowed))
+
+    qn = (q or "").strip()
+    if qn:
+        like = f"%{qn}%"
+        protokol_ids: set[int] = set()
+        try:
+            from app.features.yatis.models import YatisKaydi
+
+            for hid in session.exec(
+                select(YatisKaydi.hasta_id).where(YatisKaydi.protokol_no.ilike(like))
+            ).all():
+                if hid is not None:
+                    protokol_ids.add(hid)
+        except Exception:
+            pass
+        conds = [
+            Hasta.tc_kimlik_no.ilike(like),
+            Kullanici.ad.ilike(like),
+            Kullanici.soyad.ilike(like),
+        ]
+        if protokol_ids:
+            conds.append(Hasta.id.in_(protokol_ids))
+        query = query.where(or_(*conds))
+
+    rows = session.exec(query.order_by(Hasta.id).limit(limit)).all()
+    return [_hasta_to_read(session, h) for h in rows]
 
 
 def get_hasta(session: Session, hasta_id: int) -> Hasta:
@@ -86,8 +183,6 @@ def doktor_erisebilir_hasta_idler(
         pass
 
     try:
-        from sqlalchemy import or_
-
         from app.features.konsultasyon.models import KonsultasyonIstegi
 
         aktif = [
@@ -142,6 +237,14 @@ def list_benim_hastalar(
 ) -> list[HastaRead]:
     if kapsam == Kapsam.GLOBAL:
         return [_hasta_to_read(session, h) for h in list_hastalar(session)]
+    if kapsam == Kapsam.DEPARTMANIM:
+        ids = hemsire_erisebilir_hasta_idler(session, current_user)
+        if not ids:
+            return []
+        rows = session.exec(
+            select(Hasta).where(Hasta.id.in_(ids)).order_by(Hasta.id)
+        ).all()
+        return [_hasta_to_read(session, h) for h in rows]
     if kapsam != Kapsam.KENDI_KAYDIM:
         raise HTTPException(status_code=403, detail="Hasta listesi için yetkiniz yok")
     if current_user.rol != Rol.DOKTOR:
@@ -166,6 +269,12 @@ def get_hasta_scoped(
         return _hasta_to_read(session, h)
     if kapsam == Kapsam.KENDI_KAYDIM:
         if not doktor_hasta_erisim_var_mi(session, current_user, hasta_id):
+            raise HTTPException(
+                status_code=403, detail="Bu hastaya erişim yetkiniz yok"
+            )
+        return _hasta_to_read(session, h)
+    if kapsam == Kapsam.DEPARTMANIM:
+        if hasta_id not in hemsire_erisebilir_hasta_idler(session, current_user):
             raise HTTPException(
                 status_code=403, detail="Bu hastaya erişim yetkiniz yok"
             )

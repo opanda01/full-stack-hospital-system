@@ -51,6 +51,11 @@ import { HemsireServisTakipPage } from "@/pages/hemsire/servis-takip";
 import { HemsireIlacTalepPage } from "@/pages/hemsire/ilac-talep";
 import { HemsireGorevlerPage } from "@/pages/hemsire/gorevler";
 import { HemsireVardiyaDevirPage } from "@/pages/hemsire/vardiya-devir";
+import { HemsireHastaAramaPage } from "@/pages/hemsire/hasta-arama";
+import { HemsireOrderTakipPage } from "@/pages/hemsire/order-takip";
+import { HemsireTetkiklerPage } from "@/pages/hemsire/tetkikler";
+import { HemsireEpikrizPage } from "@/pages/hemsire/epikriz";
+import { DoktorEpikrizPage } from "@/pages/doktor/epikriz";
 
 import { LaborantDashboardPage } from "@/pages/laborant/dashboard";
 import { LaborantBekleyenPage } from "@/pages/laborant/bekleyen";
@@ -208,6 +213,7 @@ export function AppRouter() {
           <Route path="muayene" element={<DoktorMuayeneEkraniPage />} />
           <Route path="tetkiklerim" element={<DoktorTetkiklerimPage />} />
           <Route path="tetkik-iste" element={<Navigate to="/doktor/tetkiklerim" replace />} />
+          <Route path="epikriz" element={<DoktorEpikrizPage />} />
           <Route path="hastalarim" element={<DoktorHastalarimPage />} />
           <Route path="receteler" element={<DoktorRecetelerPage />} />
           <Route path="sevler" element={<DoktorSevlerPage />} />
@@ -223,6 +229,10 @@ export function AppRouter() {
         <Route path="/hemsire" element={<RoleLayoutRoute rol="HEMSIRE" />}>
           <Route index element={<HemsireDashboardPage />} />
           <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
+          <Route path="order-takip" element={<HemsireOrderTakipPage />} />
+          <Route path="tetkikler" element={<HemsireTetkiklerPage />} />
+          <Route path="epikriz" element={<HemsireEpikrizPage />} />
           <Route path="ilac-talep" element={<HemsireIlacTalepPage />} />
           <Route path="gorevler" element={<HemsireGorevlerPage />} />
           <Route path="vardiya-devir" element={<HemsireVardiyaDevirPage />} />

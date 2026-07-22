@@ -487,6 +487,10 @@ def test_hemsire_yatis_izinler_matrisi():
     assert kapsam_getir(Rol.HEMSIRE, "yatis:islem") == Kapsam.GLOBAL
     assert kapsam_getir(Rol.HEMSIRE, "ilac_talep:olustur") == Kapsam.GLOBAL
     assert kapsam_getir(Rol.HEMSIRE, "eczane:goruntule") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.HEMSIRE, "hasta:goruntule") == Kapsam.DEPARTMANIM
+    assert kapsam_getir(Rol.HEMSIRE, "tetkik:goruntule") == Kapsam.DEPARTMANIM
+    assert kapsam_getir(Rol.HEMSIRE, "epikriz:olustur") == Kapsam.GLOBAL
+    assert kapsam_getir(Rol.DOKTOR, "epikriz:onayla") == Kapsam.KENDI_KAYDIM
     assert kapsam_getir(Rol.LABORANT, "yatis:goruntule") == Kapsam.YOK
 
 

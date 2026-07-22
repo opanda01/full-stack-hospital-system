@@ -20,6 +20,7 @@ from app.features.yatis.schemas import (
     HastaNotRead,
     IlacUygulamaCreate,
     IlacUygulamaDurumPatch,
+    IlacUygulamaListeItem,
     IlacUygulamaRead,
     IzinHareketRead,
     KonsultasyonOzet,
@@ -185,6 +186,21 @@ def post_vital(
 ):
     return klinik_service.create_vital(
         session, yatis_id, body.model_dump(), current_user
+    )
+
+
+@router.get(
+    "/ilac-uygulamalari",
+    response_model=list[IlacUygulamaListeItem],
+)
+def get_ilac_uygulamalari_toplu(
+    durum: str | None = Query(default=None),
+    kapsam: str | None = Query(default="benim"),
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("ilac_uygulama:goruntule")),
+):
+    return klinik_service.list_ilac_uygulamalari_toplu(
+        session, current_user, durum=durum, kapsam=kapsam
     )
 
 

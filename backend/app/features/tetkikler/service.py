@@ -2,18 +2,25 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import Rol
-from app.core.lookups import doktor_getir, hasta_getir, personel_getir
+from app.core.lookups import doktor_getir, hasta_getir
 from app.core.permissions import Kapsam
 from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.features.hastalar import service as hasta_service
 from app.features.kullanicilar.models import Kullanici
 from app.features.tetkikler.models import Tetkik
 from app.features.tetkikler.schemas import TetkikCreate
 
 
 def listele(
-    session: Session, current_user: Kullanici, kapsam: Kapsam
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    hasta_id: int | None = None,
 ) -> list[Tetkik]:
     query = select(Tetkik)
+    if hasta_id is not None:
+        query = query.where(Tetkik.hasta_id == hasta_id)
 
     def kendi(q):
         if current_user.rol == Rol.DOKTOR:
@@ -23,15 +30,25 @@ def listele(
             hasta = hasta_getir(session, current_user.id)
             return q.where(Tetkik.hasta_id == hasta.id)
         if current_user.rol == Rol.LABORANT:
-            # Laborant bekleyen istekleri ve sonuçlandırdıklarını görür
             return q
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Kendi kaydı kapsamı bu rol için tanımlı değil",
         )
 
+    def departman(q):
+        ids = hasta_service.hemsire_erisebilir_hasta_idler(
+            session, current_user, sadece_yatan=False
+        )
+        if not ids:
+            return q.where(Tetkik.id == -1)
+        return q.where(Tetkik.hasta_id.in_(ids))
+
     query = kullanici_kapsamli_filtre_uygula(
-        query, kapsam, kendi_kaydim_filtresi=kendi
+        query,
+        kapsam,
+        kendi_kaydim_filtresi=kendi,
+        departmanim_filtresi=departman,
     )
     return list(session.exec(query).all())
 
@@ -40,6 +57,8 @@ def tetkik_erisim_kontrolu(
     session: Session, tetkik: Tetkik, current_user: Kullanici
 ) -> None:
     if current_user.rol == Rol.ADMIN:
+        return
+    if current_user.rol in (Rol.BASHEKIM, Rol.MUDUR):
         return
     if current_user.rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
@@ -50,7 +69,11 @@ def tetkik_erisim_kontrolu(
         if tetkik.hasta_id == hasta.id:
             return
     elif current_user.rol == Rol.LABORANT:
-        return  # sonuç girme yetkisi ayrı endpoint'te
+        return
+    elif current_user.rol in (Rol.HEMSIRE, Rol.EBE):
+        ids = hasta_service.hemsire_erisebilir_hasta_idler(session, current_user)
+        if tetkik.hasta_id in ids:
+            return
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Bu tetkike erişiminiz yok.",

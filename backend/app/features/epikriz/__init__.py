@@ -1,0 +1,1 @@
+"""Epikriz (yatış özeti) feature."""

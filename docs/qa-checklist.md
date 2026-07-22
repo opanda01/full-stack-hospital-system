@@ -52,4 +52,13 @@
 - [ ] `/hemsire/departman-randevulari` canlı liste
 - [ ] Laborant `GET /yatis/kayitlar` → 403
 
+## Faz I — Hemşire klinik görünürlük
+- [ ] `/hemsire/hasta-arama`: Ad/TC/protokol ara; detay + tetkik/epikriz link
+- [ ] `/hemsire/epikriz`: taslak oluştur; doktor `/doktor/epikriz` onayla
+- [ ] `/hemsire/tetkikler`: salt okunur liste; servis-takip Tetkikler sekmesi
+- [ ] `/hemsire/order-takip`: TETKIK/MAR/ILAC_TALEP; MAR Verildi/Atlandı
+- [ ] Departman randevuları: hasta adı, bugün/hafta filtre, oluştur
+- [ ] Dashboard “Bekleyen order” kartı dolu
+- [ ] HEMSIRE `GET /tetkikler/` 200 (departman kapsamı)
+
 Şifre (tümü): Test1234!

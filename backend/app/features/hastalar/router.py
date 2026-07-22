@@ -39,8 +39,10 @@ def list_benim_hastalar(
 
 @router.get("/", response_model=list[HastaRead])
 def list_hastalar(
+    q: str | None = None,
+    kapsam: str | None = None,
     session: Session = Depends(get_session),
-    _user=Depends(
+    current_user: Kullanici = Depends(
         require_role(
             Rol.ADMIN,
             Rol.BASHEKIM,
@@ -51,6 +53,10 @@ def list_hastalar(
         )
     ),
 ):
+    if q or kapsam:
+        return hasta_service.search_hastalar(
+            session, current_user, q=q, kapsam_filtre=kapsam
+        )
     return [
         hasta_service._hasta_to_read(session, h)
         for h in hasta_service.list_hastalar(session)

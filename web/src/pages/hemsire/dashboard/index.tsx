@@ -2,6 +2,7 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardList,
+  ListOrdered,
   ListTodo,
   Pill,
   Users,
@@ -14,6 +15,9 @@ type YatisListeItem = { id: number };
 type Gorev = { id: number; tamamlandi_mi: boolean };
 type Randevu = { id: number };
 type Nobet = { id: number; tarih: string };
+type Tetkik = { id: number; durum: string };
+type Mar = { id: number; durum: string };
+type Talep = { id: number; durum: string };
 
 export function HemsireDashboardPage() {
   const { data: yatislar = [] } = useQuery({
@@ -29,7 +33,7 @@ export function HemsireDashboardPage() {
   const { data: talepler = [] } = useQuery({
     queryKey: ["ilac-talepleri-dashboard"],
     queryFn: async () =>
-      (await api.get<{ id: number; durum: string }[]>("/ilac-talepleri/")).data,
+      (await api.get<Talep[]>("/ilac-talepleri/")).data,
   });
 
   const { data: gorevler = [] } = useQuery({
@@ -60,8 +64,38 @@ export function HemsireDashboardPage() {
     },
   });
 
+  const { data: tetkikler = [] } = useQuery({
+    queryKey: ["hemsire-tetkik-dash"],
+    queryFn: async () => {
+      try {
+        return (await api.get<Tetkik[]>("/tetkikler/")).data;
+      } catch {
+        return [] as Tetkik[];
+      }
+    },
+  });
+
+  const { data: marlar = [] } = useQuery({
+    queryKey: ["hemsire-mar-dash"],
+    queryFn: async () => {
+      try {
+        return (
+          await api.get<Mar[]>("/yatis/ilac-uygulamalari", {
+            params: { durum: "BEKLIYOR", kapsam: "benim" },
+          })
+        ).data;
+      } catch {
+        return [] as Mar[];
+      }
+    },
+  });
+
   const bekleyenIlac = talepler.filter((t) => t.durum === "ONAY_BEKLIYOR").length;
   const bekleyenGorev = gorevler.filter((g) => !g.tamamlandi_mi).length;
+  const bekleyenOrder =
+    marlar.length +
+    tetkikler.filter((t) => t.durum === "ISTEK_ALINDI").length +
+    bekleyenIlac;
 
   return (
     <RoleDashboard
@@ -71,6 +105,12 @@ export function HemsireDashboardPage() {
           value: yatislar.length,
           icon: Users,
           to: "/hemsire/servis-takip",
+        },
+        {
+          label: "Bekleyen order",
+          value: bekleyenOrder,
+          icon: ListOrdered,
+          to: "/hemsire/order-takip",
         },
         {
           label: "Bekleyen görev",

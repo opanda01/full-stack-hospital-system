@@ -19,5 +19,6 @@ class RandevuRead(BaseModel):
     tarih_saat: datetime
     durum: str
     notlar: str | None = None
+    hasta_ad_soyad: str | None = None
 
     model_config = {"from_attributes": True}

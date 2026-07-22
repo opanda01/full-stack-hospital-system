@@ -40,6 +40,7 @@ from app.features.yatis.models import (
 def seed_hemsire_yatis(session: Session) -> None:
     if session.exec(select(Servis).where(Servis.kod == "DAHILI-3")).first():
         seed_hemsire_klinik(session)
+        seed_hemsire_klinik_moduller(session)
         return
 
     dep_dahili = session.exec(
@@ -252,11 +253,13 @@ def seed_hemsire_yatis(session: Session) -> None:
 
     session.commit()
     seed_hemsire_klinik(session)
+    seed_hemsire_klinik_moduller(session)
 
 
 def seed_hemsire_klinik(session: Session) -> None:
     """Vital/MAR/görev/devir/bildirim — ayrı idempotent."""
     if session.exec(select(VitalBulgu)).first():
+        seed_hemsire_klinik_moduller(session)
         return
 
     yatis = session.exec(select(YatisKaydi).where(YatisKaydi.aktif_mi == True)).first()  # noqa: E712
@@ -366,4 +369,90 @@ def seed_hemsire_klinik(session: Session) -> None:
             okundu_mu=False,
         )
     )
+    session.commit()
+    seed_hemsire_klinik_moduller(session)
+
+
+def seed_hemsire_klinik_moduller(session: Session) -> None:
+    """Epikriz + tetkik demo — idempotent."""
+    from app.core.enums import EpikrizDurumu
+    from app.features.epikriz.models import Epikriz
+    from app.features.tetkikler.models import Tetkik
+
+    if session.exec(select(Epikriz)).first():
+        return
+
+    yatislar = list(
+        session.exec(select(YatisKaydi).where(YatisKaydi.aktif_mi == True)).all()  # noqa: E712
+    )
+    hemsire_user = session.exec(
+        select(Kullanici).where(Kullanici.email == "hemsire@hastane.example.com")
+    ).first()
+    doktorlar = list(session.exec(select(Doktor)).all())
+    if not yatislar or hemsire_user is None or not doktorlar:
+        return
+
+    y0 = yatislar[0]
+    y1 = yatislar[1] if len(yatislar) > 1 else yatislar[0]
+    dok = doktorlar[0]
+
+    session.add(
+        Epikriz(
+            yatis_id=y0.id,
+            hasta_id=y0.hasta_id,
+            yazar_id=hemsire_user.id,
+            durum=EpikrizDurumu.TASLAK.value,
+            sikayet_oyku="SEED: Göğüs ağrısı ve halsizlik.",
+            fizik_muayene="SEED: Vital stabil.",
+            tani="SEED: Takipte.",
+            tedavi_ozeti="SEED: Destek tedavi.",
+            taburcu_onerileri=None,
+        )
+    )
+    session.add(
+        Epikriz(
+            yatis_id=y1.id,
+            hasta_id=y1.hasta_id,
+            yazar_id=hemsire_user.id,
+            durum=EpikrizDurumu.ONAYLANDI.value,
+            sikayet_oyku="SEED: Post-op takip.",
+            tani="SEED: Operasyon sonrası iyileşme.",
+            tedavi_ozeti="SEED: Analjezi + antibiyotik.",
+            taburcu_onerileri="SEED: Kontrole 1 hafta sonra.",
+            onaylayan_doktor_id=dok.id,
+            onaylandi_at=datetime.now(timezone.utc),
+        )
+    )
+
+    existing_tetkik = session.exec(
+        select(Tetkik).where(Tetkik.tetkik_turu == "SEED Hemogram")
+    ).first()
+    if not existing_tetkik:
+        session.add(
+            Tetkik(
+                hasta_id=y0.hasta_id,
+                istek_yapan_doktor_id=dok.id,
+                tetkik_turu="SEED Hemogram",
+                durum="ISTEK_ALINDI",
+            )
+        )
+        session.add(
+            Tetkik(
+                hasta_id=y0.hasta_id,
+                istek_yapan_doktor_id=dok.id,
+                tetkik_turu="SEED Biyokimya",
+                durum="SONUCLANDI",
+                sonuc_dosyasi="/seed/biyokimya.pdf",
+            )
+        )
+        if y1.hasta_id != y0.hasta_id:
+            session.add(
+                Tetkik(
+                    hasta_id=y1.hasta_id,
+                    istek_yapan_doktor_id=dok.id,
+                    tetkik_turu="SEED Akciğer grafisi",
+                    durum="ISTEK_ALINDI",
+                )
+            )
+
     session.commit()
