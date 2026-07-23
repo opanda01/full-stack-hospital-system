@@ -12,13 +12,11 @@
   },
   "pnpm": {
     "overrides": {
+      "@expo/metro-runtime": "~6.1.2",
       "tar": "7.5.19"
     }
   },
   "devDependencies": {
     "turbo": "^2.3.3"
-  },
-  "dependencies": {
-    "pnpm": "^11.15.1"
   }
 }

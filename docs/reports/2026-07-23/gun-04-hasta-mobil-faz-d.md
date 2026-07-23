@@ -1,77 +1,111 @@
-# Staj Defteri — Gün 4: Hasta Mobil İstemci (Faz D)
+# Staj Defteri — Gün 4: Hasta Mobil İstemci (Faz D) + Expo SDK 54
 
 **Tarih:** 23 Temmuz 2026  
 **Proje:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS  
-**Kapsam:** Expo hasta mobil uygulamasının OTP auth, oturum yaşam döngüsü, randevu ve tetkik akışlarıyla backend HASTA RBAC’ine hizalanması
+**Kapsam:** Hasta mobil Faz D (OTP auth, oturum, randevu, tetkik); fiziksel cihazda Expo Go çalıştırma; monorepo Metro sorunları; Expo SDK 52 → 54 yükseltmesi
 
 ---
 
 ### 1. Günün Amacı
 
-Personel web panelleri (Faz F–K) oturmuşken, ROADMAP **Faz D** kapsamında hasta mobil istemcisi iskeletten çıkarıldı. Kritik sapma giderildi: mobil hâlâ e-posta/şifre ve deprecated `/auth/register` kullanıyordu; backend ise salt-hasta için OTP zorunlu kılıyordu.
+Personel web panelleri (Faz F–K) tamamlandıktan sonra ROADMAP **Faz D** ile hasta mobil istemcisine geçildi. Hedef: iskelet uygulamayı backend’deki OTP + HASTA RBAC ile hizalamak ve aynı ağdaki fiziksel telefonda Expo Go ile smoke edilebilir hale getirmek.
 
-Branch: `feature/hasta-mobil-faz-d` (`main` güncelinden).
-
----
-
-### 2. Kimlik Doğrulama (OTP)
-
-#### Backend (mevcut)
-
-- `POST /auth/otp/gonder` / `POST /auth/otp/dogrula` (`GIRIS` | `KAYIT`)
-- Salt-hasta şifre login → 403 (“OTP akışını kullanın”)
-- Token claim: `oturum_tipi=hasta` → izin matrisi her zaman `HASTA`
-
-#### Mobil
-
-- `GirisYapForm` / `KayitOlForm`: telefon + TC (+ kayıtta ad/soyad/KVKK) → OTP → token
-- E-posta/şifre formu ve `/auth/register` çağrısı kaldırıldı
-- Demo: TC `10000000006`, telefon `05551234567` (seed’de telefon alanı dolduruldu); OTP kodu SMS stub / konsol
+| İş | Detay |
+|----|--------|
+| Branch | `feature/hasta-mobil-faz-d` (`main` güncelinden) |
+| PR | [#15](https://github.com/opanda01/full-stack-hospital-system/pull/15) — OTP / randevu / tetkik (ilk commit) |
+| Sonraki yerel değişiklikler | SDK 54, `@expo/metro-runtime` pin, Metro monorepo config (commit bekliyor) |
 
 ---
 
-### 3. Oturum Yaşam Döngüsü
+### 2. Faz D — Ürün / Kod
 
-- `expo-secure-store` ile access + refresh + rol saklama
-- Zustand `hydrate` root layout’ta; token yoksa `(auth)`, varsa `(hasta)` tabs
-- `apiFetch`: 401 → `/auth/refresh` retry; başarısızsa clear
-- Profil **Çıkış**: `POST /auth/logout` + SecureStore temizliği
+#### Kritik sapma (öncesi)
+
+Mobil e-posta+şifre ve deprecated `/auth/register` kullanıyordu; backend salt-hasta için OTP zorunlu (şifre login → 403).
+
+#### Kimlik doğrulama
+
+- `GirisYapForm` / `KayitOlForm`: telefon + TC (+ kayıtta ad/soyad/KVKK) → OTP → `oturum_tipi=hasta`
+- Demo: TC `10000000006`, telefon `05551234567` (seed); OTP kodu SMS stub / konsol
+
+#### Oturum
+
+- `expo-secure-store` + Zustand hydrate
+- `apiFetch`: 401 → refresh retry; profil çıkış → `/auth/logout`
+
+#### Klinik ekranlar
+
+| Ekran | API |
+|-------|-----|
+| Randevularım | `GET/DELETE /randevular/` |
+| Randevu Al | departman → doktor (filtre) → `musait` → `POST /randevular/` |
+| Tetkikler | `GET /tetkikler/` |
+| Profil | `GET /auth/me` |
+
+#### Dokümantasyon (Faz D)
+
+- `docs/ROADMAP.md` — Faz D uygulandı
+- `docs/qa-checklist.md` — mobil OTP maddeleri
+- `README.md` — OTP / LAN API notları
 
 ---
 
-### 4. Klinik Hasta Akışları
+### 3. Fiziksel Cihaz + LAN
 
-| Ekran | API | Not |
-|-------|-----|-----|
-| Randevularım | `GET/DELETE /randevular/` | KENDI_KAYDIM; pull-to-refresh; iptal |
-| Randevu Al | `/hastalar/ben`, `/departmanlar/`, `/doktorlar/`, `/randevular/musait`, `POST /randevular/` | Doktor listesi seçilen `departman_id` ile client-side filtre |
-| Tetkikler | `GET /tetkikler/` | Durum + sonuç dosyası / bekliyor |
-| Profil | `GET /auth/me` | Rol, KVKK, çıkış |
+- PC Wi‑Fi IP: `172.20.10.3`
+- `mobile/.env` → `EXPO_PUBLIC_API_URL=http://172.20.10.3:8000`
+- Expo LAN modu; telefon aynı ağda Expo Go ile bağlanır
+- Backend Docker `0.0.0.0:8000` health OK
 
 ---
 
-### 5. Dokümantasyon
+### 4. Çalıştırma / Build Sorunları ve Çözümler
 
-- `docs/ROADMAP.md` — Faz D “uygulandı”
-- `docs/qa-checklist.md` — Faz D OTP / SecureStore / randevu / tetkik maddeleri
+Gün içinde Expo Go “loading → bir şeyler yanlış gitti” ve ardından `runtime not ready` / `getDevServer is not a function` hataları alındı. Özet kök nedenler:
+
+| Sorun | Kök neden | Çözüm |
+|-------|-----------|--------|
+| Bundle fail / Metro `empty-module` | Çözümleme `C:\Users\Lenovo\node_modules`’a kaçıyordu; pnpm monorepo | `mobile/metro.config.js`: `watchFolders`, `disableHierarchicalLookup`, proje `emptyModulePath` |
+| Expo Go SDK uyumsuzluğu | Proje SDK 52; telefon Expo Go SDK 54 | Expo **~54**, RN **0.81.5**, React **19.1**, `expo-router` **~6** |
+| `getDevServer is not a function` | `@expo/metro-runtime` **4.0.1** kalmıştı | Doğrudan bağımlılık + override **~6.1.2**; `unstable_enablePackageExports: false` |
+| Port karmaşası | Eski Metro 8081’i tutuyordu; istemci 8082’ye düşüyordu | Portu boşaltıp `--port 8081` ile tek sunucu |
+
+Ek paketler (SDK 54 peer’leri): `expo-linking`, `expo-constants`, `react-native-gesture-handler`, `babel-preset-expo`.  
+`.npmrc`: `node-linker=hoisted` + expo/metro hoist kalıpları.
+
+Doğrulama: Android bundle Metro’da **200** (~7.6 MB, 1140 modül); `@expo/metro-runtime` **6.1.2**.
+
+---
+
+### 5. Gün Sonu Durumu
+
+- Faz D işlevsel kodu PR #15’te; SDK 54 / Metro düzeltmeleri branch’te yerel (henüz PR’a ek commit atılmamış olabilir).
+- Çalıştırma:
+
+```bash
+pnpm --filter mobile exec expo start --lan --clear --port 8081
+# Telefon: exp://172.20.10.3:8081
+```
 
 ---
 
 ### 6. Sonraki Adımlar
 
-1. Manuel smoke: OTP giriş → randevu al → iptal; tetkik uçtan uca (doktor → laborant → mobil).  
-2. Faz C: gerçek SMS gateway (mobil OTP üretimde stub’dan çıkar).  
-3. İsteğe bağlı: `GET /doktorlar/?departman_id=` sunucu filtresi; şikayet/öneri mobil ekranı.  
-4. Expo CI / cihaz matrisi (test-plan “Sonra” maddesi).
+1. SDK 54 + Metro fix commit’ini PR #15’e ekle / merge.  
+2. Manuel smoke: OTP → randevu al/iptal → tetkik (doktor → laborant → mobil).  
+3. Faz C: gerçek SMS gateway.  
+4. Expo CI / cihaz matrisi.
 
 ---
 
 ### Öğrenilenler
 
-- **İstemci–API sözleşmesi drift’i pahalıdır:** Mobil şifre login’i backend OTP’ye geçtikten sonra kırık kalmıştı; Faz D’nin ilk işi hizalama oldu.  
-- **Hasta oturumu ≠ personel oturumu:** Aynı kullanıcı çift profilde olsa bile mobil yalnızca `oturum_tipi=hasta` token’ı ile çalışmalı.  
-- **SecureStore + refresh:** Stateless JWT’de mobil UX için hydrate ve sessiz yenileme zorunlu; yoksa her açılışta OTP yorgunluğu oluşur.
+- **İstemci–API drift:** Şifre UI, OTP backend ile uyumsuz kalınca mobil tamamen kırılır; Faz D önce hizalama olmalı.  
+- **Expo Go = sabit SDK:** Store’daki Go sürümü projeyi zorlar; monorepo’da yükseltme + peer pin şart.  
+- **`@expo/metro-runtime` sürümü kritik:** Eski 4.x ile SDK 54 `getDevServer` / “runtime not ready” üretir; override + doğrudan bağımlılık gerekir.  
+- **Windows + pnpm:** Üst dizin `node_modules` ve dosya kilitleri (EPERM) kurulum/Metro’yu bozar; hoist + net Metro kökü şart.
 
 ---
 
-*Bu rapor, 23.07.2026 tarihli `feature/hasta-mobil-faz-d` çalışması ve `docs/ROADMAP.md` Faz D maddeleri esas alınarak hazırlanmıştır.*
+*Bu rapor, 23.07.2026 tarihli `feature/hasta-mobil-faz-d` çalışması (PR #15 + SDK 54 / Metro düzeltmeleri) esas alınarak hazırlanmıştır.*
