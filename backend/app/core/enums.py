@@ -146,3 +146,25 @@ class PanelBildirimTipi(str, Enum):
 class EpikrizDurumu(str, Enum):
     TASLAK = "TASLAK"
     ONAYLANDI = "ONAYLANDI"
+
+
+class GuvenlikOlayTipi(str, Enum):
+    BEYAZ_KOD = "BEYAZ_KOD"
+    MAVI_KOD = "MAVI_KOD"
+    PEMBE_KOD = "PEMBE_KOD"
+    KIRMIZI_KOD = "KIRMIZI_KOD"
+    GRI_KOD = "GRI_KOD"
+    GENEL = "GENEL"
+
+
+class GuvenlikOlayDurumu(str, Enum):
+    ACIK = "ACIK"
+    MUDAHALE = "MUDAHALE"
+    COZULDU = "COZULDU"
+    IPTAL = "IPTAL"
+
+
+class KayipEsyaDurumu(str, Enum):
+    BEKLIYOR = "BEKLIYOR"
+    TESLIM = "TESLIM"
+    POLISE = "POLISE"

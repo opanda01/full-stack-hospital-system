@@ -78,6 +78,11 @@ import {
 import { MudurDashboardPage } from "@/pages/mudur/dashboard";
 import { EbeDashboardPage } from "@/pages/ebe/dashboard";
 import { GuvenlikDashboardPage } from "@/pages/guvenlik/dashboard";
+import { GuvenlikOlaylarPage } from "@/pages/guvenlik/olaylar";
+import { GuvenlikZiyaretcilerPage } from "@/pages/guvenlik/ziyaretciler";
+import { GuvenlikKayipEsyaPage } from "@/pages/guvenlik/kayip-esya";
+import { GuvenlikDevriyelerPage } from "@/pages/guvenlik/devriyeler";
+import { GuvenlikRefakatciSorgulaPage } from "@/pages/guvenlik/refakatci-sorgula";
 import { IdariDashboardPage } from "@/pages/idari/dashboard";
 
 function Guard({
@@ -299,6 +304,16 @@ export function AppRouter() {
         {/* GUVENLIK / IDARI */}
         <Route path="/guvenlik" element={<RoleLayoutRoute rol="GUVENLIK" />}>
           <Route index element={<GuvenlikDashboardPage />} />
+          <Route path="olaylar" element={<GuvenlikOlaylarPage />} />
+          <Route path="ziyaretciler" element={<GuvenlikZiyaretcilerPage />} />
+          <Route path="kayip-esya" element={<GuvenlikKayipEsyaPage />} />
+          <Route path="devriyeler" element={<GuvenlikDevriyelerPage />} />
+          <Route
+            path="refakatci-sorgula"
+            element={<GuvenlikRefakatciSorgulaPage />}
+          />
+          <Route path="nobet" element={<NobetYonetimiPage />} />
+          <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
         <Route path="/idari" element={<RoleLayoutRoute rol="IDARI_PERSONEL" />}>

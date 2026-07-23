@@ -30,6 +30,10 @@ import {
   Search,
   ListOrdered,
   ScrollText,
+  AlertTriangle,
+  UserRound,
+  Package,
+  Footprints,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -263,6 +267,17 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ]),
   GUVENLIK: asSingleGroup([
     { label: "Dashboard", path: "/guvenlik", icon: Shield },
+    { label: "Olaylar", path: "/guvenlik/olaylar", icon: AlertTriangle },
+    { label: "Ziyaretçiler", path: "/guvenlik/ziyaretciler", icon: UserRound },
+    { label: "Kayıp Eşya", path: "/guvenlik/kayip-esya", icon: Package },
+    { label: "Devriyeler", path: "/guvenlik/devriyeler", icon: Footprints },
+    {
+      label: "Refakatçi Sorgula",
+      path: "/guvenlik/refakatci-sorgula",
+      icon: Search,
+    },
+    { label: "Nöbet Çizelgem", path: "/guvenlik/nobet", icon: CalendarDays },
+    { label: "Şikayet", path: "/guvenlik/sikayet", icon: MessageSquareWarning },
   ]),
   IDARI_PERSONEL: asSingleGroup([
     { label: "Dashboard", path: "/idari", icon: LayoutDashboard },

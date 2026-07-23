@@ -31,3 +31,15 @@ export const DEV_HEMSIRE_CREDENTIALS = {
   sifre: "Test1234!",
   label: "Hemşire",
 } as const;
+
+export const DEV_EBE_CREDENTIALS = {
+  kimlik: "E-001",
+  sifre: "Test1234!",
+  label: "Ebe",
+} as const;
+
+export const DEV_GUVENLIK_CREDENTIALS = {
+  kimlik: "G-001",
+  sifre: "Test1234!",
+  label: "Güvenlik",
+} as const;

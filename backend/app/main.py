@@ -35,6 +35,7 @@ from app.features.saglik_kurulu.router import router as saglik_kurulu_router
 from app.features.yatis.router import router as yatis_router
 from app.features.ilac_talep.router import router as ilac_talep_router
 from app.features.epikriz.router import router as epikriz_router
+from app.features.guvenlik.router import router as guvenlik_router
 
 settings = get_settings()
 
@@ -104,3 +105,4 @@ app.include_router(saglik_kurulu_router, prefix="/saglik-kurulu", tags=["saglik_
 app.include_router(yatis_router, prefix="/yatis", tags=["yatis"])
 app.include_router(ilac_talep_router, prefix="/ilac-talepleri", tags=["ilac_talep"])
 app.include_router(epikriz_router, prefix="/epikriz", tags=["epikriz"])
+app.include_router(guvenlik_router, prefix="/guvenlik", tags=["guvenlik"])

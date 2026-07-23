@@ -53,6 +53,10 @@ def _mudur_izinleri() -> dict[str, Kapsam]:
         "epikriz:olustur": Kapsam.GLOBAL,
         "epikriz:guncelle": Kapsam.GLOBAL,
         "epikriz:onayla": Kapsam.GLOBAL,
+        "guvenlik_olay:goruntule": Kapsam.GLOBAL,
+        "guvenlik_ziyaretci:goruntule": Kapsam.GLOBAL,
+        "kayip_esya:goruntule": Kapsam.GLOBAL,
+        "guvenlik_devriye:goruntule": Kapsam.GLOBAL,
     }
 
 
@@ -188,7 +192,21 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
     },
     Rol.GUVENLIK: {
+        "nobet:goruntule": Kapsam.KENDI_KAYDIM,
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
+        "guvenlik_olay:goruntule": Kapsam.GLOBAL,
+        "guvenlik_olay:olustur": Kapsam.GLOBAL,
+        "guvenlik_olay:guncelle": Kapsam.GLOBAL,
+        "guvenlik_ziyaretci:goruntule": Kapsam.GLOBAL,
+        "guvenlik_ziyaretci:olustur": Kapsam.GLOBAL,
+        "guvenlik_ziyaretci:guncelle": Kapsam.GLOBAL,
+        "kayip_esya:goruntule": Kapsam.GLOBAL,
+        "kayip_esya:olustur": Kapsam.GLOBAL,
+        "kayip_esya:guncelle": Kapsam.GLOBAL,
+        "guvenlik_devriye:goruntule": Kapsam.GLOBAL,
+        "guvenlik_devriye:olustur": Kapsam.GLOBAL,
+        "refakatci:sorgula": Kapsam.GLOBAL,
+        "guvenlik:ozet": Kapsam.GLOBAL,
     },
     Rol.IDARI_PERSONEL: {
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
