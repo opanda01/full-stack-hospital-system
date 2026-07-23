@@ -1,5 +1,8 @@
 # Manuel QA — rol bazlı senaryolar
 
+Strateji, P0–P2 öncelikler ve otomasyon envanteri: [test-plan.md](test-plan.md).  
+Müdür / başhekim izin ayrımı regresyonu: [bashekim-izin-envanteri.md](bashekim-izin-envanteri.md).
+
 ## Faz 1
 - [ ] admin@hastane.example.com → /admin
 - [ ] doktor@hastane.example.com → /doktor/randevularim
@@ -67,5 +70,29 @@
 - [ ] `/ebe/servis-takip` listeler; dashboard kart linkleri `/ebe/...` (hemsire’ye kaçmaz)
 - [ ] `/ebe/hasta-arama`, `/order-takip`, `/tetkikler`, `/epikriz`, `/ilac-talep`, `/gorevler`, `/vardiya-devir` açılır
 - [ ] Laborant `GET /yatis/kayitlar` → 403 (değişmez)
+
+## Faz K — Güvenlik paneli
+- [ ] guvenlik@hastane.example.com (G-001 / Test1234!) → `/guvenlik` özet kartları dolu
+- [ ] Olay oluştur (renk kodu: BEYAZ / MAVI / PEMBE / KIRMIZI / GRI / GENEL)
+- [ ] Olay durumu: AÇIK → MÜDAHALE → ÇÖZÜLDÜ
+- [ ] Ziyaretçi kaydı + çıkış
+- [ ] Kayıp eşya kaydı
+- [ ] Devriye kaydı
+- [ ] Refakatçi sorgula (protokol / hasta)
+- [ ] Yönetim (admin/başhekim/müdür) güvenlik kayıtlarını salt okuma gözetimiyle görür; operasyonel CRUD güvenlik rolünde
+
+## Faz L — Laborant / Temizlik smoke
+- [ ] laborant@hastane.example.com → `/laborant`: bekleyen tetkik listesi; sonuç girişi
+- [ ] Laborant `GET /yatis/kayitlar` → 403 (klinik yatışa sızmaz)
+- [ ] temizlik@hastane.example.com → `/temizlik`: kendi görevini görür / tamamlar
+- [ ] Yönetim (müdür) temizlik görevi atar; personel listede görür
+
+## Müdür regresyon (başhekim ayrımı)
+Detaylı checklist: [bashekim-izin-envanteri.md](bashekim-izin-envanteri.md#müdür-regresyon-checklist).
+- [ ] `GET /personel/`, `/departmanlar/`, `/randevular/` → 200
+- [ ] `POST /personel/.../onayla` → 403
+- [ ] `GET /denetim/` → 403
+- [ ] `GET /bashekim/ozet` → 403
+- [ ] `GET/POST /klinik-onay` onay uçları → 403
 
 Şifre (tümü): Test1234!

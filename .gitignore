@@ -42,3 +42,5 @@ mobile/ios/
 # Misc
 *.log
 .cache/
+
+*.tsbuildinfo

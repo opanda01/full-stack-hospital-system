@@ -24,6 +24,7 @@
 
 ## Ops
 
+- [ ] CI yeşil: bkz. [CI.md](CI.md) — branch protection required check: `ci-success`
 - [ ] Health check: `GET /health`
 - [ ] Login rate limit: `LOGIN_RATE_LIMIT_PER_MINUTE` (+ WAF önerilir)
 - [ ] `CORS_ORIGINS` yalnızca bilinen origin’ler
