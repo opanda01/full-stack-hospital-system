@@ -76,6 +76,8 @@ pnpm --filter mobile dev
 
 Expo Dev Tools açılır; emülatör veya Expo Go ile çalıştırın.
 
+Hasta girişi **OTP** ile yapılır (e-posta/şifre yok). Demo: TC `10000000006`, telefon `05551234567` — doğrulama kodu backend SMS stub / konsol çıktısında görünür. API adresi için `mobile/.env.example` → `EXPO_PUBLIC_API_URL` (Android emülatör: `http://10.0.2.2:8000`).
+
 ## Shared types üretimi
 
 Backend ayaktayken:
@@ -91,7 +93,7 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/index.ts
 
 **Web (FSD):** Bağımlılık yönü yalnızca `app → pages → widgets → features → entities → shared`. Her feature/entity public API için `index.ts` dışa aktarır.
 
-**Mobile:** Sadece hasta rolü; sadeleştirilmiş FSD (`entities` / `features` / `shared`) + Expo Router.
+**Mobile:** Sadece hasta rolü + OTP oturumu (`oturum_tipi=hasta`); sadeleştirilmiş FSD (`entities` / `features` / `shared`) + Expo Router + SecureStore.
 
 ## RBAC (rol / izin / kapsam)
 

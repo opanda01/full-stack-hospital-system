@@ -5,8 +5,10 @@ import { GirisYapForm } from "@/features/giris-yap";
 export default function GirisScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Çanakkale Mehmet Akif Ersoy Devlet Hastanesi</Text>
-      <Text style={styles.subtitle}>Hasta Mobil Giriş</Text>
+      <Text style={styles.title}>
+        Çanakkale Mehmet Akif Ersoy Devlet Hastanesi
+      </Text>
+      <Text style={styles.subtitle}>Hasta Mobil Giriş (OTP)</Text>
       <GirisYapForm />
       <Link href="/(auth)/kayit" style={styles.link}>
         Hesap oluştur

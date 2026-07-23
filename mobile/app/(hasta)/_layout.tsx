@@ -7,9 +7,15 @@ export default function HastaLayout() {
 
   return (
     <Tabs>
-      <Tabs.Screen name="randevularim/index" options={{ title: "Randevularım" }} />
+      <Tabs.Screen
+        name="randevularim/index"
+        options={{ title: "Randevularım" }}
+      />
       <Tabs.Screen name="randevu-al/index" options={{ title: "Randevu Al" }} />
-      <Tabs.Screen name="tetkik-sonuclarim/index" options={{ title: "Tetkikler" }} />
+      <Tabs.Screen
+        name="tetkik-sonuclarim/index"
+        options={{ title: "Tetkikler" }}
+      />
       <Tabs.Screen name="profil/index" options={{ title: "Profil" }} />
     </Tabs>
   );

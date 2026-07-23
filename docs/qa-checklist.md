@@ -11,7 +11,7 @@ Müdür / başhekim izin ayrımı regresyonu: [bashekim-izin-envanteri.md](bashe
 - [ ] laborant@hastane.example.com → /laborant
 - [ ] mudur@hastane.example.com → /admin
 - [ ] hasta@hastane.example.com (web) → /hasta
-- [ ] hasta@hastane.example.com (mobil) → randevularım
+- [ ] Mobil OTP giriş (TC `10000000006` / tel `05551234567`) → randevularım
 
 ## Faz 2–3
 - [ ] Admin departman ekler / listeler
@@ -25,6 +25,14 @@ Müdür / başhekim izin ayrımı regresyonu: [bashekim-izin-envanteri.md](bashe
 - [ ] Doktor muayene kaydı + tetkik ister
 - [ ] Laborant sonuç girer
 - [ ] Hasta mobilde sonucu görür
+
+## Faz D — Hasta mobil (OTP)
+- [ ] OTP GIRIS: telefon + TC → kod (konsol/SMS stub) → `oturum_tipi=hasta` tabs
+- [ ] Salt-hasta `/auth/login` şifre → 403 (OTP zorunlu)
+- [ ] OTP KAYIT: ad/soyad + KVKK → doğrula → randevu alabilir
+- [ ] SecureStore: uygulamayı kapat/aç → oturum korunur; Çıkış → refresh iptal
+- [ ] Randevu Al: yalnızca seçilen departman doktorları; iptal `Randevularım`’da
+- [ ] Tetkikler tab’ı kendi sonuçlarını listeler; başka hasta verisi yok
 
 ## Faz 5
 - [ ] Müdür nöbet oluşturur; personel kendi nöbetini görür
