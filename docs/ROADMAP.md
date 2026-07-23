@@ -24,11 +24,13 @@
 - [ ] Import için **batch / rate-limited kuyruk** (2000 satır × ayrı API call riski)
 - [ ] Retry / DLQ
 
-## Faz D — Hasta mobil istemci
+## Faz D — Hasta mobil istemci (uygulandı)
 
-- OTP gönder / doğrula ekranları
-- `oturum_tipi=hasta` token kullanımı
-- `/auth/register` kaldırma tarihi (`Sunset`)
+- OTP gönder / doğrula ekranları (GIRIS + KAYIT + KVKK); e-posta/şifre ve `/auth/register` mobil istemciden kaldırıldı
+- `oturum_tipi=hasta` token: SecureStore + Zustand hydrate; 401’de refresh; logout
+- Tabs: randevularım (liste/iptal), randevu al (departman→doktor→slot), tetkik sonuçlarım, profil
+- Demo: TC `10000000006` / telefon `05551234567` (OTP kodu SMS stub / konsol)
+- `/auth/register` backend’de deprecated (`X-Deprecated`, `Sunset`); mobil artık OTP kullanır
 
 ## Faz F — Başhekim paneli (uygulandı)
 

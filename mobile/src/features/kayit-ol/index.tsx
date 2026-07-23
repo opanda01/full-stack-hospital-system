@@ -1,28 +1,46 @@
 import { useState } from "react";
-import { Text, TextInput, Pressable, StyleSheet, View } from "react-native";
+import {
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  View,
+  Switch,
+} from "react-native";
 import { router } from "expo-router";
 import { otpDogrula, otpGonder } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
 
 type Step = "bilgi" | "otp";
 
-export function GirisYapForm() {
+export function KayitOlForm() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [step, setStep] = useState<Step>("bilgi");
-  const [telefon, setTelefon] = useState("05551234567");
-  const [tc, setTc] = useState("10000000006");
+  const [telefon, setTelefon] = useState("");
+  const [tc, setTc] = useState("");
+  const [ad, setAd] = useState("");
+  const [soyad, setSoyad] = useState("");
+  const [kvkk, setKvkk] = useState(false);
   const [kod, setKod] = useState("");
   const [hata, setHata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const gonder = async () => {
     setHata(null);
+    if (!telefon.trim() || tc.trim().length !== 11 || !ad.trim() || !soyad.trim()) {
+      setHata("Telefon, TC, ad ve soyad zorunludur");
+      return;
+    }
+    if (!kvkk) {
+      setHata("Kayıt için KVKK onayı zorunludur");
+      return;
+    }
     setLoading(true);
     try {
       await otpGonder({
         telefon: telefon.trim(),
         tc_kimlik_no: tc.trim(),
-        amac: "GIRIS",
+        amac: "KAYIT",
       });
       setStep("otp");
     } catch (e) {
@@ -40,12 +58,11 @@ export function GirisYapForm() {
         telefon: telefon.trim(),
         tc_kimlik_no: tc.trim(),
         kod: kod.trim(),
-        amac: "GIRIS",
+        amac: "KAYIT",
+        ad: ad.trim(),
+        soyad: soyad.trim(),
+        kvkk_onay: true,
       });
-      if (data.oturum_tipi !== "hasta" && data.rol !== "HASTA") {
-        setHata("Mobil uygulama yalnızca hasta oturumu içindir");
-        return;
-      }
       await setAuth(
         data.access_token,
         data.refresh_token,
@@ -53,7 +70,7 @@ export function GirisYapForm() {
       );
       router.replace("/(hasta)/randevularim");
     } catch (e) {
-      setHata(e instanceof Error ? e.message : "Doğrulama başarısız");
+      setHata(e instanceof Error ? e.message : "Kayıt doğrulama başarısız");
     } finally {
       setLoading(false);
     }
@@ -78,6 +95,25 @@ export function GirisYapForm() {
             value={tc}
             onChangeText={setTc}
           />
+          <TextInput
+            style={styles.input}
+            placeholder="Ad"
+            value={ad}
+            onChangeText={setAd}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Soyad"
+            value={soyad}
+            onChangeText={setSoyad}
+          />
+          <View style={styles.kvkkRow}>
+            <Switch value={kvkk} onValueChange={setKvkk} />
+            <Text style={styles.kvkkText}>
+              KVKK aydınlatma metnini okudum, kişisel verilerimin işlenmesini
+              onaylıyorum.
+            </Text>
+          </View>
           {hata ? <Text style={styles.error}>{hata}</Text> : null}
           <Pressable style={styles.button} onPress={gonder} disabled={loading}>
             <Text style={styles.buttonText}>
@@ -89,7 +125,6 @@ export function GirisYapForm() {
         <>
           <Text style={styles.hint}>
             {telefon} numarasına gönderilen 6 haneli kodu girin.
-            {"\n"}(Dev: SMS konsol/stub çıktısına bakın)
           </Text>
           <TextInput
             style={styles.input}
@@ -102,7 +137,7 @@ export function GirisYapForm() {
           {hata ? <Text style={styles.error}>{hata}</Text> : null}
           <Pressable style={styles.button} onPress={dogrula} disabled={loading}>
             <Text style={styles.buttonText}>
-              {loading ? "…" : "Giriş yap"}
+              {loading ? "…" : "Kaydı tamamla"}
             </Text>
           </Pressable>
           <Pressable
@@ -121,7 +156,7 @@ export function GirisYapForm() {
 }
 
 const styles = StyleSheet.create({
-  form: { width: "100%", maxWidth: 320, gap: 10 },
+  form: { width: "100%", maxWidth: 360, gap: 10 },
   input: {
     borderWidth: 1,
     borderColor: "#cbd5e1",
@@ -131,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   button: {
-    backgroundColor: "#0c4a6e",
+    backgroundColor: "#0369a1",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -140,4 +175,6 @@ const styles = StyleSheet.create({
   error: { color: "#dc2626", fontSize: 12 },
   hint: { color: "#64748b", fontSize: 13, marginBottom: 4 },
   link: { color: "#0369a1", textAlign: "center", marginTop: 4 },
+  kvkkRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  kvkkText: { flex: 1, color: "#334155", fontSize: 13, lineHeight: 18 },
 });

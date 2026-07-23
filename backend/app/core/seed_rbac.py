@@ -111,6 +111,7 @@ DEMO_KULLANICILAR: list[dict] = [
         "soyad": "Hasta",
         "rol": Rol.HASTA,
         "tc": "10000000006",
+        "telefon": "05551234567",
     },
 ]
 
@@ -145,6 +146,9 @@ def seed_demo_kullanicilar(session: Session) -> None:
             if item.get("kullanici_adi") and not kullanici.kullanici_adi:
                 kullanici.kullanici_adi = item["kullanici_adi"]
                 session.add(kullanici)
+            if item.get("telefon") and not kullanici.telefon:
+                kullanici.telefon = item["telefon"]
+                session.add(kullanici)
         else:
             tc_existing = session.exec(
                 select(Kullanici).where(Kullanici.tc_kimlik_no == item["tc"])
@@ -156,7 +160,7 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 ad=item["ad"],
                 soyad=item["soyad"],
                 email=item["email"],
-                telefon=None,
+                telefon=item.get("telefon"),
                 kullanici_adi=item.get("kullanici_adi"),
                 sifre_hash=sifre_hash,
                 rol=item["rol"],
