@@ -5,8 +5,46 @@ on:
     branches: [main, master]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - '.github/workflows/ci.yml'
+            docker:
+              - 'backend/Dockerfile'
+              - 'backend/requirements.txt'
+              - 'docker-compose.yml'
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+
   backend:
+    name: Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -16,14 +54,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Pytest
-        run: pytest -q
+      - name: Pytest + coverage
+        run: >
+          pytest -q
+          --cov=app.features
+          --cov=app.core
+          --cov-report=xml:coverage.xml
+          --cov-report=term-missing
         env:
           PYTHONPATH: .
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 7
 
   web:
+    name: Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +87,106 @@ jobs:
         with:
           node-version: "20"
           cache: pnpm
-      - run: pnpm install
-      - run: pnpm --filter web typecheck
-      - run: pnpm --filter web lint
-        continue-on-error: true
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter web lint
+      - name: Typecheck
+        run: pnpm --filter web typecheck
+      - name: Build
+        run: pnpm --filter web build
+      - name: Upload build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 3
+
+  docker:
+    name: Docker build
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: true
+          tags: hastane-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Import smoke
+        run: docker run --rm hastane-backend:ci python -c "import app.main"
+      - name: Trivy image scan (CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: hastane-backend:ci
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Trivy image scan (HIGH report)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: hastane-backend:ci
+          severity: HIGH
+          exit-code: "0"
+          ignore-unfixed: true
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trivy filesystem (CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Trivy filesystem (HIGH report)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH
+          exit-code: "0"
+          ignore-unfixed: true
+
+  ci-success:
+    name: ci-success
+    needs: [changes, backend, web, docker, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate job results
+        run: |
+          set -euo pipefail
+          check() {
+            local name="$1"
+            local result="$2"
+            echo "$name=$result"
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::$name failed ($result)"
+              exit 1
+            fi
+          }
+          check backend "${{ needs.backend.result }}"
+          check web "${{ needs.web.result }}"
+          check docker "${{ needs.docker.result }}"
+          check security "${{ needs.security.result }}"
+          echo "All required jobs passed or were skipped."
