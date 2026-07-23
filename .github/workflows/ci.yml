@@ -123,7 +123,7 @@ jobs:
       - name: Import smoke
         run: docker run --rm hastane-backend:ci python -c "import app.main"
       - name: Trivy image scan (CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: hastane-backend:ci
           severity: CRITICAL
@@ -131,7 +131,7 @@ jobs:
           ignore-unfixed: true
       - name: Trivy image scan (HIGH report)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: hastane-backend:ci
           severity: HIGH
@@ -150,7 +150,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Trivy filesystem (CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -159,7 +159,7 @@ jobs:
           ignore-unfixed: true
       - name: Trivy filesystem (HIGH report)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
