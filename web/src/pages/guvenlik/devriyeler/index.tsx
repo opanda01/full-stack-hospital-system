@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
-import { Button, Input } from "@/shared/ui";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
+import { Button, Input, ListPager } from "@/shared/ui";
 
 type Devriye = {
   id: number;
@@ -13,16 +18,26 @@ type Devriye = {
   personel_id: number;
 };
 
+const PAGE_SIZE = 50;
+
 export function GuvenlikDevriyelerPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [bolge, setBolge] = useState("");
   const [bulgu, setBulgu] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  const { data: liste = [], isLoading } = useQuery({
-    queryKey: ["guvenlik-devriyeler"],
-    queryFn: async () => (await api.get<Devriye[]>("/guvenlik/devriyeler")).data,
+  const { data, isLoading } = useQuery({
+    queryKey: ["guvenlik-devriyeler", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Devriye>>("/guvenlik/devriyeler", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const liste = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -117,6 +132,12 @@ export function GuvenlikDevriyelerPage() {
           )}
         </ul>
       )}
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

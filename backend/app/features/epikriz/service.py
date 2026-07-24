@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.enums import EpikrizDurumu, Rol
 from app.core.lookups import doktor_getir
+from app.core.pagination import Page, make_page, paginate
 from app.core.public_id import hasta_pk_from_public_id, hasta_public_id_from_pk
 from app.features.epikriz.models import Epikriz
 from app.features.epikriz.schemas import EpikrizCreate, EpikrizRead, EpikrizUpdate
@@ -37,14 +38,21 @@ def list_epikriz(
     *,
     yatis_id: int | None = None,
     hasta_id: UUID | None = None,
-) -> list[EpikrizRead]:
-    q = select(Epikriz)
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[EpikrizRead]:
+    q = select(Epikriz).order_by(Epikriz.id.desc())
     if yatis_id is not None:
         q = q.where(Epikriz.yatis_id == yatis_id)
     if hasta_id is not None:
         q = q.where(Epikriz.hasta_id == hasta_pk_from_public_id(session, hasta_id))
-    rows = list(session.exec(q.order_by(Epikriz.id.desc())).all())
-    return [_to_read(session, r) for r in rows]
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_to_read(session, r) for r in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_epikriz(session: Session, epikriz_id: int) -> EpikrizRead:

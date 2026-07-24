@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.lookups import doktor_getir
+from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.features.departmanlar.models import Departman
 from app.features.doktorlar.models import Doktor
@@ -33,9 +34,20 @@ def _to_read(session: Session, d: Doktor) -> DoktorRead:
     )
 
 
-def list_doktorlar(session: Session) -> list[DoktorRead]:
-    rows = list(session.exec(select(Doktor).order_by(Doktor.id)).all())
-    return [_to_read(session, d) for d in rows]
+def list_doktorlar(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[DoktorRead]:
+    q = select(Doktor).order_by(Doktor.id.desc())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_to_read(session, d) for d in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_doktor(session: Session, doktor_id: int) -> Doktor:

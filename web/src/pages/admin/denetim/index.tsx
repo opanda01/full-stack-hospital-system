@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { AppShell } from "@/shared/ui";
+import { AppShell, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Denetim = {
@@ -16,25 +21,35 @@ type Denetim = {
   zaman: string;
 };
 
+const PAGE_SIZE = 50;
+
 export function AdminDenetimPage() {
   const root = roleRootFromPath(useLocation().pathname);
+  const [page, setPage] = useState(1);
   const [aksiyon, setAksiyon] = useState("");
   const [kaynak, setKaynak] = useState("");
 
-  const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: ["denetim"],
-    queryFn: async () => (await api.get<Denetim[]>("/denetim/?limit=200")).data,
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["denetim", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Denetim>>("/denetim/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const items = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const filtered = useMemo(() => {
     const a = aksiyon.trim().toLowerCase();
     const k = kaynak.trim().toLowerCase();
-    return data.filter((d) => {
+    return items.filter((d) => {
       if (a && !d.aksiyon.toLowerCase().includes(a)) return false;
       if (k && !(d.kaynak ?? "").toLowerCase().includes(k)) return false;
       return true;
     });
-  }, [data, aksiyon, kaynak]);
+  }, [items, aksiyon, kaynak]);
 
   return (
     <AppShell title="Denetim kayıtları" links={[{ to: root, label: "Ana" }]}>
@@ -70,33 +85,41 @@ export function AdminDenetimPage() {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">Kayıt yok.</p>
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">Zaman</th>
-              <th>Aksiyon</th>
-              <th>Actor</th>
-              <th>Kaynak</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((d) => (
-              <tr key={d.id} className="border-b">
-                <td className="py-2">
-                  {new Date(d.zaman).toLocaleString("tr-TR")}
-                </td>
-                <td>{d.aksiyon}</td>
-                <td>{d.actor_id ?? "—"}</td>
-                <td>
-                  {d.kaynak ?? "—"}
-                  {d.kaynak_id ? ` #${d.kaynak_id}` : ""}
-                </td>
-                <td>{d.ip_adresi ?? "—"}</td>
+        <>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-2">Zaman</th>
+                <th>Aksiyon</th>
+                <th>Actor</th>
+                <th>Kaynak</th>
+                <th>IP</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((d) => (
+                <tr key={d.id} className="border-b">
+                  <td className="py-2">
+                    {new Date(d.zaman).toLocaleString("tr-TR")}
+                  </td>
+                  <td>{d.aksiyon}</td>
+                  <td>{d.actor_id ?? "—"}</td>
+                  <td>
+                    {d.kaynak ?? "—"}
+                    {d.kaynak_id ? ` #${d.kaynak_id}` : ""}
+                  </td>
+                  <td>{d.ip_adresi ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ListPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </AppShell>
   );

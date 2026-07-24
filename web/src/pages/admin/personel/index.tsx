@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AppShell, Button, Input, SearchableCombobox } from "@/shared/ui";
+import { AppShell, Button, Input, ListPager, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, pageTotal, unwrapPage, type PageResponse } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { PersonelEkleForm } from "@/features/personel-ekle";
 import { PersonelImportPanel } from "@/features/personel-import";
@@ -26,6 +26,8 @@ const ROLLER = [
 
 type DurumFiltre = "hepsi" | "aktif" | "pasif";
 
+const PAGE_SIZE = 50;
+
 function normalize(s: string) {
   return s.trim().toLocaleLowerCase("tr-TR");
 }
@@ -43,17 +45,20 @@ export function PersonelYonetimiPage() {
   const [rolFiltre, setRolFiltre] = useState("");
   const [durumFiltre, setDurumFiltre] = useState<DurumFiltre>("hepsi");
   const [departmanFiltre, setDepartmanFiltre] = useState("");
+  const [page, setPage] = useState(1);
   const titleId = useId();
 
-  const {
-    data: personeller = [],
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["personel"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["personel", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Personel>>("/personel/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const personeller = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
@@ -284,6 +289,12 @@ export function PersonelYonetimiPage() {
               </tbody>
             </table>
           )}
+          <ListPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
 

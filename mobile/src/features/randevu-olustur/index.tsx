@@ -58,7 +58,7 @@ export function RandevuOlusturForm() {
         const [hRes, dRes, dokRes] = await Promise.all([
           apiFetch("/hastalar/ben"),
           apiFetch("/departmanlar/"),
-          apiFetch("/doktorlar/"),
+          apiFetch("/doktorlar/?page_size=200"),
         ]);
         if (!hRes.ok) throw new Error("Hasta kaydı alınamadı");
         if (!dRes.ok) throw new Error("Departmanlar yüklenemedi");
@@ -66,7 +66,10 @@ export function RandevuOlusturForm() {
         const mine = (await hRes.json()) as Hasta;
         setHastaId(mine.id);
         setDepartmanlar(await dRes.json());
-        setDoktorlar(await dokRes.json());
+        const dokBody = await dokRes.json();
+        setDoktorlar(
+          Array.isArray(dokBody) ? dokBody : (dokBody.items ?? []),
+        );
       } catch (e) {
         setHata(e instanceof Error ? e.message : "Veriler yüklenemedi");
       } finally {

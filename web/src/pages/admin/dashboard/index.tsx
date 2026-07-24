@@ -11,6 +11,12 @@ import {
 } from "lucide-react";
 import { RoleDashboard } from "@/shared/ui/RoleDashboard";
 import { api } from "@/shared/api";
+import {
+  LOOKUP_PAGE_SIZE,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type AdminOzet = {
   kullanici_sayisi: number;
@@ -30,18 +36,28 @@ export function AdminDashboardPage() {
     queryKey: ["dashboard-admin-ozet"],
     queryFn: async () => (await api.get<AdminOzet>("/dashboard/admin/ozet")).data,
   });
-  const { data: sikayetler = [] } = useQuery({
-    queryKey: ["sikayet-oneri"],
-    queryFn: async () => (await api.get<Sikayet[]>("/sikayet-oneri/")).data,
+  const { data: sikayetPage } = useQuery({
+    queryKey: ["sikayet-oneri-count"],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Sikayet>>("/sikayet-oneri/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
-  const { data: hastalar = [] } = useQuery({
+  const { data: hastaPage } = useQuery({
     queryKey: ["hastalar-count"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/")).data,
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Hasta>>("/hastalar/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
   const { data: temizlikler = [] } = useQuery({
     queryKey: ["temizlik-gorevleri"],
     queryFn: async () =>
-      (await api.get<Temizlik[]>("/temizlik-gorevleri/")).data,
+      unwrapPage((await api.get<PageResponse<Temizlik>>("/temizlik-gorevleri/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const acikTemizlik = temizlikler.filter(
@@ -77,7 +93,7 @@ export function AdminDashboardPage() {
         },
         {
           label: "Hastalar",
-          value: hastalar.length,
+          value: hastaPage ? pageTotal(hastaPage) : "…",
           icon: HeartPulse,
           to: "/admin/hastalar",
         },
@@ -95,7 +111,7 @@ export function AdminDashboardPage() {
         },
         {
           label: "Şikayet / öneri",
-          value: sikayetler.length,
+          value: sikayetPage ? pageTotal(sikayetPage) : "…",
           icon: MessageSquareWarning,
           to: "/admin/sikayet",
         },

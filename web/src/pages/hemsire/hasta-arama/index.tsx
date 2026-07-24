@@ -4,7 +4,12 @@ import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { useRoleBasePath } from "@/shared/auth";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  LOOKUP_PAGE_SIZE,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Hasta = {
   id: string;
@@ -33,24 +38,33 @@ export function HemsireHastaAramaPage() {
   const { data = [], isLoading, isError, error, isFetching } = useQuery({
     queryKey: ["hasta-arama", submitted.q, submitted.kapsam],
     queryFn: async () =>
-      (
-        await api.get<Hasta[]>("/hastalar/", {
-          params: {
-            q: submitted.q || undefined,
-            kapsam: submitted.kapsam,
-          },
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Hasta>>("/hastalar/", {
+            params: {
+              q: submitted.q || undefined,
+              kapsam: submitted.kapsam,
+              page_size: LOOKUP_PAGE_SIZE,
+            },
+          })
+        ).data,
+      ),
   });
 
   const { data: yatislar = [] } = useQuery({
     queryKey: ["yatis-for-arama"],
     queryFn: async () =>
-      (
-        await api.get<Yatis[]>("/yatis/kayitlar", {
-          params: { aktif: true, kapsam: "benim" },
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Yatis>>("/yatis/kayitlar", {
+            params: {
+              aktif: true,
+              kapsam: "benim",
+              page_size: LOOKUP_PAGE_SIZE,
+            },
+          })
+        ).data,
+      ),
   });
 
   const aktifYatis = useMemo(() => {

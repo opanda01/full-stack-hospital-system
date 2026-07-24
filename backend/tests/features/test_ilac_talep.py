@@ -100,7 +100,7 @@ def test_ilac_talep_olustur_ve_durum_zinciri(client, session, seeded):
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 200
-    assert any(v["talep_id"] == talep_id for v in r.json())
+    assert any(v["talep_id"] == talep_id for v in r.json()["items"])
 
 
 def test_laborant_ilac_talep_403(client, session, seeded):

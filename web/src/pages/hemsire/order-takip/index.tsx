@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 
 type OrderTip = "TETKIK" | "MAR" | "ILAC_TALEP";
 
@@ -50,26 +50,35 @@ export function HemsireOrderTakipPage() {
 
   const { data: tetkikler = [] } = useQuery({
     queryKey: ["order-tetkikler"],
-    queryFn: async () => (await api.get<Tetkik[]>("/tetkikler/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Tetkik>>("/tetkikler/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: marlar = [] } = useQuery({
     queryKey: ["order-mar"],
     queryFn: async () =>
-      (
-        await api.get<Mar[]>("/yatis/ilac-uygulamalari", {
-          params: { kapsam: "benim" },
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Mar>>("/yatis/ilac-uygulamalari", {
+            params: { kapsam: "benim", page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: talepler = [] } = useQuery({
     queryKey: ["order-talep"],
     queryFn: async () =>
-      (await api.get<TalepSatir[]>("/ilac-talepleri/satirlar")).data,
+      unwrapPage((await api.get<PageResponse<TalepSatir>>("/ilac-talepleri/satirlar", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-order"],
     queryFn: async () =>
-      (await api.get<Hasta[]>("/hastalar/", { params: { kapsam: "yatan" } })).data,
+      unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { kapsam: "yatan", page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const hastaLabel = useMemo(() => {

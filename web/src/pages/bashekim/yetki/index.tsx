@@ -1,10 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppShell, Button, Input } from "@/shared/ui";
-import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
-import { roleRootFromPath } from "@/shared/lib/role-root";
 import { useLocation } from "react-router-dom";
+import { AppShell, Button, Input, ListPager } from "@/shared/ui";
+import { api } from "@/shared/api";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
+import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Devri = {
   id: number;
@@ -23,15 +28,25 @@ type Sistem = {
   health: string;
 };
 
+const PAGE_SIZE = 50;
+
 export function BashekimYetkiDuyurulariPage() {
   const root = roleRootFromPath(useLocation().pathname);
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [alanId, setAlanId] = useState("1");
   const [metin, setMetin] = useState("");
-  const { data = [], isLoading } = useQuery({
-    queryKey: ["yetki-devri"],
-    queryFn: async () => (await api.get<Devri[]>("/yetki-devri/")).data,
+  const { data, isLoading } = useQuery({
+    queryKey: ["yetki-devri", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Devri>>("/yetki-devri/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const items = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
   const create = useMutation({
     mutationFn: async () => {
       const now = new Date();
@@ -78,14 +93,22 @@ export function BashekimYetkiDuyurulariPage() {
       {isLoading ? (
         <p>Yükleniyor…</p>
       ) : (
-        <ul className="space-y-2 text-sm">
-          {data.map((d) => (
-            <li key={d.id} className="rounded border border-border p-3">
-              <div className="font-medium">Personel #{d.alan_personel_id}</div>
-              <p className="text-muted-foreground">{d.duyuru_metni}</p>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2 text-sm">
+            {items.map((d) => (
+              <li key={d.id} className="rounded border border-border p-3">
+                <div className="font-medium">Personel #{d.alan_personel_id}</div>
+                <p className="text-muted-foreground">{d.duyuru_metni}</p>
+              </li>
+            ))}
+          </ul>
+          <ListPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </AppShell>
   );

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { AppShell, Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 import type { Randevu } from "@/entities/randevu";
@@ -130,22 +130,23 @@ export function AdminRandevularPage() {
     error,
   } = useQuery({
     queryKey: ["randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
+    queryFn: async () =>
+      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
   });
 
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: kullanicilar = [] } = useQuery({
     queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: departmanlar = [] } = useQuery({

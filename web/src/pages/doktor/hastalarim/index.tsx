@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  getApiErrorMessage,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Hasta = {
   id: string;
@@ -27,7 +32,14 @@ export function DoktorHastalarimPage() {
     error,
   } = useQuery({
     queryKey: ["hastalar-benim"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/benim")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Hasta>>("/hastalar/benim", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const filtered = useMemo(() => {

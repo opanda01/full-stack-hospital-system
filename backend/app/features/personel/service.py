@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, PersonelKaynakTipi, Rol
+from app.core.pagination import Page, make_page, paginate
 from app.core.security import hash_password
 from app.features.departmanlar.models import Departman
 from app.features.doktorlar.models import Doktor
@@ -51,9 +52,20 @@ def _to_read(session: Session, p: Personel) -> PersonelRead:
     )
 
 
-def list_personel(session: Session) -> list[PersonelRead]:
-    rows = list(session.exec(select(Personel).order_by(Personel.id)).all())
-    return [_to_read(session, p) for p in rows]
+def list_personel(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[PersonelRead]:
+    q = select(Personel).order_by(Personel.id.desc())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_to_read(session, p) for p in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_personel(session: Session, personel_id: int) -> Personel:

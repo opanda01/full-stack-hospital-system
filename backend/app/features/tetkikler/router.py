@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.tetkikler import service as tetkik_service
@@ -17,15 +18,21 @@ from app.features.tetkikler.schemas import (
 router = APIRouter()
 
 
-@router.get("/", response_model=list[TetkikRead])
+@router.get("/", response_model=Page[TetkikRead])
 def list_tetkikler(
     request: Request,
     hasta_id: UUID | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     current_user: Kullanici = Depends(require_permission("tetkik:goruntule")),
     session: Session = Depends(get_session),
 ):
     return tetkik_service.listele(
-        session, current_user, request.state.kapsam, hasta_public_id=hasta_id
+        session,
+        current_user,
+        request.state.kapsam,
+        hasta_public_id=hasta_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

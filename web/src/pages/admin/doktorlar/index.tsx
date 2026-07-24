@@ -1,16 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AppShell, Button } from "@/shared/ui";
+import { AppShell, Button, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import type { Doktor } from "@/entities/doktor";
+
+const PAGE_SIZE = 50;
 
 export function AdminDoktorlarPage() {
   const location = useLocation();
   const roleRoot = roleRootFromPath(location.pathname);
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({
     uzmanlik_alani: "",
@@ -20,14 +28,21 @@ export function AdminDoktorlarPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
-    data: doktorlar = [],
+    data,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryKey: ["doktorlar", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Doktor>>("/doktorlar/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const doktorlar = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const updateMut = useMutation({
     mutationFn: async () =>
@@ -174,6 +189,12 @@ export function AdminDoktorlarPage() {
           </tbody>
         </table>
       )}
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </AppShell>
   );
 }

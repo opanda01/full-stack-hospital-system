@@ -7,6 +7,7 @@ import { useAuthStore } from "@/shared/auth";
 import type { NavItem, Rol } from "@/shared/config/nav-items";
 import { ROL_ETIKET } from "@/shared/config/nav-items";
 import { api } from "@/shared/api";
+import { LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 import { Button } from "@/shared/ui/button";
 import {
@@ -60,7 +61,13 @@ export function Topbar({ navItems, currentUser }: TopbarProps) {
     queryKey: ["panel-bildirimler"],
     queryFn: async () => {
       try {
-        return (await api.get<Bildirim[]>("/yatis/bildirimler")).data;
+        return unwrapPage(
+          (
+            await api.get<PageResponse<Bildirim>>("/yatis/bildirimler", {
+              params: { page_size: LOOKUP_PAGE_SIZE },
+            })
+          ).data,
+        );
       } catch {
         return [] as Bildirim[];
       }

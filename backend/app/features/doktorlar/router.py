@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.doktorlar import service as doktor_service
 from app.features.doktorlar.schemas import DoktorCreate, DoktorRead, DoktorUpdate
@@ -10,12 +11,15 @@ from app.features.kullanicilar.models import Kullanici
 router = APIRouter()
 
 
-@router.get("/", response_model=list[DoktorRead])
+@router.get("/", response_model=Page[DoktorRead])
 def list_doktorlar(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("departman:goruntule")),
 ):
-    return doktor_service.list_doktorlar(session)
+    return doktor_service.list_doktorlar(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.get("/ben", response_model=DoktorRead)

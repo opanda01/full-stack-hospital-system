@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, KonsultasyonDurumu, Rol
 from app.core.lookups import doktor_getir, personel_getir
+from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_from_public_id
 from app.core.security import hash_password
@@ -23,8 +24,20 @@ from app.features.randevular.models import Randevu
 from app.features.tetkikler.models import Tetkik
 
 
-def list_hastalar(session: Session) -> list[Hasta]:
-    return list(session.exec(select(Hasta).order_by(Hasta.id)).all())
+def list_hastalar(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[HastaRead]:
+    q = select(Hasta).order_by(Hasta.id.desc())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_hasta_to_read(session, h) for h in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def hemsire_erisebilir_hasta_idler(
@@ -65,8 +78,9 @@ def search_hastalar(
     *,
     q: str | None = None,
     kapsam_filtre: str | None = None,
-    limit: int = 50,
-) -> list[HastaRead]:
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[HastaRead]:
     """q: TC / ad / soyad / protokol; kapsam_filtre: yatan | tumu."""
     sadece_yatan = (kapsam_filtre or "").lower() == "yatan"
     rol = current_user.rol
@@ -93,7 +107,7 @@ def search_hastalar(
     query = select(Hasta).join(Kullanici, Kullanici.id == Hasta.kullanici_id)
     if allowed is not None:
         if not allowed:
-            return []
+            return make_page([], total=0, page=page, page_size=page_size)
         query = query.where(Hasta.id.in_(allowed))
 
     qn = (q or "").strip()
@@ -125,8 +139,14 @@ def search_hastalar(
             conds.append(Hasta.id.in_(protokol_ids))
         query = query.where(or_(*conds))
 
-    rows = session.exec(query.order_by(Hasta.id).limit(limit)).all()
-    return [_hasta_to_read(session, h) for h in rows]
+    query = query.order_by(Hasta.id.desc())
+    rows, total = paginate(session, query, page=page, page_size=page_size)
+    return make_page(
+        [_hasta_to_read(session, h) for h in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_hasta(session: Session, hasta_id: int) -> Hasta:
@@ -248,18 +268,27 @@ def doktor_hasta_erisim_var_mi(
 
 
 def list_benim_hastalar(
-    session: Session, current_user: Kullanici, kapsam: Kapsam
-) -> list[HastaRead]:
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[HastaRead]:
     if kapsam == Kapsam.GLOBAL:
-        return [_hasta_to_read(session, h) for h in list_hastalar(session)]
+        return list_hastalar(session, page=page, page_size=page_size)
     if kapsam == Kapsam.DEPARTMANIM:
         ids = hemsire_erisebilir_hasta_idler(session, current_user)
         if not ids:
-            return []
-        rows = session.exec(
-            select(Hasta).where(Hasta.id.in_(ids)).order_by(Hasta.id)
-        ).all()
-        return [_hasta_to_read(session, h) for h in rows]
+            return make_page([], total=0, page=page, page_size=page_size)
+        q = select(Hasta).where(Hasta.id.in_(ids)).order_by(Hasta.id.desc())
+        rows, total = paginate(session, q, page=page, page_size=page_size)
+        return make_page(
+            [_hasta_to_read(session, h) for h in rows],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
     if kapsam != Kapsam.KENDI_KAYDIM:
         raise HTTPException(status_code=403, detail="Hasta listesi için yetkiniz yok")
     if current_user.rol != Rol.DOKTOR:
@@ -268,9 +297,15 @@ def list_benim_hastalar(
         )
     ids = doktor_erisebilir_hasta_idler(session, current_user)
     if not ids:
-        return []
-    rows = session.exec(select(Hasta).where(Hasta.id.in_(ids)).order_by(Hasta.id)).all()
-    return [_hasta_to_read(session, h) for h in rows]
+        return make_page([], total=0, page=page, page_size=page_size)
+    q = select(Hasta).where(Hasta.id.in_(ids)).order_by(Hasta.id.desc())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_hasta_to_read(session, h) for h in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_hasta_scoped(

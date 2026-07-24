@@ -47,7 +47,7 @@ def test_laborant_tetkik_iste_yok():
 def test_randevu_liste_admin_200(client, seeded):
     r = client.get("/randevular/", headers=auth_header(seeded["admin"]))
     assert r.status_code == 200
-    assert len(r.json()) >= 2
+    assert len(r.json()["items"]) >= 2
 
 
 def test_randevu_liste_laborant_403(client, seeded):
@@ -226,7 +226,7 @@ def test_muayene_list_doktor_only_own(client, seeded, session):
 
     r = client.get("/muayeneler/", headers=auth_header(seeded["doktor_a"]))
     assert r.status_code == 200
-    ids = {row["randevu_id"] for row in r.json()}
+    ids = {row["randevu_id"] for row in r.json()["items"]}
     assert seeded["randevu_a"].id in ids
     assert seeded["randevu_b"].id not in ids
 
@@ -245,7 +245,7 @@ def test_muayene_list_hemsire_departman(client, seeded, session):
 
     r = client.get("/muayeneler/", headers=auth_header(seeded["hemsire"]))
     assert r.status_code == 200
-    ids = {row["randevu_id"] for row in r.json()}
+    ids = {row["randevu_id"] for row in r.json()["items"]}
     assert seeded["randevu_a"].id in ids
     assert seeded["randevu_b"].id not in ids
 
@@ -452,7 +452,7 @@ def test_doktor_hasta_liste_genel_403(client, seeded):
 def test_doktor_benim_hastalar_scoped(client, seeded):
     r = client.get("/hastalar/benim", headers=auth_header(seeded["doktor_a"]))
     assert r.status_code == 200
-    ids = {h["id"] for h in r.json()}
+    ids = {h["id"] for h in r.json()["items"]}
     assert str(seeded["hasta_a_entity"].public_id) in ids
     assert str(seeded["hasta_b_entity"].public_id) not in ids
 
@@ -483,7 +483,7 @@ def test_doktor_klinik_onay_kendi_kapsam(client, seeded):
     assert c.status_code == 201
     r = client.get("/klinik-onay/", headers=auth_header(seeded["doktor_a"]))
     assert r.status_code == 200
-    assert all(x["olusturan_id"] == seeded["doktor_a"].id for x in r.json())
+    assert all(x["olusturan_id"] == seeded["doktor_a"].id for x in r.json()["items"])
 
 
 def test_doktor_yeni_izinler_matrisi():

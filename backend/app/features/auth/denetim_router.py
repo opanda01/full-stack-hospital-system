@@ -9,6 +9,7 @@ from sqlmodel import Session, col, select
 
 from app.core.config import get_settings
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.auth.models import DenetimKaydi
 from app.features.kullanicilar.models import Kullanici
@@ -56,7 +57,7 @@ def _zaman_filtre(
     return q
 
 
-@router.get("/", response_model=list[DenetimKaydiRead])
+@router.get("/", response_model=Page[DenetimKaydiRead])
 def list_denetim(
     aksiyon: str | None = Query(default=None),
     kaynak: str | None = Query(default=None),
@@ -68,7 +69,7 @@ def list_denetim(
         default=False,
         description="True ise varsayılan 90 gün penceresi kalkar (yalnız ADMIN)",
     ),
-    limit: int = Query(default=100, ge=1, le=500),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("denetim:goruntule")),
 ):
@@ -87,8 +88,16 @@ def list_denetim(
         q = q.where(DenetimKaydi.kaynak_id == kaynak_id)
     if actor_id is not None:
         q = q.where(DenetimKaydi.actor_id == actor_id)
-    q = q.order_by(col(DenetimKaydi.zaman).desc()).limit(limit)
-    return list(session.exec(q).all())
+    q = q.order_by(col(DenetimKaydi.zaman).desc(), col(DenetimKaydi.id).desc())
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        list(rows),
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.get("/{kayit_id}/detay", response_model=DenetimKaydiDetayRead)

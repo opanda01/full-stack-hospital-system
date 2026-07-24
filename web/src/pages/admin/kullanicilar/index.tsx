@@ -1,9 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AppShell, Button, ConfirmDialog } from "@/shared/ui";
+import { AppShell, Button, ConfirmDialog, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Kullanici = {
   id: number;
@@ -30,26 +35,36 @@ const ROLLER = [
 
 type DurumFiltre = "hepsi" | "aktif" | "pasif";
 
+const PAGE_SIZE = 50;
+
 export function KullaniciYonetimiPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingDeaktif, setPendingDeaktif] = useState<Kullanici | null>(null);
   const [rolFiltre, setRolFiltre] = useState("");
   const [durumFiltre, setDurumFiltre] = useState<DurumFiltre>("hepsi");
 
-  const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["kullanicilar", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Kullanici>>("/kullanicilar/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const items = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const filtered = useMemo(() => {
-    return data.filter((u) => {
+    return items.filter((u) => {
       if (rolFiltre && u.rol !== rolFiltre) return false;
       if (durumFiltre === "aktif" && !u.aktif_mi) return false;
       if (durumFiltre === "pasif" && u.aktif_mi) return false;
       return true;
     });
-  }, [data, rolFiltre, durumFiltre]);
+  }, [items, rolFiltre, durumFiltre]);
 
   const patchMut = useMutation({
     mutationFn: async ({
@@ -200,6 +215,13 @@ export function KullaniciYonetimiPage() {
           </tbody>
         </table>
       )}
+
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
 
       <ConfirmDialog
         open={pendingDeaktif != null}

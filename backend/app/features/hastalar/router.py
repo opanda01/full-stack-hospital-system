@@ -6,6 +6,7 @@ from sqlmodel import Session
 from app.core.db import get_session
 from app.core.enums import Rol
 from app.core.lookups import hasta_getir
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import get_current_user, require_permission, require_role
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.hastalar import service as hasta_service
@@ -30,21 +31,27 @@ def benim_hasta_kaydim(
     return hasta_service._hasta_to_read(session, h)
 
 
-@router.get("/benim", response_model=list[HastaRead])
+@router.get("/benim", response_model=Page[HastaRead])
 def list_benim_hastalar(
     request: Request,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
     return hasta_service.list_benim_hastalar(
-        session, current_user, request.state.kapsam
+        session,
+        current_user,
+        request.state.kapsam,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
-@router.get("/", response_model=list[HastaRead])
+@router.get("/", response_model=Page[HastaRead])
 def list_hastalar(
     q: str | None = None,
     kapsam: str | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(
         require_role(
@@ -59,12 +66,16 @@ def list_hastalar(
 ):
     if q or kapsam:
         return hasta_service.search_hastalar(
-            session, current_user, q=q, kapsam_filtre=kapsam
+            session,
+            current_user,
+            q=q,
+            kapsam_filtre=kapsam,
+            page=pagination.page,
+            page_size=pagination.page_size,
         )
-    return [
-        hasta_service._hasta_to_read(session, h)
-        for h in hasta_service.list_hastalar(session)
-    ]
+    return hasta_service.list_hastalar(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.get("/{public_id}/alerjiler", response_model=list[HastaAlerjiRead])

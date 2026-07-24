@@ -6,7 +6,10 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
+from app.core.batch_load import batch_by_ids
 from app.core.enums import IlacUygulamaDurumu, KlinikDurum, PanelBildirimTipi
+from app.core.pagination import Page, make_page, paginate
+from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
 from app.features.yatis.models import (
@@ -14,6 +17,7 @@ from app.features.yatis.models import (
     HemsireGorevi,
     IlacUygulama,
     PanelBildirim,
+    Servis,
     VardiyaDevirNotu,
     VitalBulgu,
     YatisKaydi,
@@ -159,13 +163,11 @@ def list_ilac_uygulamalari_toplu(
     *,
     durum: str | None = None,
     kapsam: str | None = "benim",
-) -> list[dict]:
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[dict]:
     """Aktif yatışlara ait MAR satırları (order kuyruğu için)."""
     from sqlalchemy import or_
-
-    from app.features.yatis.models import Servis
-    from app.features.hastalar.models import Hasta
-    from app.features.kullanicilar.models import Kullanici as KullaniciModel
 
     q = (
         select(IlacUygulama, YatisKaydi)
@@ -181,7 +183,7 @@ def list_ilac_uygulamalari_toplu(
             select(Personel).where(Personel.kullanici_id == current_user.id)
         ).first()
         if pid is None or p is None:
-            return []
+            return make_page([], total=0, page=page, page_size=page_size)
         servis_ids: list[int] = []
         if p.departman_id is not None:
             servis_ids = list(
@@ -194,16 +196,19 @@ def list_ilac_uygulamalari_toplu(
             conds.append(YatisKaydi.servis_id.in_(servis_ids))
         q = q.where(or_(*conds))
 
-    rows = session.exec(q.order_by(IlacUygulama.planlanan_saat)).all()
+    q = q.order_by(IlacUygulama.planlanan_saat.asc(), IlacUygulama.id.asc())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    hastalar = batch_by_ids(session, Hasta, (yatis.hasta_id for _, yatis in rows))
+    kullanicilar = batch_by_ids(
+        session, Kullanici, (h.kullanici_id for h in hastalar.values())
+    )
     out: list[dict] = []
     for uygulama, yatis in rows:
-        hasta = session.get(Hasta, yatis.hasta_id)
+        hasta = hastalar.get(yatis.hasta_id)
         if hasta is None:
             continue
-        ad = ""
-        k = session.get(KullaniciModel, hasta.kullanici_id)
-        if k:
-            ad = f"{k.ad} {k.soyad}".strip()
+        k = kullanicilar.get(hasta.kullanici_id)
+        ad = f"{k.ad} {k.soyad}".strip() if k else ""
         out.append(
             {
                 "id": uygulama.id,
@@ -221,7 +226,7 @@ def list_ilac_uygulamalari_toplu(
                 "notlar": uygulama.notlar,
             }
         )
-    return out
+    return make_page(out, total=total, page=page, page_size=page_size)
 
 
 def create_ilac_uygulama(session: Session, yatis_id: int, data: dict) -> IlacUygulama:
@@ -291,13 +296,18 @@ def list_gorevler(
     *,
     hemsire_id: int | None = None,
     tamamlandi: bool | None = None,
-) -> list[HemsireGorevi]:
-    q = select(HemsireGorevi).order_by(HemsireGorevi.son_tarih)
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[HemsireGorevi]:
+    q = select(HemsireGorevi).order_by(
+        HemsireGorevi.son_tarih.asc(), HemsireGorevi.id.asc()
+    )
     if hemsire_id is not None:
         q = q.where(HemsireGorevi.atanan_hemsire_id == hemsire_id)
     if tamamlandi is not None:
         q = q.where(HemsireGorevi.tamamlandi_mi == tamamlandi)
-    return list(session.exec(q).all())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def create_gorev(session: Session, data: dict, yapan: Kullanici | None = None) -> HemsireGorevi:
@@ -334,12 +344,19 @@ def toggle_gorev(session: Session, gorev_id: int) -> HemsireGorevi:
 # --- Vardiya devir ---
 
 def list_devir_notlari(
-    session: Session, *, vardiya_tarihi: date | None = None
-) -> list[VardiyaDevirNotu]:
-    q = select(VardiyaDevirNotu).order_by(VardiyaDevirNotu.created_at.desc())
+    session: Session,
+    *,
+    vardiya_tarihi: date | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[VardiyaDevirNotu]:
+    q = select(VardiyaDevirNotu).order_by(
+        VardiyaDevirNotu.created_at.desc(), VardiyaDevirNotu.id.desc()
+    )
     if vardiya_tarihi is not None:
         q = q.where(VardiyaDevirNotu.vardiya_tarihi == vardiya_tarihi)
-    return list(session.exec(q).all())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def create_devir_notu(
@@ -364,15 +381,18 @@ def list_bildirimler(
     alici_id: int,
     *,
     okunmamis: bool | None = None,
-) -> list[PanelBildirim]:
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[PanelBildirim]:
     q = (
         select(PanelBildirim)
         .where(PanelBildirim.alici_id == alici_id)
-        .order_by(PanelBildirim.created_at.desc())
+        .order_by(PanelBildirim.created_at.desc(), PanelBildirim.id.desc())
     )
     if okunmamis is True:
         q = q.where(PanelBildirim.okundu_mu == False)  # noqa: E712
-    return list(session.exec(q).all())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def mark_okundu(session: Session, bildirim_id: int, alici_id: int) -> PanelBildirim:

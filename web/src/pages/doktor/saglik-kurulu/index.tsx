@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  getApiErrorMessage,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Kurul = {
   id: number;
@@ -14,7 +19,14 @@ type Kurul = {
 export function DoktorSaglikKuruluPage() {
   const { data = [], isLoading, isError, error } = useQuery({
     queryKey: ["saglik-kurulu"],
-    queryFn: async () => (await api.get<Kurul[]>("/saglik-kurulu/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Kurul>>("/saglik-kurulu/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   return (

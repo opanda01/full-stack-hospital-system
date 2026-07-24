@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from app.core.audit import denetim_kaydi_yaz
 from app.core.db import get_session
 from app.core.enums import KlinikOnayDurumu, Rol
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import (
     optional_hasta_pk_from_public_id,
@@ -75,11 +76,12 @@ def _assert_erisim(
     raise HTTPException(status_code=403, detail="Klinik onay için yetkiniz yok")
 
 
-@router.get("/", response_model=list[KlinikOnayRead])
+@router.get("/", response_model=Page[KlinikOnayRead])
 def list_klinik_onay(
     request: Request,
     durum: KlinikOnayDurumu | None = None,
     tur: str | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("klinik_onay:goruntule")),
 ):
@@ -93,7 +95,15 @@ def list_klinik_onay(
         q = q.where(KlinikOnayKaydi.olusturan_id == current_user.id)
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Klinik onay listesi için yetkiniz yok")
-    return [_to_read(session, r) for r in session.exec(q).all()]
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        [_to_read(session, r) for r in rows],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.get("/{kayit_id}", response_model=KlinikOnayRead)

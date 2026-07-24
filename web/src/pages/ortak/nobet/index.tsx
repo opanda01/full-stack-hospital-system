@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import {
+  LOOKUP_PAGE_SIZE,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { useAuthStore } from "@/shared/auth";
 
 type Nobet = {
@@ -21,11 +26,11 @@ export function NobetYonetimiPage() {
   );
   const { data: nobetler = [] } = useQuery({
     queryKey: ["nobetler"],
-    queryFn: async () => (await api.get<Nobet[]>("/nobet-cizelgesi/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Nobet>>("/nobet-cizelgesi/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: personeller = [] } = useQuery({
     queryKey: ["personeller"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Personel>>("/personel/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
     enabled: canCreate,
   });
   const { data: departmanlar = [] } = useQuery({

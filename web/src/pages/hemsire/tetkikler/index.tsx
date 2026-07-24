@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { useRoleBasePath } from "@/shared/auth";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
 
 type Tetkik = {
   id: string;
@@ -25,16 +25,18 @@ export function HemsireTetkiklerPage() {
   const { data: tetkikler = [], isLoading, isError, error } = useQuery({
     queryKey: ["hemsire-tetkikler", hastaParam],
     queryFn: async () =>
-      (
-        await api.get<Tetkik[]>("/tetkikler/", {
-          params: hastaParam ? { hasta_id: hastaParam } : undefined,
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Tetkik>>("/tetkikler/", {
+            params: hastaParam ? { hasta_id: hastaParam } : undefined,
+          })
+        ).data,
+      ),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-yatan"],
     queryFn: async () =>
-      (await api.get<Hasta[]>("/hastalar/", { params: { kapsam: "yatan" } })).data,
+      unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { kapsam: "yatan", page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const hastaLabel = useMemo(() => {

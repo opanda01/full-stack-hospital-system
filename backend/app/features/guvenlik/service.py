@@ -6,6 +6,7 @@ from sqlmodel import Session, col, or_, select
 from app.core.base_model import utc_now
 from app.core.enums import GuvenlikOlayDurumu, KayipEsyaDurumu
 from app.core.lookups import personel_getir
+from app.core.pagination import Page, make_page, paginate
 from app.features.guvenlik.models import (
     GuvenlikDevriye,
     GuvenlikOlayi,
@@ -113,12 +114,14 @@ def ozet(session: Session, current_user: Kullanici) -> GuvenlikOzet:
 
 
 
-def olay_listele(session: Session) -> list[GuvenlikOlayi]:
-    return list(
-        session.exec(
-            select(GuvenlikOlayi).order_by(col(GuvenlikOlayi.olay_zamani).desc())
-        ).all()
+def olay_listele(
+    session: Session, *, page: int = 1, page_size: int = 50
+) -> Page[GuvenlikOlayi]:
+    q = select(GuvenlikOlayi).order_by(
+        col(GuvenlikOlayi.olay_zamani).desc(), GuvenlikOlayi.id.desc()
     )
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def olay_olustur(
@@ -161,11 +164,20 @@ def olay_guncelle(
     return olay
 
 
-def ziyaretci_listele(session: Session, sadece_acik: bool = False) -> list[GuvenlikZiyaretci]:
-    q = select(GuvenlikZiyaretci).order_by(col(GuvenlikZiyaretci.giris_zamani).desc())
+def ziyaretci_listele(
+    session: Session,
+    sadece_acik: bool = False,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[GuvenlikZiyaretci]:
+    q = select(GuvenlikZiyaretci).order_by(
+        col(GuvenlikZiyaretci.giris_zamani).desc(), GuvenlikZiyaretci.id.desc()
+    )
     if sadece_acik:
         q = q.where(GuvenlikZiyaretci.cikis_zamani.is_(None))  # type: ignore[union-attr]
-    return list(session.exec(q).all())
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def ziyaretci_olustur(
@@ -209,12 +221,14 @@ def ziyaretci_cikis(session: Session, ziyaretci_id: int) -> GuvenlikZiyaretci:
     )
 
 
-def kayip_esya_listele(session: Session) -> list[KayipEsya]:
-    return list(
-        session.exec(
-            select(KayipEsya).order_by(col(KayipEsya.bulunan_tarih).desc())
-        ).all()
+def kayip_esya_listele(
+    session: Session, *, page: int = 1, page_size: int = 50
+) -> Page[KayipEsya]:
+    q = select(KayipEsya).order_by(
+        col(KayipEsya.bulunan_tarih).desc(), KayipEsya.id.desc()
     )
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def kayip_esya_olustur(
@@ -253,12 +267,14 @@ def kayip_esya_guncelle(
     return kayit
 
 
-def devriye_listele(session: Session) -> list[GuvenlikDevriye]:
-    return list(
-        session.exec(
-            select(GuvenlikDevriye).order_by(col(GuvenlikDevriye.baslangic).desc())
-        ).all()
+def devriye_listele(
+    session: Session, *, page: int = 1, page_size: int = 50
+) -> Page[GuvenlikDevriye]:
+    q = select(GuvenlikDevriye).order_by(
+        col(GuvenlikDevriye.baslangic).desc(), GuvenlikDevriye.id.desc()
     )
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def devriye_olustur(

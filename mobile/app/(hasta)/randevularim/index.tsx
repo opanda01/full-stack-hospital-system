@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Pressable,
   Text,
@@ -20,34 +20,70 @@ type Randevu = {
   hasta_ad_soyad: string | null;
 };
 
+type Page<T> = { items: T[]; total: number; page: number; page_size: number };
+
+const PAGE_SIZE = 20;
+
+function unwrapPage<T>(data: Page<T> | T[]): T[] {
+  if (Array.isArray(data)) return data;
+  return data?.items ?? [];
+}
+
 export default function RandevularimScreen() {
   const [items, setItems] = useState<Randevu[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const loadingMoreRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const loadPage = useCallback(async (pageNum: number, append: boolean) => {
+    const res = await apiFetch(
+      `/randevular/?page=${pageNum}&page_size=${PAGE_SIZE}`,
+    );
+    if (!res.ok) {
+      throw new Error("Randevular yüklenemedi");
+    }
+    const body = (await res.json()) as Page<Randevu>;
+    const chunk = unwrapPage(body);
+    setTotal(body.total ?? chunk.length);
+    setPage(pageNum);
+    setItems((prev) => (append ? [...prev, ...chunk] : chunk));
+  }, []);
+
+  const refresh = useCallback(async () => {
     setHata(null);
     try {
-      const res = await apiFetch("/randevular/");
-      if (!res.ok) {
-        setHata("Randevular yüklenemedi");
-        return;
-      }
-      setItems(await res.json());
+      await loadPage(1, false);
     } catch {
       setHata("Sunucuya bağlanılamadı");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadPage]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      void load();
-    }, [load]),
+      void refresh();
+    }, [refresh]),
   );
+
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || items.length >= total) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      await loadPage(page + 1, true);
+    } catch {
+      setHata("Daha fazla yüklenemedi");
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [items.length, loadPage, page, total]);
 
   const iptal = async (id: string) => {
     setBusyId(id);
@@ -58,7 +94,8 @@ export default function RandevularimScreen() {
         setHata("İptal başarısız");
         return;
       }
-      await load();
+      setLoading(true);
+      await refresh();
     } finally {
       setBusyId(null);
     }
@@ -79,26 +116,29 @@ export default function RandevularimScreen() {
         data={items}
         keyExtractor={(i) => String(i.id)}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void load()} />
+          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+        }
+        onEndReached={() => void loadMore()}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator color="#0369a1" style={{ marginVertical: 12 }} />
+          ) : null
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>Henüz randevunuz yok</Text>
+          <Text style={styles.empty}>Randevu bulunamadı</Text>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {new Date(item.tarih_saat).toLocaleString("tr-TR", {
-                timeZone: "Europe/Istanbul",
-              })}
-            </Text>
+            <Text style={styles.cardTitle}>{item.tarih_saat}</Text>
             <Text>Durum: {item.durum}</Text>
-            <Text style={styles.meta}>Doktor #{item.doktor_id}</Text>
-            {item.durum !== "IPTAL" && item.durum !== "TAMAMLANDI" ? (
+            {item.durum !== "IPTAL" ? (
               <Pressable
-                onPress={() => void iptal(item.id)}
+                style={styles.btn}
                 disabled={busyId === item.id}
+                onPress={() => void iptal(item.id)}
               >
-                <Text style={styles.link}>
+                <Text style={styles.btnText}>
                   {busyId === item.id ? "İptal ediliyor…" : "İptal et"}
                 </Text>
               </Pressable>
@@ -128,8 +168,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardTitle: { fontWeight: "600", color: "#0f172a" },
-  meta: { color: "#64748b", fontSize: 12 },
-  link: { color: "#b91c1c", marginTop: 4 },
+  btn: {
+    marginTop: 8,
+    backgroundColor: "#fee2e2",
+    padding: 8,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  btnText: { color: "#b91c1c", fontWeight: "600" },
   empty: { color: "#64748b", textAlign: "center", marginTop: 24 },
   error: { color: "#dc2626", marginBottom: 8 },
 });

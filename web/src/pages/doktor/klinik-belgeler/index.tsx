@@ -3,7 +3,12 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  getApiErrorMessage,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Tur = "RECETE" | "SEVK" | "TIBBI_RAPOR";
 
@@ -38,11 +43,24 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
   const { data: kayitlar = [], isLoading, isError, error } = useQuery({
     queryKey: ["klinik-onay", tur],
     queryFn: async () =>
-      (await api.get<Kayit[]>("/klinik-onay/", { params: { tur } })).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Kayit>>("/klinik-onay/", {
+            params: { tur, page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-benim"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/benim")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Hasta>>("/hastalar/benim", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const hastaLabel = useMemo(() => {

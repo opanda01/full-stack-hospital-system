@@ -3,7 +3,12 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  getApiErrorMessage,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Konsultasyon = {
   id: number;
@@ -35,16 +40,36 @@ export function DoktorKonsultasyonlarPage() {
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Doktor>>("/doktorlar/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-benim"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/benim")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Hasta>>("/hastalar/benim", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: liste = [], isLoading, isError, error } = useQuery({
     queryKey: ["konsultasyonlar"],
     queryFn: async () =>
-      (await api.get<Konsultasyon[]>("/konsultasyonlar/")).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Konsultasyon>>("/konsultasyonlar/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const doktorLabel = useMemo(() => {

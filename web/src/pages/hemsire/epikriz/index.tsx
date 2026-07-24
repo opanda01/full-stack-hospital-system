@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { useRoleBasePath } from "@/shared/auth";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 
 type Epikriz = {
   id: number;
@@ -32,16 +32,22 @@ export function HemsireEpikrizPage() {
 
   const { data: liste = [], isLoading, isError, error } = useQuery({
     queryKey: ["epikriz"],
-    queryFn: async () => (await api.get<Epikriz[]>("/epikriz/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Epikriz>>("/epikriz/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: yatislar = [] } = useQuery({
     queryKey: ["yatis-aktif-epikriz"],
     queryFn: async () =>
-      (
-        await api.get<Yatis[]>("/yatis/kayitlar", {
-          params: { aktif: true, kapsam: "benim" },
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Yatis>>("/yatis/kayitlar", {
+            params: {
+              aktif: true,
+              kapsam: "benim",
+              page_size: LOOKUP_PAGE_SIZE,
+            },
+          })
+        ).data,
+      ),
   });
 
   const yatisLabel = useMemo(() => {

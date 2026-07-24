@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.db import get_session
 from app.core.lookups import doktor_getir
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import (
     optional_hasta_pk_from_public_id,
@@ -50,28 +51,36 @@ def _to_read(session: Session, row: SaglikKuruluKaydi) -> SaglikKuruluRead:
     )
 
 
-@router.get("/", response_model=list[SaglikKuruluRead])
+@router.get("/", response_model=Page[SaglikKuruluRead])
 def list_kurullar(
     request: Request,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("saglik_kurulu:goruntule")),
 ):
     kapsam = request.state.kapsam
     if kapsam == Kapsam.GLOBAL:
-        rows = session.exec(
-            select(SaglikKuruluKaydi).order_by(SaglikKuruluKaydi.id.desc())
-        ).all()
-        return [_to_read(session, r) for r in rows]
-    if kapsam == Kapsam.KENDI_KAYDIM:
+        q = select(SaglikKuruluKaydi).order_by(SaglikKuruluKaydi.id.desc())
+    elif kapsam == Kapsam.KENDI_KAYDIM:
         doktor = doktor_getir(session, current_user.id)
-        rows = session.exec(
+        q = (
             select(SaglikKuruluKaydi)
             .join(SaglikKuruluUye, SaglikKuruluUye.kurul_id == SaglikKuruluKaydi.id)
             .where(SaglikKuruluUye.doktor_id == doktor.id)
             .order_by(SaglikKuruluKaydi.id.desc())
-        ).all()
-        return [_to_read(session, r) for r in rows]
-    raise HTTPException(status_code=403, detail="Sağlık kurulu görüntüleme yetkiniz yok")
+        )
+    else:
+        raise HTTPException(status_code=403, detail="Sağlık kurulu görüntüleme yetkiniz yok")
+
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        [_to_read(session, r) for r in rows],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post("/", response_model=SaglikKuruluRead, status_code=status.HTTP_201_CREATED)

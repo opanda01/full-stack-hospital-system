@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -6,6 +7,7 @@ from sqlmodel import Session, select
 from app.core.audit import denetim_kaydi_yaz
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
+from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_public_id_from_pk
 from app.core.scope import kullanici_kapsamli_filtre_uygula
@@ -251,8 +253,13 @@ def update_muayene(
 
 
 def list_muayeneler(
-    session: Session, current_user: Kullanici, kapsam: Kapsam
-) -> list[MuayeneKaydi]:
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[MuayeneRead]:
     query = select(MuayeneKaydi).join(Randevu, MuayeneKaydi.randevu_id == Randevu.id)
 
     def kendi(q):
@@ -282,4 +289,31 @@ def list_muayeneler(
         kendi_kaydim_filtresi=kendi,
         departmanim_filtresi=departman,
     )
-    return list(session.exec(query).all())
+    query = query.order_by(MuayeneKaydi.id.desc())
+    rows, total = paginate(session, query, page=page, page_size=page_size)
+
+    muayene_ids = [r.id for r in rows if r.id is not None]
+    kalem_map: dict[int, list[ReceteKalemRead]] = defaultdict(list)
+    if muayene_ids:
+        for k in session.exec(
+            select(ReceteKalemi).where(ReceteKalemi.muayene_id.in_(muayene_ids))
+        ).all():
+            kalem_map[k.muayene_id].append(ReceteKalemRead.model_validate(k))
+
+    items: list[MuayeneRead] = []
+    for kayit in rows:
+        kalemler = kalem_map.get(kayit.id, []) if kayit.id else []
+        recete_text = kayit.receteler
+        if kalemler and not recete_text:
+            recete_text = _kalemleri_metne(kalemler)
+        items.append(
+            MuayeneRead(
+                id=kayit.id,  # type: ignore[arg-type]
+                randevu_id=kayit.randevu_id,
+                tani=kayit.tani,
+                tedavi_plani=kayit.tedavi_plani,
+                receteler=recete_text,
+                recete_kalemleri=kalemler,
+            )
+        )
+    return make_page(items, total=total, page=page, page_size=page_size)

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { unwrapPage, type PageResponse } from "@/shared/lib";
 
 type Tetkik = {
   id: string;
@@ -14,7 +15,8 @@ export function LaborantPage() {
   const qc = useQueryClient();
   const { data = [] } = useQuery({
     queryKey: ["tetkikler"],
-    queryFn: async () => (await api.get<Tetkik[]>("/tetkikler/")).data,
+    queryFn: async () =>
+      unwrapPage((await api.get<PageResponse<Tetkik>>("/tetkikler/")).data),
   });
   const [sonuc, setSonuc] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string | null>(null);

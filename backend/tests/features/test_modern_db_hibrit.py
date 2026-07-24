@@ -148,8 +148,8 @@ def test_denetim_list_no_detay(client, seeded, session: Session):
     r = client.get("/denetim/", headers=headers)
     assert r.status_code == 200
     data = r.json()
-    assert data
-    assert "detay" not in data[0]
+    assert data["items"]
+    assert "detay" not in data["items"][0]
     row = session.exec(
         select(DenetimKaydi).where(DenetimKaydi.aksiyon == "TEST_MASK")
     ).first()

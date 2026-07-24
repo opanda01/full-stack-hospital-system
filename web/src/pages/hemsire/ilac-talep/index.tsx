@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { Badge, Button, Input } from "@/shared/ui";
 
 type YatisListeItem = {
@@ -93,13 +93,18 @@ export function HemsireIlacTalepPage() {
   const { data: kayitlar = [] } = useQuery({
     queryKey: ["yatis-kayitlar-aktif"],
     queryFn: async () =>
-      (await api.get<YatisListeItem[]>("/yatis/kayitlar", { params: { aktif: true } }))
-        .data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<YatisListeItem>>("/yatis/kayitlar", {
+            params: { aktif: true, page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const { data: ilaclar = [] } = useQuery({
     queryKey: ["eczane-ilaclar"],
-    queryFn: async () => (await api.get<Ilac[]>("/eczane/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Ilac>>("/eczane/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const selected = kayitlar.find((k) => k.id === Number(yatisId));
@@ -107,7 +112,7 @@ export function HemsireIlacTalepPage() {
   const { data: satirlar = [] } = useQuery({
     queryKey: ["ilac-satirlar"],
     queryFn: async () =>
-      (await api.get<Satir[]>("/ilac-talepleri/satirlar")).data,
+      unwrapPage((await api.get<PageResponse<Satir>>("/ilac-talepleri/satirlar", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: stok } = useQuery({
@@ -125,11 +130,14 @@ export function HemsireIlacTalepPage() {
     queryKey: ["ilac-verilen", selected?.hasta_id],
     enabled: !!selected?.hasta_id && tab === "verilen",
     queryFn: async () =>
-      (
-        await api.get<Verilen[]>(
-          `/ilac-talepleri/hasta/${selected!.hasta_id}/verilen`,
-        )
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Verilen>>(
+            `/ilac-talepleri/hasta/${selected!.hasta_id}/verilen`,
+            { params: { page_size: LOOKUP_PAGE_SIZE } },
+          )
+        ).data,
+      ),
   });
 
   const createMut = useMutation({

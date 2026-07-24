@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.eczane.models import Ilac
 
@@ -20,20 +21,29 @@ class IlacRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-@router.get("/", response_model=list[IlacRead])
+@router.get("/", response_model=Page[IlacRead])
 def list_ilaclar(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("eczane:goruntule")),
 ):
-    rows = list(session.exec(select(Ilac).order_by(Ilac.ad)).all())
-    return [
-        IlacRead(
-            id=r.id,
-            ad=r.ad,
-            barkod=r.barkod,
-            stok=r.stok,
-            kritik_stok=r.kritik_stok,
-            kritik_mi=r.stok <= r.kritik_stok,
-        )
-        for r in rows
-    ]
+    q = select(Ilac).order_by(col(Ilac.ad).asc(), col(Ilac.id).desc())
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        [
+            IlacRead(
+                id=r.id,
+                ad=r.ad,
+                barkod=r.barkod,
+                stok=r.stok,
+                kritik_stok=r.kritik_stok,
+                kritik_mi=r.stok <= r.kritik_stok,
+            )
+            for r in rows
+        ],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
