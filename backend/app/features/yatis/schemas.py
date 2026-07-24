@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -29,7 +30,7 @@ class YatakRead(BaseModel):
 class YatisListeItem(BaseModel):
     id: int
     protokol_no: str
-    hasta_id: int
+    hasta_id: UUID
     hasta_ad_soyad: str
     yas: int | None
     cinsiyet: str | None
@@ -49,7 +50,7 @@ class YatisListeItem(BaseModel):
 
 class YatisDetay(BaseModel):
     id: int
-    hasta_id: int
+    hasta_id: UUID
     protokol_no: str
     basvuru_no: str | None
     dosya_no: str | None
@@ -215,7 +216,7 @@ class IlacUygulamaRead(BaseModel):
 
 
 class IlacUygulamaListeItem(IlacUygulamaRead):
-    hasta_id: int
+    hasta_id: UUID
     hasta_ad_soyad: str
     protokol_no: str
 

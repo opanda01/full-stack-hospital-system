@@ -67,7 +67,7 @@ def test_hemsire_epikriz_taslak_doktor_onay(client, session, seeded):
     body = r.json()
     assert body["durum"] == "TASLAK"
     assert body["yatis_id"] == yatis.id
-    assert body["hasta_id"] == seeded["hasta_a_entity"].id
+    assert body["hasta_id"] == str(seeded["hasta_a_entity"].public_id)
     epikriz_id = body["id"]
 
     r = client.post(

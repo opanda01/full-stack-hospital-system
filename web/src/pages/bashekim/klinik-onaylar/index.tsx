@@ -10,7 +10,7 @@ type Kayit = {
   tur: string;
   icerik: string;
   onay_durumu: string;
-  hasta_id: number | null;
+  hasta_id: string | null;
 };
 
 export function BashekimKlinikOnaylarPage() {

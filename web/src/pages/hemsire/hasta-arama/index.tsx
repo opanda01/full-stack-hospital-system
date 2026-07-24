@@ -7,7 +7,7 @@ import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Hasta = {
-  id: number;
+  id: string;
   tc_kimlik_no: string;
   ad?: string | null;
   soyad?: string | null;
@@ -18,7 +18,7 @@ type Hasta = {
 };
 type Yatis = {
   id: number;
-  hasta_id: number;
+  hasta_id: string;
   protokol_no: string;
   aktif_mi?: boolean;
 };

@@ -8,7 +8,7 @@ import { Badge, Button, Input } from "@/shared/ui";
 type YatisListeItem = {
   id: number;
   protokol_no: string;
-  hasta_id: number;
+  hasta_id: string;
   hasta_ad_soyad: string;
   servis_ad: string | null;
   sorumlu_doktor_id: number | null;

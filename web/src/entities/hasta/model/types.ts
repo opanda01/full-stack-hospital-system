@@ -1,5 +1,5 @@
 ﻿export type Hasta = {
-  id: number;
+  id: string;
   kullanici_id: number;
   tc_kimlik_no: string;
   dogum_tarihi: string | null;

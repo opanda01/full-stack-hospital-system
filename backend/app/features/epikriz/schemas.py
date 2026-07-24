@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -23,7 +24,7 @@ class EpikrizUpdate(BaseModel):
 class EpikrizRead(BaseModel):
     id: int
     yatis_id: int
-    hasta_id: int
+    hasta_id: UUID
     yazar_id: int
     durum: str
     sikayet_oyku: str | None = None

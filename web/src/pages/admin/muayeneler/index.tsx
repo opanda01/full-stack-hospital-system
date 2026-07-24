@@ -9,7 +9,7 @@ type Muayene = {
   id: number;
   randevu_id?: number;
   doktor_id?: number;
-  hasta_id?: number;
+  hasta_id?: string;
   tani?: string | null;
   created_at?: string;
   olusturma_tarihi?: string;

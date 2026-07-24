@@ -50,6 +50,7 @@ def phi_goruntuleme_logla(
     kaynak: str,
     kaynak_id: int | str,
     request: Request | None = None,
+    detay_extra: dict | None = None,
 ) -> None:
     denetim_kaydi_yaz(
         session,
@@ -58,6 +59,7 @@ def phi_goruntuleme_logla(
         kaynak=kaynak,
         kaynak_id=kaynak_id,
         ip_adresi=istemci_ip_al(request) if request else None,
+        detay=detay_extra,
         commit=True,
     )
 

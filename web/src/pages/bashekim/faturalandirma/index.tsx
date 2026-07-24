@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom";
 
 type Fatura = {
   id: number;
-  hasta_id: number | null;
+  hasta_id: string | null;
   tutar: string | number;
   durum: string;
   aciklama: string | null;

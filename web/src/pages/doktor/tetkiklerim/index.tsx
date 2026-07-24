@@ -5,14 +5,14 @@ import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Tetkik = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   tetkik_turu: string;
   sonuc_dosyasi: string | null;
   durum: string;
 };
 type Doktor = { id: number };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 export function DoktorTetkiklerimPage() {
   const qc = useQueryClient();
@@ -35,7 +35,7 @@ export function DoktorTetkiklerimPage() {
   });
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
@@ -49,7 +49,7 @@ export function DoktorTetkiklerimPage() {
   const createMut = useMutation({
     mutationFn: async () =>
       api.post("/tetkikler/", {
-        hasta_id: Number(hastaId),
+        hasta_id: hastaId,
         istek_yapan_doktor_id: doktor!.id,
         tetkik_turu: tur,
       }),

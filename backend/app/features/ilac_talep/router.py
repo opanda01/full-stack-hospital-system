@@ -1,7 +1,10 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.public_id import hasta_pk_from_public_id, optional_hasta_pk_from_public_id
 from app.core.security import require_permission
 from app.features.ilac_talep import service as ilac_service
 from app.features.ilac_talep.schemas import (
@@ -19,25 +22,29 @@ router = APIRouter()
 
 @router.get("/", response_model=list[IlacTalepRead])
 def list_talepler(
-    hasta_id: int | None = None,
+    hasta_id: UUID | None = None,
     yatis_id: int | None = None,
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
     return ilac_service.list_talepler(
-        session, hasta_id=hasta_id, yatis_id=yatis_id
+        session,
+        hasta_id=optional_hasta_pk_from_public_id(session, hasta_id),
+        yatis_id=yatis_id,
     )
 
 
 @router.get("/satirlar", response_model=list[IlacTalepSatirRead])
 def list_satirlar(
-    hasta_id: int | None = None,
+    hasta_id: UUID | None = None,
     yatis_id: int | None = None,
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
     return ilac_service.list_talepler_satir(
-        session, hasta_id=hasta_id, yatis_id=yatis_id
+        session,
+        hasta_id=optional_hasta_pk_from_public_id(session, hasta_id),
+        yatis_id=yatis_id,
     )
 
 
@@ -53,11 +60,13 @@ def get_stok(
 
 @router.get("/hasta/{hasta_id}/verilen", response_model=list[VerilenIlacRead])
 def get_verilen(
-    hasta_id: int,
+    hasta_id: UUID,
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
-    return ilac_service.verilen_ilaclar(session, hasta_id)
+    return ilac_service.verilen_ilaclar(
+        session, hasta_pk_from_public_id(session, hasta_id)
+    )
 
 
 @router.get("/{talep_id}", response_model=IlacTalepRead)

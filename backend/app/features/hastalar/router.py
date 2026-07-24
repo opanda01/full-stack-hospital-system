@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
@@ -63,22 +65,24 @@ def list_hastalar(
     ]
 
 
-@router.get("/{hasta_id}", response_model=HastaRead)
+@router.get("/{public_id}", response_model=HastaRead)
 def get_hasta(
-    hasta_id: int,
+    public_id: UUID,
     request: Request,
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
     hasta = hasta_service.get_hasta_scoped(
-        session, current_user, hasta_id, request.state.kapsam
+        session, current_user, public_id, request.state.kapsam
     )
+    h = hasta_service.get_hasta_by_public_id(session, public_id)
     phi_goruntuleme_logla(
         session,
         actor=current_user,
         kaynak="hasta",
-        kaynak_id=hasta_id,
+        kaynak_id=h.id,
         request=request,
+        detay_extra={"hasta_public_id": str(h.public_id)},
     )
     return hasta
 
@@ -93,12 +97,12 @@ def create_hasta(
     return hasta_service._hasta_to_read(session, h)
 
 
-@router.patch("/{hasta_id}", response_model=HastaRead)
+@router.patch("/{public_id}", response_model=HastaRead)
 def update_hasta(
-    hasta_id: int,
+    public_id: UUID,
     body: HastaUpdate,
     session: Session = Depends(get_session),
     _user=Depends(require_role(Rol.ADMIN, Rol.IDARI_PERSONEL)),
 ):
-    h = hasta_service.update_hasta(session, hasta_id, body)
+    h = hasta_service.update_hasta(session, public_id, body)
     return hasta_service._hasta_to_read(session, h)

@@ -1,4 +1,4 @@
 export type Hasta = {
-  id: number;
+  id: string;
   tcKimlikNo: string;
 };

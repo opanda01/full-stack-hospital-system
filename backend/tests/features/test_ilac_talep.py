@@ -96,7 +96,7 @@ def test_ilac_talep_olustur_ve_durum_zinciri(client, session, seeded):
     assert r.json()["kalemler"][0]["verilen_miktar"] == 10
 
     r = client.get(
-        f"/ilac-talepleri/hasta/{seeded['hasta_a_entity'].id}/verilen",
+        f"/ilac-talepleri/hasta/{seeded['hasta_a_entity'].public_id}/verilen",
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 200

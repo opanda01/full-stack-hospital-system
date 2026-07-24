@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -8,6 +9,7 @@ from app.core.db import get_session
 from app.core.enums import KonsultasyonDurumu
 from app.core.lookups import doktor_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import hasta_pk_from_public_id, hasta_public_id_from_pk
 from app.core.security import require_permission
 from app.features.hastalar import service as hasta_service
 from app.features.konsultasyon.models import KonsultasyonIstegi
@@ -18,7 +20,7 @@ router = APIRouter()
 
 class KonsultasyonCreate(BaseModel):
     hedef_doktor_id: int
-    hasta_id: int
+    hasta_id: UUID
     notlar: str | None = Field(default=None, max_length=2000)
 
 
@@ -31,7 +33,7 @@ class KonsultasyonRead(BaseModel):
     id: int
     isteyen_doktor_id: int
     hedef_doktor_id: int
-    hasta_id: int
+    hasta_id: UUID
     notlar: str | None
     durum: str
     yanit_notu: str | None
@@ -40,21 +42,17 @@ class KonsultasyonRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-def _to_read(row: KonsultasyonIstegi) -> KonsultasyonRead:
+def _to_read(session: Session, row: KonsultasyonIstegi) -> KonsultasyonRead:
     return KonsultasyonRead(
         id=row.id,
         isteyen_doktor_id=row.isteyen_doktor_id,
         hedef_doktor_id=row.hedef_doktor_id,
-        hasta_id=row.hasta_id,
+        hasta_id=hasta_public_id_from_pk(session, row.hasta_id),
         notlar=row.notlar,
         durum=row.durum.value if hasattr(row.durum, "value") else str(row.durum),
         yanit_notu=row.yanit_notu,
         yanit_tarihi=row.yanit_tarihi,
     )
-
-
-def _ilgili_mi(doktor_id: int, row: KonsultasyonIstegi) -> bool:
-    return row.isteyen_doktor_id == doktor_id or row.hedef_doktor_id == doktor_id
 
 
 @router.get("/", response_model=list[KonsultasyonRead])
@@ -73,7 +71,7 @@ def list_konsultasyonlar(
         )
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Konsültasyon listesi için yetkiniz yok")
-    return [_to_read(r) for r in session.exec(q).all()]
+    return [_to_read(session, r) for r in session.exec(q).all()]
 
 
 @router.post("/", response_model=KonsultasyonRead, status_code=status.HTTP_201_CREATED)
@@ -86,9 +84,10 @@ def create_konsultasyon(
     doktor = doktor_getir(session, current_user.id)
     if body.hedef_doktor_id == doktor.id:
         raise HTTPException(status_code=400, detail="Kendinize konsültasyon isteği gönderemezsiniz")
+    hasta_pk = hasta_pk_from_public_id(session, body.hasta_id)
     if request.state.kapsam == Kapsam.KENDI_KAYDIM:
         if not hasta_service.doktor_hasta_erisim_var_mi(
-            session, current_user, body.hasta_id
+            session, current_user, hasta_pk
         ):
             raise HTTPException(
                 status_code=403, detail="Bu hasta için konsültasyon isteyemezsiniz"
@@ -96,14 +95,14 @@ def create_konsultasyon(
     row = KonsultasyonIstegi(
         isteyen_doktor_id=doktor.id,
         hedef_doktor_id=body.hedef_doktor_id,
-        hasta_id=body.hasta_id,
+        hasta_id=hasta_pk,
         notlar=body.notlar,
         durum=KonsultasyonDurumu.BEKLEMEDE,
     )
     session.add(row)
     session.commit()
     session.refresh(row)
-    return _to_read(row)
+    return _to_read(session, row)
 
 
 @router.post("/{kayit_id}/yanitla", response_model=KonsultasyonRead)
@@ -128,4 +127,4 @@ def yanitla_konsultasyon(
     session.add(row)
     session.commit()
     session.refresh(row)
-    return _to_read(row)
+    return _to_read(session, row)

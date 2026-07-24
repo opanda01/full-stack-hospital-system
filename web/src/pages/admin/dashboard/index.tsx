@@ -23,7 +23,7 @@ type AdminOzet = {
 
 type Sikayet = { id: number };
 type Temizlik = { id: number; durum?: string };
-type Hasta = { id: number };
+type Hasta = { id: string };
 
 export function AdminDashboardPage() {
   const { data: ozet, isLoading } = useQuery({

@@ -1,5 +1,5 @@
 export type Randevu = {
-  id: number;
+  id: string;
   tarihSaat: string;
   durum: string;
 };
