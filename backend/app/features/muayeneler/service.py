@@ -3,18 +3,143 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
+from app.core.audit import denetim_kaydi_yaz
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import hasta_public_id_from_pk
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.models import MuayeneKaydi
-from app.features.muayeneler.schemas import MuayeneCreate, MuayeneUpdate
+from app.features.muayeneler.recete_guvenlik import (
+    ReceteKalemGirdi,
+    uygula_veya_engelle,
+)
+from app.features.muayeneler.recete_models import ReceteKalemi
+from app.features.muayeneler.schemas import (
+    MuayeneCreate,
+    MuayeneRead,
+    MuayeneUpdate,
+    ReceteKalemRead,
+)
 from app.features.randevular.models import Randevu
 
 
+def _kalemleri_metne(kalemler: list) -> str | None:
+    if not kalemler:
+        return None
+    parts = []
+    for k in kalemler:
+        bit = k.urun_adi
+        if k.doz:
+            bit += f" {k.doz}"
+        if k.periyod:
+            bit += f" / {k.periyod}"
+        parts.append(bit)
+    return "; ".join(parts)[:2000]
+
+
+def _kalem_oku(session: Session, muayene_id: int) -> list[ReceteKalemRead]:
+    rows = list(
+        session.exec(
+            select(ReceteKalemi)
+            .where(ReceteKalemi.muayene_id == muayene_id)
+            .order_by(ReceteKalemi.sira, ReceteKalemi.id)
+        ).all()
+    )
+    return [ReceteKalemRead.model_validate(r) for r in rows]
+
+
+def muayene_to_read(session: Session, kayit: MuayeneKaydi) -> MuayeneRead:
+    kalemler = _kalem_oku(session, kayit.id)  # type: ignore[arg-type]
+    recete_text = kayit.receteler
+    if kalemler and not recete_text:
+        recete_text = _kalemleri_metne(kalemler)
+    return MuayeneRead(
+        id=kayit.id,  # type: ignore[arg-type]
+        randevu_id=kayit.randevu_id,
+        tani=kayit.tani,
+        tedavi_plani=kayit.tedavi_plani,
+        receteler=recete_text,
+        recete_kalemleri=kalemler,
+    )
+
+
+def _kaydet_kalemler(
+    session: Session,
+    *,
+    muayene: MuayeneKaydi,
+    randevu: Randevu,
+    current_user: Kullanici,
+    kalem_data: list,
+    uyari_onay,
+    ip_adresi: str | None = None,
+) -> None:
+    girdiler = [
+        ReceteKalemGirdi(
+            urun_adi=k.urun_adi, barkod=k.barkod, ilac_id=k.ilac_id
+        )
+        for k in kalem_data
+    ]
+    soft = uygula_veya_engelle(
+        session,
+        hasta_id=randevu.hasta_id,
+        kalemler=girdiler,
+        uyari_kodlari=uyari_onay.uyari_kodlari if uyari_onay else None,
+        gerekce=uyari_onay.gerekce if uyari_onay else None,
+    )
+
+    # Eski kalemleri sil
+    for old in session.exec(
+        select(ReceteKalemi).where(ReceteKalemi.muayene_id == muayene.id)
+    ).all():
+        session.delete(old)
+
+    for k in kalem_data:
+        session.add(
+            ReceteKalemi(
+                muayene_id=muayene.id,  # type: ignore[arg-type]
+                ilac_id=k.ilac_id,
+                urun_adi=k.urun_adi,
+                barkod=k.barkod,
+                doz=k.doz,
+                periyod=k.periyod,
+                kullanim_sekli=k.kullanim_sekli,
+                adet=k.adet,
+                sira=k.sira,
+            )
+        )
+
+    muayene.receteler = _kalemleri_metne(kalem_data)
+
+    if soft and uyari_onay:
+        denetim_kaydi_yaz(
+            session,
+            aksiyon="RECETE_UYARI_OVERRIDE",
+            actor_id=current_user.id,
+            kaynak="muayene",
+            kaynak_id=muayene.id,
+            ip_adresi=ip_adresi,
+            detay={
+                "muayene_id": muayene.id,
+                "kalem_ozet": [k.urun_adi for k in kalem_data],
+                "uyari_kodlari": uyari_onay.uyari_kodlari,
+                "gerekce": uyari_onay.gerekce,
+                "hasta_public_id": str(
+                    hasta_public_id_from_pk(session, randevu.hasta_id)
+                ),
+            },
+            commit=False,
+        )
+
+
 def create_muayene(
-    session: Session, current_user: Kullanici, data: MuayeneCreate, kapsam: Kapsam
+    session: Session,
+    current_user: Kullanici,
+    data: MuayeneCreate,
+    kapsam: Kapsam,
+    *,
+    ip_adresi: str | None = None,
 ) -> MuayeneKaydi:
     randevu = session.get(Randevu, data.randevu_id)
     if randevu is None:
@@ -31,8 +156,44 @@ def create_muayene(
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Bu randevu için muayene zaten var")
-    kayit = MuayeneKaydi(**data.model_dump())
+
+    dump = data.model_dump(
+        exclude={"recete_kalemleri", "uyari_onay"},
+    )
+
+    if data.recete_kalemleri:
+        # Güvenlik kontrolü kayıt oluşturmadan önce (422'de yarım satır kalmasın)
+        girdiler = [
+            ReceteKalemGirdi(
+                urun_adi=k.urun_adi, barkod=k.barkod, ilac_id=k.ilac_id
+            )
+            for k in data.recete_kalemleri
+        ]
+        uygula_veya_engelle(
+            session,
+            hasta_id=randevu.hasta_id,
+            kalemler=girdiler,
+            uyari_kodlari=data.uyari_onay.uyari_kodlari if data.uyari_onay else None,
+            gerekce=data.uyari_onay.gerekce if data.uyari_onay else None,
+        )
+
+    kayit = MuayeneKaydi(**dump)
     session.add(kayit)
+    session.flush()
+
+    if data.recete_kalemleri:
+        _kaydet_kalemler(
+            session,
+            muayene=kayit,
+            randevu=randevu,
+            current_user=current_user,
+            kalem_data=data.recete_kalemleri,
+            uyari_onay=data.uyari_onay,
+            ip_adresi=ip_adresi,
+        )
+    elif data.receteler:
+        kayit.receteler = data.receteler
+
     randevu.durum = "TAMAMLANDI"
     randevu.updated_at = datetime.now(timezone.utc)
     session.add(randevu)
@@ -47,6 +208,8 @@ def update_muayene(
     muayene_id: int,
     data: MuayeneUpdate,
     kapsam: Kapsam,
+    *,
+    ip_adresi: str | None = None,
 ) -> MuayeneKaydi:
     kayit = session.get(MuayeneKaydi, muayene_id)
     if kayit is None:
@@ -62,8 +225,24 @@ def update_muayene(
             )
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Muayene güncelleme yetkiniz yok")
-    for k, v in data.model_dump(exclude_unset=True).items():
+
+    payload = data.model_dump(
+        exclude_unset=True, exclude={"recete_kalemleri", "uyari_onay"}
+    )
+    for k, v in payload.items():
         setattr(kayit, k, v)
+
+    if data.recete_kalemleri is not None:
+        _kaydet_kalemler(
+            session,
+            muayene=kayit,
+            randevu=randevu,
+            current_user=current_user,
+            kalem_data=data.recete_kalemleri,
+            uyari_onay=data.uyari_onay,
+            ip_adresi=ip_adresi,
+        )
+
     kayit.updated_at = datetime.now(timezone.utc)
     session.add(kayit)
     session.commit()

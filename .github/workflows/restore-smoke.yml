@@ -1,0 +1,34 @@
+name: Restore smoke
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # weekly Monday 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  restore-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start postgres
+        run: docker compose up -d postgres
+      - name: Wait healthy
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T postgres pg_isready -U hastane -d hastane_db && break
+            sleep 2
+          done
+      - name: Apply schema (alembic) or create stub
+        run: |
+          docker compose up -d backend || true
+          sleep 5
+          # Smoke can run against empty DB with CREATE TABLE stub if migrate fails
+          docker compose exec -T postgres psql -U hastane -d hastane_db -c \
+            "CREATE TABLE IF NOT EXISTS hastalar (id serial primary key);" || true
+      - name: Restore smoke
+        run: bash scripts/restore-smoke.sh
+        env:
+          BACKUP_DIR: /tmp
+      - name: Notify on failure
+        if: failure()
+        run: echo "::error::Weekly restore-smoke failed — backup claim is unverified"

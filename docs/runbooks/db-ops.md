@@ -51,3 +51,19 @@
 
 - Prod’da `UPDATE hastalar` p95 ölçün (trigger açık).
 - Aşımda önce `mask_dict(..., narrow=True)` alan setine düşün; TC/adres maske kuralları değişmez.
+
+## Compose otomatik backup
+
+- `postgres-backup` servisi günlük `pg_dump` alır; volume `postgres_backups`, 7 gün saklama.
+- RPO ≈ saat mertebesi (WAL/PITR bu runbook’ta ayrı, managed/prod adımı).
+- **Haftalık CI:** `.github/workflows/restore-smoke.yml` restore-smoke çalıştırır.
+- **Çeyreklik manuel:** bu bölümdeki PITR/full restore tatbikatı + RTO ölçümü.
+- Lokal: `bash scripts/restore-smoke.sh` veya `scripts/restore-smoke.ps1`.
+
+## PHI encrypt backfill
+
+1. Backup doğrulanmış; düşük trafikli pencere.
+2. `PHI_ENCRYPT_ENABLED=false` iken kolonlar hazır (`015_kvkk_phi`).
+3. `python -m scripts.phi_encrypt_backfill --batch-size 500` — `app.skip_hasta_audit=1`, batch özet `PHI_ENCRYPT_BACKFILL`.
+4. Doğrulama sonrası `PHI_ENCRYPT_ENABLED=true`.
+5. Plaintext drop ayrı migration (doğrulama sonrası).

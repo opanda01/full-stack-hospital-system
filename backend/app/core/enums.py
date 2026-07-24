@@ -81,6 +81,48 @@ class KlinikOnayDurumu(str, Enum):
 class EntegrasyonSistem(str, Enum):
     ENABIZ = "ENABIZ"
     SGK_PROVIZYON = "SGK_PROVIZYON"
+    MEDULA = "MEDULA"
+    KPS = "KPS"
+    SAGLIK_NET = "SAGLIK_NET"
+    ITS = "ITS"
+
+
+class AllerjenTipi(str, Enum):
+    ILAC = "ILAC"
+    ETKEN_MADDE = "ETKEN_MADDE"
+    GIDA = "GIDA"
+    DIGER = "DIGER"
+
+
+class AlerjiSiddet(str, Enum):
+    HAFIF = "HAFIF"
+    ORTA = "ORTA"
+    SIDDETLI = "SIDDETLI"
+    ANAFILAKSI = "ANAFILAKSI"
+
+
+class IlacEtkilesimSeviye(str, Enum):
+    UYARI = "UYARI"
+    KONTRANDIKE = "KONTRANDIKE"
+
+
+class KvkkMetinTur(str, Enum):
+    AYDINLATMA = "AYDINLATMA"
+    ACIK_RIZA = "ACIK_RIZA"
+    PERSONEL = "PERSONEL"
+
+
+class KvkkOnayKanal(str, Enum):
+    WEB = "WEB"
+    MOBIL = "MOBIL"
+    OTP_KAYIT = "OTP_KAYIT"
+
+
+class MedulaGonderimDurumu(str, Enum):
+    BEKLEMEDE = "BEKLEMEDE"
+    GONDERILDI = "GONDERILDI"
+    HATA = "HATA"
+    IPTAL = "IPTAL"
 
 
 class EntegrasyonDurumKod(str, Enum):

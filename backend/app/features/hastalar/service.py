@@ -110,11 +110,17 @@ def search_hastalar(
                     protokol_ids.add(hid)
         except Exception:
             pass
+        from app.core.crypto import hmac_lookup_values
+
+        hash_vals = hmac_lookup_values(qn) if qn.isdigit() and len(qn) == 11 else []
         conds = [
             Hasta.tc_kimlik_no.ilike(like),
             Kullanici.ad.ilike(like),
             Kullanici.soyad.ilike(like),
         ]
+        if hash_vals:
+            conds.append(Hasta.tc_kimlik_no_hash.in_(hash_vals))
+            conds.append(Hasta.tc_kimlik_no_hash_prev.in_(hash_vals))
         if protokol_ids:
             conds.append(Hasta.id.in_(protokol_ids))
         query = query.where(or_(*conds))
@@ -135,15 +141,17 @@ def get_hasta_by_public_id(session: Session, public_id: UUID) -> Hasta:
 
 
 def _hasta_to_read(session: Session, h: Hasta) -> HastaRead:
+    from app.core.crypto import decrypt_phi
+
     k = session.get(Kullanici, h.kullanici_id)
     return HastaRead(
         id=h.public_id,
         kullanici_id=h.kullanici_id,
-        tc_kimlik_no=h.tc_kimlik_no,
+        tc_kimlik_no=decrypt_phi(h.tc_kimlik_no) or h.tc_kimlik_no,
         dogum_tarihi=h.dogum_tarihi,
         cinsiyet=h.cinsiyet,
         kan_grubu=h.kan_grubu,
-        adres=h.adres,
+        adres=decrypt_phi(h.adres) if h.adres else None,
         ad=k.ad if k else None,
         soyad=k.soyad if k else None,
     )
@@ -342,13 +350,25 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
     apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
     session.add(kullanici)
     session.flush()
+    from app.core.crypto import encrypt_phi, hmac_tc, phi_encrypt_enabled
+
+    store_tc = data.tc_kimlik_no
+    store_adres = data.adres
+    tc_hash = hmac_tc(data.tc_kimlik_no)
+    if phi_encrypt_enabled():
+        store_tc = encrypt_phi(data.tc_kimlik_no) or data.tc_kimlik_no
+        store_adres = encrypt_phi(data.adres) if data.adres else None
+        kullanici.tc_kimlik_no = store_tc
+        kullanici.tc_kimlik_no_hash = tc_hash
+        session.add(kullanici)
     h = Hasta(
         kullanici_id=kullanici.id,
-        tc_kimlik_no=data.tc_kimlik_no,
+        tc_kimlik_no=store_tc,
+        tc_kimlik_no_hash=tc_hash,
         dogum_tarihi=data.dogum_tarihi,
         cinsiyet=data.cinsiyet,
         kan_grubu=data.kan_grubu,
-        adres=data.adres,
+        adres=store_adres,
         **({"public_id": data.public_id} if data.public_id is not None else {}),
     )
     session.add(h)

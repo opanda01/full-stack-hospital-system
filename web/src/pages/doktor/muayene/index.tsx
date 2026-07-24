@@ -12,13 +12,39 @@ type Randevu = {
   hasta_id: string;
 };
 type Doktor = { id: number };
+type ReceteKalem = {
+  id?: number;
+  urun_adi: string;
+  doz?: string;
+  periyod?: string;
+  sira: number;
+};
 type Muayene = {
   id: number;
   randevu_id: number;
   tani: string | null;
   tedavi_plani: string | null;
+  recete_kalemleri?: ReceteKalem[];
 };
 type Hasta = { id: string; ad?: string | null; soyad?: string | null };
+type Alerji = {
+  id: number;
+  allerjen_adi: string;
+  siddet: string;
+};
+
+type ApiDetail = {
+  kod?: string;
+  mesaj?: string;
+  uyarilar?: { kod: string; mesaj: string }[];
+};
+
+function extractDetail(e: unknown): ApiDetail | null {
+  const ax = e as { response?: { data?: { detail?: ApiDetail | string } } };
+  const d = ax?.response?.data?.detail;
+  if (d && typeof d === "object") return d;
+  return null;
+}
 
 export function DoktorMuayeneEkraniPage() {
   const qc = useQueryClient();
@@ -45,10 +71,27 @@ export function DoktorMuayeneEkraniPage() {
   const [randevuId, setRandevuId] = useState(initialRandevu);
   const [tani, setTani] = useState("");
   const [tedavi, setTedavi] = useState("");
+  const [kalemAd, setKalemAd] = useState("");
+  const [kalemDoz, setKalemDoz] = useState("");
+  const [kalemler, setKalemler] = useState<ReceteKalem[]>([]);
   const [tetkikTuru, setTetkikTuru] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [pendingUyarilar, setPendingUyarilar] = useState<
+    { kod: string; mesaj: string }[] | null
+  >(null);
+  const [gerekce, setGerekce] = useState("");
+
+  const selected = randevular.find((r) => r.id === randevuId);
+  const existing = muayeneler.find((m) => m.randevu_id === Number(randevuId));
+
+  const { data: alerjiler = [] } = useQuery({
+    queryKey: ["alerjiler", selected?.hasta_id],
+    enabled: Boolean(selected?.hasta_id),
+    queryFn: async () =>
+      (await api.get<Alerji[]>(`/hastalar/${selected!.hasta_id}/alerjiler`)).data,
+  });
 
   const hastaLabel = useMemo(() => {
     const m = new Map<string, string>();
@@ -58,32 +101,54 @@ export function DoktorMuayeneEkraniPage() {
     return m;
   }, [hastalar]);
 
-  const selected = randevular.find((r) => r.id === randevuId);
-  const existing = muayeneler.find((m) => m.randevu_id === Number(randevuId));
+  const payloadBase = () => ({
+    tani,
+    tedavi_plani: tedavi,
+    recete_kalemleri: kalemler.map((k, i) => ({
+      urun_adi: k.urun_adi,
+      doz: k.doz || null,
+      periyod: k.periyod || null,
+      sira: i + 1,
+    })),
+  });
 
   const saveMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (uyariOnay?: { gerekce: string; uyari_kodlari: string[] }) => {
+      const body = {
+        ...payloadBase(),
+        ...(uyariOnay ? { uyari_onay: uyariOnay } : {}),
+      };
       if (editingId || existing) {
         const id = editingId ?? existing!.id;
-        return api.patch(`/muayeneler/${id}`, {
-          tani,
-          tedavi_plani: tedavi,
-        });
+        return api.patch(`/muayeneler/${id}`, body);
       }
       return api.post("/muayeneler/", {
         randevu_id: Number(randevuId),
-        tani,
-        tedavi_plani: tedavi,
-        receteler: null,
+        ...body,
       });
     },
     onSuccess: () => {
       setMsg(existing || editingId ? "Muayene güncellendi" : "Muayene kaydedildi");
       setErr(null);
+      setPendingUyarilar(null);
+      setGerekce("");
       qc.invalidateQueries({ queryKey: ["randevular"] });
       qc.invalidateQueries({ queryKey: ["muayeneler"] });
     },
-    onError: (e) => setErr(getApiErrorMessage(e)),
+    onError: (e) => {
+      const detail = extractDetail(e);
+      if (detail?.kod === "RECETE_HARD_STOP") {
+        setPendingUyarilar(null);
+        setErr(detail.mesaj || "Reçete engellendi (hard-stop)");
+        return;
+      }
+      if (detail?.kod === "RECETE_UYARI_ONAY_GEREKLI" && detail.uyarilar) {
+        setPendingUyarilar(detail.uyarilar);
+        setErr(detail.mesaj || "Uyarı onayı gerekli");
+        return;
+      }
+      setErr(getApiErrorMessage(e));
+    },
   });
 
   const tetkik = useMutation({
@@ -103,15 +168,26 @@ export function DoktorMuayeneEkraniPage() {
 
   const loadExisting = (rId: string) => {
     setRandevuId(rId);
+    setPendingUyarilar(null);
+    setGerekce("");
     const m = muayeneler.find((x) => x.randevu_id === Number(rId));
     if (m) {
       setEditingId(m.id);
       setTani(m.tani ?? "");
       setTedavi(m.tedavi_plani ?? "");
+      setKalemler(
+        (m.recete_kalemleri ?? []).map((k, i) => ({
+          urun_adi: k.urun_adi,
+          doz: k.doz,
+          periyod: k.periyod,
+          sira: k.sira ?? i + 1,
+        }))
+      );
     } else {
       setEditingId(null);
       setTani("");
       setTedavi("");
+      setKalemler([]);
     }
   };
 
@@ -130,6 +206,12 @@ export function DoktorMuayeneEkraniPage() {
           <p className="text-sm text-red-600" role="alert">
             {err}
           </p>
+        )}
+        {alerjiler.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Alerjiler:{" "}
+            {alerjiler.map((a) => `${a.allerjen_adi} (${a.siddet})`).join(", ")}
+          </div>
         )}
         <select
           className="w-full rounded-md border border-border px-3 py-2"
@@ -158,9 +240,95 @@ export function DoktorMuayeneEkraniPage() {
           value={tedavi}
           onChange={(e) => setTedavi(e.target.value)}
         />
+
+        <div className="space-y-2 border-t border-border pt-3">
+          <p className="text-sm font-medium">Reçete kalemleri</p>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 rounded-md border border-border px-3 py-2"
+              placeholder="İlaç adı"
+              value={kalemAd}
+              onChange={(e) => setKalemAd(e.target.value)}
+            />
+            <input
+              className="w-28 rounded-md border border-border px-3 py-2"
+              placeholder="Doz"
+              value={kalemDoz}
+              onChange={(e) => setKalemDoz(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (!kalemAd.trim()) return;
+                setKalemler((prev) => [
+                  ...prev,
+                  {
+                    urun_adi: kalemAd.trim(),
+                    doz: kalemDoz.trim() || undefined,
+                    sira: prev.length + 1,
+                  },
+                ]);
+                setKalemAd("");
+                setKalemDoz("");
+              }}
+            >
+              Ekle
+            </Button>
+          </div>
+          <ul className="space-y-1 text-sm">
+            {kalemler.map((k, i) => (
+              <li key={`${k.urun_adi}-${i}`} className="flex justify-between gap-2">
+                <span>
+                  {k.urun_adi}
+                  {k.doz ? ` — ${k.doz}` : ""}
+                </span>
+                <button
+                  type="button"
+                  className="text-red-600 underline"
+                  onClick={() =>
+                    setKalemler((prev) => prev.filter((_, idx) => idx !== i))
+                  }
+                >
+                  Sil
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {pendingUyarilar && (
+          <div className="space-y-2 rounded-md border border-orange-300 bg-orange-50 p-3">
+            <p className="text-sm font-medium text-orange-900">Uyarı onayı gerekli</p>
+            <ul className="list-disc pl-5 text-sm text-orange-900">
+              {pendingUyarilar.map((u) => (
+                <li key={u.kod}>{u.mesaj}</li>
+              ))}
+            </ul>
+            <textarea
+              className="w-full rounded-md border border-border px-3 py-2"
+              placeholder="Gerekçe (min 10 karakter)"
+              value={gerekce}
+              onChange={(e) => setGerekce(e.target.value)}
+            />
+            <Button
+              type="button"
+              onClick={() =>
+                saveMut.mutate({
+                  gerekce,
+                  uyari_kodlari: pendingUyarilar.map((u) => u.kod),
+                })
+              }
+              disabled={gerekce.trim().length < 10 || saveMut.isPending}
+            >
+              Uyarıyı onayla ve kaydet
+            </Button>
+          </div>
+        )}
+
         <Button
           type="button"
-          onClick={() => saveMut.mutate()}
+          onClick={() => saveMut.mutate(undefined)}
           disabled={!randevuId || !tani || saveMut.isPending}
         >
           {existing || editingId ? "Muayeneyi güncelle" : "Muayene kaydet"}
