@@ -37,6 +37,7 @@ def _to_read(session: Session, r: Randevu) -> RandevuRead:
     )
 
 
+
 @router.get("/musait", response_model=list[str])
 def musait_slotlar(
     doktor_id: int = Query(...),

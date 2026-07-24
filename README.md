@@ -1,4 +1,4 @@
-# Çanakkale Mehmet Akif Ersoy Devlet Hastanesi — Hastane Bilgi Yönetim Sistemi
+# Devlet Hastanesi — Hastane Bilgi Yönetim Sistemi
 
 Monorepo: **pnpm workspaces** + **Turborepo**. Backend FastAPI (feature-based), web React+Vite (FSD), mobile Expo (sadeleştirilmiş FSD).
 

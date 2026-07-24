@@ -115,7 +115,7 @@ def olustur(
                 detail="Sadece kendi departmanınız için randevu oluşturabilirsiniz.",
             )
 
-    if veri.public_id is not None:
+if veri.public_id is not None:
         clash = session.exec(
             select(Randevu).where(Randevu.public_id == veri.public_id)
         ).first()
