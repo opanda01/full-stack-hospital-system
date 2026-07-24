@@ -4,7 +4,7 @@ import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 
 type Tetkik = {
-  id: number;
+  id: string;
   tetkik_turu: string;
   durum: string;
   sonuc_dosyasi: string | null;
@@ -16,10 +16,10 @@ export function LaborantPage() {
     queryKey: ["tetkikler"],
     queryFn: async () => (await api.get<Tetkik[]>("/tetkikler/")).data,
   });
-  const [sonuc, setSonuc] = useState<Record<number, string>>({});
+  const [sonuc, setSonuc] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const kaydet = useMutation({
-    mutationFn: ({ id, text }: { id: number; text: string }) =>
+    mutationFn: ({ id, text }: { id: string; text: string }) =>
       api.patch(`/tetkikler/${id}/sonuc`, {
         sonuc_dosyasi: text,
         durum: "SONUCLANDI",

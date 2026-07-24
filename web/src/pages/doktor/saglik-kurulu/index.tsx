@@ -5,7 +5,7 @@ import { getApiErrorMessage } from "@/shared/lib";
 type Kurul = {
   id: number;
   baslik: string;
-  hasta_id: number | null;
+  hasta_id: string | null;
   karar_ozeti: string | null;
   durum: string;
   uye_doktor_idler: number[];

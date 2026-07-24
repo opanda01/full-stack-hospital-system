@@ -1,19 +1,21 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel
 
 
 class RandevuCreate(BaseModel):
-    hasta_id: int
+    hasta_id: UUID
     doktor_id: int
     departman_id: int
     tarih_saat: datetime
     notlar: str | None = None
+    public_id: UUID | None = None
 
 
 class RandevuRead(BaseModel):
-    id: int
-    hasta_id: int
+    id: UUID
+    hasta_id: UUID
     doktor_id: int
     departman_id: int
     tarih_saat: datetime

@@ -180,6 +180,8 @@ def list_kayitlar(
     items: list[YatisListeItem] = []
     for y in session.exec(q).all():
         hasta = session.get(Hasta, y.hasta_id)
+        if hasta is None:
+            continue
         yatak = session.get(Yatak, y.yatak_id) if y.yatak_id else None
         servis = session.get(Servis, y.servis_id)
         durum = y.klinik_durum.value if hasattr(y.klinik_durum, "value") else str(y.klinik_durum)
@@ -187,10 +189,10 @@ def list_kayitlar(
             YatisListeItem(
                 id=y.id,
                 protokol_no=y.protokol_no,
-                hasta_id=y.hasta_id,
-                hasta_ad_soyad=_hasta_ad(session, hasta) if hasta else f"#{y.hasta_id}",
-                yas=_yas(hasta.dogum_tarihi) if hasta else None,
-                cinsiyet=hasta.cinsiyet if hasta else None,
+                hasta_id=hasta.public_id,
+                hasta_ad_soyad=_hasta_ad(session, hasta),
+                yas=_yas(hasta.dogum_tarihi),
+                cinsiyet=hasta.cinsiyet,
                 yatak_no=yatak.yatak_no if yatak else None,
                 oda_no=yatak.oda_no if yatak else None,
                 yatis_tarihi=y.yatis_tarihi,
@@ -213,13 +215,15 @@ def get_detay(session: Session, yatis_id: int) -> YatisDetay:
     if y is None:
         raise HTTPException(status_code=404, detail="Yatış kaydı bulunamadı")
     hasta = session.get(Hasta, y.hasta_id)
+    if hasta is None:
+        raise HTTPException(status_code=404, detail="Hasta bulunamadı")
     yatak = session.get(Yatak, y.yatak_id) if y.yatak_id else None
     servis = session.get(Servis, y.servis_id)
     ref = session.exec(select(Refakatci).where(Refakatci.yatis_id == yatis_id)).first()
     durum = y.klinik_durum.value if hasattr(y.klinik_durum, "value") else str(y.klinik_durum)
     return YatisDetay(
         id=y.id,
-        hasta_id=y.hasta_id,
+        hasta_id=hasta.public_id,
         protokol_no=y.protokol_no,
         basvuru_no=y.basvuru_no,
         dosya_no=y.dosya_no,

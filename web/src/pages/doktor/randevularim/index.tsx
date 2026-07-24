@@ -7,13 +7,13 @@ import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 
 type Randevu = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   durum: string;
   tarih_saat: string;
   notlar: string | null;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null; tc_kimlik_no: string };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null; tc_kimlik_no: string };
 
 type ZamanDilimi =
   | "hepsi"
@@ -89,7 +89,7 @@ export function DoktorRandevularimPage() {
   });
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       const ad = `${h.ad ?? ""} ${h.soyad ?? ""}`.trim();
       m.set(h.id, ad || `Hasta #${h.id}`);

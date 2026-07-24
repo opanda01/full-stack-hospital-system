@@ -17,6 +17,12 @@
 - Sequence: migration `setval` uygular; smoke insert ile doğrulayın.
 - `denetim_kayitlari_old` doğrulama sonrası drop.
 
+## Alembic 013 public_id (PHI)
+
+- `hastalar` / `randevular` / `tetkikler`: `public_id UUID NOT NULL UNIQUE`; integer PK/FK değişmez.
+- Dış API kimliği = `public_id`; iç audit `kaynak_id` = integer PK string.
+- `hastalar_audit_trigger` `detay.hasta_public_id` yazar; eski denetim satırlarına backfill yok.
+
 ## timestamptz
 
 - Randevu: `USING tarih_saat AT TIME ZONE 'Europe/Istanbul'`.

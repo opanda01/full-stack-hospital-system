@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.core.enums import IlacTalepDurumu, KullanimSekli
+from uuid import UUID
 
 
 class IlacTalepKalemCreate(BaseModel):
@@ -51,7 +52,7 @@ class IlacTalepKalemRead(BaseModel):
 class IlacTalepRead(BaseModel):
     id: int
     yatis_id: int
-    hasta_id: int
+    hasta_id: UUID
     hasta_ad_soyad: str | None = None
     protokol_no: str | None = None
     servis_id: int

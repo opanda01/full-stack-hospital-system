@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const randevuOlusturSchema = z.object({
-  hastaId: z.number().int().positive(),
+  hastaId: z.string().uuid(),
   doktorId: z.number().int().positive(),
   departmanId: z.number().int().positive(),
   tarihSaat: z.string().min(1),

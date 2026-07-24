@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID, uuid4
 
 from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship
@@ -10,6 +11,7 @@ from app.core.base_model import BaseModel
 class Randevu(BaseModel, table=True):
     __tablename__ = "randevular"
 
+    public_id: UUID = Field(default_factory=uuid4, unique=True, index=True)
     hasta_id: int = Field(foreign_key="hastalar.id", index=True)
     doktor_id: int = Field(foreign_key="doktorlar.id", index=True)
     departman_id: int = Field(foreign_key="departmanlar.id", index=True)

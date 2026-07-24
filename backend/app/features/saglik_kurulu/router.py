@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -5,6 +7,10 @@ from sqlmodel import Session, select
 from app.core.db import get_session
 from app.core.lookups import doktor_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import (
+    optional_hasta_pk_from_public_id,
+    optional_hasta_public_id_from_pk,
+)
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.saglik_kurulu.models import SaglikKuruluKaydi, SaglikKuruluUye
@@ -14,7 +20,7 @@ router = APIRouter()
 
 class SaglikKuruluCreate(BaseModel):
     baslik: str = Field(min_length=1, max_length=255)
-    hasta_id: int | None = None
+    hasta_id: UUID | None = None
     karar_ozeti: str | None = None
     uye_doktor_idler: list[int] = Field(default_factory=list)
 
@@ -22,7 +28,7 @@ class SaglikKuruluCreate(BaseModel):
 class SaglikKuruluRead(BaseModel):
     id: int
     baslik: str
-    hasta_id: int | None
+    hasta_id: UUID | None
     karar_ozeti: str | None
     durum: str
     uye_doktor_idler: list[int]
@@ -37,7 +43,7 @@ def _to_read(session: Session, row: SaglikKuruluKaydi) -> SaglikKuruluRead:
     return SaglikKuruluRead(
         id=row.id,
         baslik=row.baslik,
-        hasta_id=row.hasta_id,
+        hasta_id=optional_hasta_public_id_from_pk(session, row.hasta_id),
         karar_ozeti=row.karar_ozeti,
         durum=row.durum,
         uye_doktor_idler=list(uyeler),
@@ -76,7 +82,7 @@ def create_kurul(
 ):
     row = SaglikKuruluKaydi(
         baslik=body.baslik,
-        hasta_id=body.hasta_id,
+        hasta_id=optional_hasta_pk_from_public_id(session, body.hasta_id),
         karar_ozeti=body.karar_ozeti,
         durum="ACIK",
     )

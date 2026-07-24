@@ -1,15 +1,18 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
 class TetkikCreate(BaseModel):
-    hasta_id: int
+    hasta_id: UUID
     istek_yapan_doktor_id: int
     tetkik_turu: str
+    public_id: UUID | None = None
 
 
 class TetkikRead(BaseModel):
-    id: int
-    hasta_id: int
+    id: UUID
+    hasta_id: UUID
     istek_yapan_doktor_id: int
     tetkik_turu: str
     sonuc_dosyasi: str | None = None

@@ -1,10 +1,12 @@
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from app.core.db import get_session
+from app.core.public_id import optional_hasta_public_id_from_pk
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.faturalandirma.models import Fatura
@@ -15,7 +17,7 @@ router = APIRouter()
 
 class FaturaRead(BaseModel):
     id: int
-    hasta_id: int | None
+    hasta_id: UUID | None
     tutar: Decimal
     durum: str
     aciklama: str | None
@@ -27,6 +29,16 @@ class FaturaOzet(BaseModel):
     toplam_adet: int
     toplam_tutar: Decimal
     durum_dagilim: dict[str, int]
+
+
+def _to_read(session: Session, row: Fatura) -> FaturaRead:
+    return FaturaRead(
+        id=row.id,
+        hasta_id=optional_hasta_public_id_from_pk(session, row.hasta_id),
+        tutar=row.tutar,
+        durum=row.durum,
+        aciklama=row.aciklama,
+    )
 
 
 @router.get("/ozet", response_model=FaturaOzet)
@@ -52,7 +64,7 @@ def list_faturalar(
     session: Session = Depends(get_session),
     _user=Depends(require_permission("fatura:goruntule")),
 ):
-    return list(session.exec(select(Fatura).order_by(Fatura.id.desc())).all())
+    return [_to_read(session, r) for r in session.exec(select(Fatura).order_by(Fatura.id.desc())).all()]
 
 
 @router.get("/{fatura_id}", response_model=FaturaRead)
@@ -73,4 +85,4 @@ def get_fatura(
             kaynak_id=fatura_id,
             request=request,
         )
-    return row
+    return _to_read(session, row)

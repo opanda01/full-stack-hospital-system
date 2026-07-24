@@ -10,7 +10,7 @@ import type { Randevu } from "@/entities/randevu";
 import type { Doktor } from "@/entities/doktor";
 import { AdminRandevuOlusturForm } from "./AdminRandevuOlusturForm";
 
-type Hasta = { id: number; tc_kimlik_no: string; kullanici_id: number };
+type Hasta = { id: string; tc_kimlik_no: string; kullanici_id: number };
 type Kullanici = { id: number; ad: string; soyad: string };
 type Departman = { id: number; ad: string };
 
@@ -163,7 +163,7 @@ export function AdminRandevularPage() {
 
   const hastaLabelById = useMemo(() => {
     const kullaniciById = new Map(kullanicilar.map((k) => [k.id, k]));
-    const map = new Map<number, string>();
+    const map = new Map<string, string>();
     for (const h of hastalar) {
       const k = kullaniciById.get(h.kullanici_id);
       map.set(

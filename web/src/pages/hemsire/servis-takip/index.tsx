@@ -28,7 +28,7 @@ type Doktor = { id: number; uzmanlik_alani?: string };
 type YatisListeItem = {
   id: number;
   protokol_no: string;
-  hasta_id: number;
+  hasta_id: string;
   hasta_ad_soyad: string;
   yas: number | null;
   cinsiyet: string | null;
@@ -45,7 +45,7 @@ type YatisListeItem = {
 };
 type YatisDetay = {
   id: number;
-  hasta_id: number;
+  hasta_id: string;
   protokol_no: string;
   basvuru_no: string | null;
   dosya_no: string | null;
@@ -225,7 +225,7 @@ export function HemsireServisTakipPage() {
     enabled: tab === "tetkik" && !!detay?.hasta_id,
     queryFn: async () =>
       (
-        await api.get<{ id: number; tetkik_turu: string; durum: string }[]>(
+        await api.get<{ id: string; tetkik_turu: string; durum: string }[]>(
           "/tetkikler/",
           { params: { hasta_id: detay!.hasta_id } },
         )

@@ -5,8 +5,8 @@ import { api } from "@/shared/api";
 import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 
 type Randevu = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   doktor_id: number;
   departman_id: number;
   tarih_saat: string;
@@ -14,7 +14,7 @@ type Randevu = {
   notlar: string | null;
   hasta_ad_soyad?: string | null;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 type Doktor = {
   id: number;
   ad?: string | null;
@@ -103,7 +103,7 @@ export function HemsireDepartmanRandevulariPage() {
         throw new Error("Departman bilgisi bulunamadı (doktor seçin)");
       }
       return api.post("/randevular/", {
-        hasta_id: Number(hastaId),
+        hasta_id: hastaId,
         doktor_id: Number(doktorId),
         departman_id,
         tarih_saat: new Date(tarihSaat).toISOString(),

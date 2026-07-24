@@ -6,7 +6,7 @@ import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Hasta = {
-  id: number;
+  id: string;
   tc_kimlik_no: string;
   ad?: string | null;
   soyad?: string | null;

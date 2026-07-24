@@ -12,7 +12,7 @@ import { useFocusEffect } from "expo-router";
 import { apiFetch } from "@/shared/api";
 
 type Randevu = {
-  id: number;
+  id: string;
   tarih_saat: string;
   durum: string;
   doktor_id: number;
@@ -24,7 +24,7 @@ export default function RandevularimScreen() {
   const [items, setItems] = useState<Randevu[]>([]);
   const [loading, setLoading] = useState(true);
   const [hata, setHata] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setHata(null);
@@ -49,7 +49,7 @@ export default function RandevularimScreen() {
     }, [load]),
   );
 
-  const iptal = async (id: number) => {
+  const iptal = async (id: string) => {
     setBusyId(id);
     setHata(null);
     try {

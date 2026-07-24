@@ -4,8 +4,8 @@ import { api } from "@/shared/api";
 import { formatIstanbulDateTime } from "@/shared/lib";
 
 type Randevu = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   tarih_saat: string;
   durum: string;
   departman_id: number;

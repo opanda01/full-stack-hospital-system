@@ -6,10 +6,10 @@ import { api } from "@/shared/api";
 import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 
 type Randevu = {
-  id: number;
+  id: string;
   durum: string;
   tarih_saat: string;
-  hasta_id: number;
+  hasta_id: string;
 };
 type Doktor = { id: number };
 type Muayene = {
@@ -18,7 +18,7 @@ type Muayene = {
   tani: string | null;
   tedavi_plani: string | null;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 export function DoktorMuayeneEkraniPage() {
   const qc = useQueryClient();
@@ -51,14 +51,14 @@ export function DoktorMuayeneEkraniPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
     return m;
   }, [hastalar]);
 
-  const selected = randevular.find((r) => r.id === Number(randevuId));
+  const selected = randevular.find((r) => r.id === randevuId);
   const existing = muayeneler.find((m) => m.randevu_id === Number(randevuId));
 
   const saveMut = useMutation({

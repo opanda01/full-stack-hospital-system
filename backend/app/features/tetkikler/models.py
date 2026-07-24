@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship
 
@@ -8,6 +9,7 @@ from app.core.base_model import BaseModel
 class Tetkik(BaseModel, table=True):
     __tablename__ = "tetkikler"
 
+    public_id: UUID = Field(default_factory=uuid4, unique=True, index=True)
     hasta_id: int = Field(foreign_key="hastalar.id", index=True)
     istek_yapan_doktor_id: int = Field(foreign_key="doktorlar.id", index=True)
     tetkik_turu: str = Field(max_length=150)

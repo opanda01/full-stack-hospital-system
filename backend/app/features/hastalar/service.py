@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlmodel import Session, select
@@ -5,6 +7,7 @@ from sqlmodel import Session, select
 from app.core.enums import ErisimDurumu, KonsultasyonDurumu, Rol
 from app.core.lookups import doktor_getir, personel_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import hasta_from_public_id
 from app.core.security import hash_password
 from app.features.hastalar.models import Hasta
 from app.features.hastalar.schemas import (
@@ -127,10 +130,14 @@ def get_hasta(session: Session, hasta_id: int) -> Hasta:
     return h
 
 
+def get_hasta_by_public_id(session: Session, public_id: UUID) -> Hasta:
+    return hasta_from_public_id(session, public_id)
+
+
 def _hasta_to_read(session: Session, h: Hasta) -> HastaRead:
     k = session.get(Kullanici, h.kullanici_id)
     return HastaRead(
-        id=h.id,
+        id=h.public_id,
         kullanici_id=h.kullanici_id,
         tc_kimlik_no=h.tc_kimlik_no,
         dogum_tarihi=h.dogum_tarihi,
@@ -261,20 +268,21 @@ def list_benim_hastalar(
 def get_hasta_scoped(
     session: Session,
     current_user: Kullanici,
-    hasta_id: int,
+    public_id: UUID,
     kapsam: Kapsam,
 ) -> HastaRead:
-    h = get_hasta(session, hasta_id)
+    h = get_hasta_by_public_id(session, public_id)
+    assert h.id is not None
     if kapsam == Kapsam.GLOBAL:
         return _hasta_to_read(session, h)
     if kapsam == Kapsam.KENDI_KAYDIM:
-        if not doktor_hasta_erisim_var_mi(session, current_user, hasta_id):
+        if not doktor_hasta_erisim_var_mi(session, current_user, h.id):
             raise HTTPException(
                 status_code=403, detail="Bu hastaya erişim yetkiniz yok"
             )
         return _hasta_to_read(session, h)
     if kapsam == Kapsam.DEPARTMANIM:
-        if hasta_id not in hemsire_erisebilir_hasta_idler(session, current_user):
+        if h.id not in hemsire_erisebilir_hasta_idler(session, current_user):
             raise HTTPException(
                 status_code=403, detail="Bu hastaya erişim yetkiniz yok"
             )
@@ -291,7 +299,14 @@ def create_hasta(session: Session, data: HastaCreate) -> Hasta:
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Hasta kaydı zaten var")
-    h = Hasta(**data.model_dump())
+    payload = data.model_dump(exclude_none=True)
+    if data.public_id is not None:
+        clash = session.exec(
+            select(Hasta).where(Hasta.public_id == data.public_id)
+        ).first()
+        if clash:
+            raise HTTPException(status_code=409, detail="public_id zaten kullanılıyor")
+    h = Hasta(**payload)
     session.add(h)
     session.commit()
     session.refresh(h)
@@ -309,6 +324,12 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
         raise HTTPException(
             status_code=400, detail="Bu e-posta veya TC ile kayıt zaten var"
         )
+    if data.public_id is not None:
+        clash = session.exec(
+            select(Hasta).where(Hasta.public_id == data.public_id)
+        ).first()
+        if clash:
+            raise HTTPException(status_code=409, detail="public_id zaten kullanılıyor")
     kullanici = Kullanici(
         tc_kimlik_no=data.tc_kimlik_no,
         ad=data.ad,
@@ -328,6 +349,7 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
         cinsiyet=data.cinsiyet,
         kan_grubu=data.kan_grubu,
         adres=data.adres,
+        **({"public_id": data.public_id} if data.public_id is not None else {}),
     )
     session.add(h)
     session.commit()
@@ -335,8 +357,8 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
     return h
 
 
-def update_hasta(session: Session, hasta_id: int, data: HastaUpdate) -> Hasta:
-    h = get_hasta(session, hasta_id)
+def update_hasta(session: Session, public_id: UUID, data: HastaUpdate) -> Hasta:
+    h = get_hasta_by_public_id(session, public_id)
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(h, k, v)
     session.add(h)

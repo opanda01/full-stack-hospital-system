@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
@@ -14,7 +16,7 @@ router = APIRouter()
 @router.get("/", response_model=list[EpikrizRead])
 def list_epikriz(
     yatis_id: int | None = Query(default=None),
-    hasta_id: int | None = Query(default=None),
+    hasta_id: UUID | None = Query(default=None),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):

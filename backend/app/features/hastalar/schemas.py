@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
@@ -10,6 +11,7 @@ class HastaCreate(BaseModel):
     cinsiyet: str | None = None
     kan_grubu: str | None = None
     adres: str | None = None
+    public_id: UUID | None = None
 
 
 class HastaCreateWithUser(BaseModel):
@@ -23,10 +25,11 @@ class HastaCreateWithUser(BaseModel):
     cinsiyet: str | None = None
     kan_grubu: str | None = None
     adres: str | None = None
+    public_id: UUID | None = None
 
 
 class HastaRead(BaseModel):
-    id: int
+    id: UUID
     kullanici_id: int
     tc_kimlik_no: str
     dogum_tarihi: date | None = None

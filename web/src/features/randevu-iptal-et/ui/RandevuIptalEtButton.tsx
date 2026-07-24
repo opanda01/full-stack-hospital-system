@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, ConfirmDialog } from "@/shared/ui";
 import { api } from "@/shared/api";
 
-export function RandevuIptalEtButton({ randevuId }: { randevuId: number }) {
+export function RandevuIptalEtButton({ randevuId }: { randevuId: string }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const mut = useMutation({

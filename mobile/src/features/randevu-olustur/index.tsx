@@ -19,7 +19,7 @@ type Doktor = {
   departman_id: number | null;
   online_randevu_acik_mi: boolean;
 };
-type Hasta = { id: number; kullanici_id: number };
+type Hasta = { id: string; kullanici_id: number };
 
 function tomorrowYmd(): string {
   const tarih = new Date();
@@ -34,7 +34,7 @@ export function RandevuOlusturForm() {
   const [depId, setDepId] = useState<number | null>(null);
   const [doktorId, setDoktorId] = useState<number | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
-  const [hastaId, setHastaId] = useState<number | null>(null);
+  const [hastaId, setHastaId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

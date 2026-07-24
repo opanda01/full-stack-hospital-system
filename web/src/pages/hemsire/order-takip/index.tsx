@@ -7,15 +7,15 @@ import { getApiErrorMessage } from "@/shared/lib";
 type OrderTip = "TETKIK" | "MAR" | "ILAC_TALEP";
 
 type Tetkik = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   tetkik_turu: string;
   durum: string;
 };
 type Mar = {
   id: number;
   yatis_id: number;
-  hasta_id: number;
+  hasta_id: string;
   hasta_ad_soyad: string;
   protokol_no: string;
   ilac_adi: string;
@@ -31,7 +31,7 @@ type TalepSatir = {
   durum: string;
   acil_mi?: boolean;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 type OrderRow = {
   tip: OrderTip;
@@ -73,7 +73,7 @@ export function HemsireOrderTakipPage() {
   });
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
@@ -89,7 +89,7 @@ export function HemsireOrderTakipPage() {
         baslik: t.tetkik_turu,
         hasta: hastaLabel.get(t.hasta_id) ?? `#${t.hasta_id}`,
         durum: t.durum,
-        rawId: t.id,
+        rawId: 0,
       });
     }
     for (const m of marlar) {
