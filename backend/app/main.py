@@ -7,6 +7,7 @@ from app.core.enums import Rol
 from app.core.errors import register_exception_handlers
 from app.core.login_rate_limit import LoginRateLimitMiddleware
 from app.core.security import require_role
+from app.core.security_headers import SecurityHeadersMiddleware
 
 from app.features.auth.denetim_router import router as denetim_router
 from app.features.auth.router import router as auth_router
@@ -19,6 +20,8 @@ from app.features.entegrasyonlar.router import router as entegrasyon_router
 from app.features.faturalandirma.router import router as fatura_router
 from app.features.hastalar.router import router as hastalar_router
 from app.features.klinik_onay.router import router as klinik_onay_router
+from app.features.klinik_kodlar.router import router as icd10_router
+from app.features.kvkk.router import router as kvkk_router
 from app.features.kullanicilar.router import router as kullanicilar_router
 from app.features.mhrs.router import router as mhrs_router
 from app.features.muayeneler.router import router as muayeneler_router
@@ -40,10 +43,15 @@ from app.features.guvenlik.router import router as guvenlik_router
 
 settings = get_settings()
 
+_docs_url = "/docs" if settings.DOCS_ENABLED else None
+_redoc_url = "/redoc" if settings.DOCS_ENABLED else None
+
 app = FastAPI(
     title="Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS",
     version="0.1.0",
     description="Hastane Bilgi Yönetim Sistemi API",
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
 )
 
 _cors = settings.cors_origin_list
@@ -55,6 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(LoginRateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 register_exception_handlers(app)
 
@@ -65,7 +74,7 @@ def health_check() -> dict[str, str]:
 
 
 @app.get("/sistem/bilgi")
-def sistem_bilgi(_user=Depends(require_role(Rol.ADMIN))) -> dict[str, str | int]:
+def sistem_bilgi(_user=Depends(require_role(Rol.ADMIN))) -> dict[str, str | int | bool]:
     """Salt-okunur sistem özeti (admin ayarlar UI)."""
     return {
         "bildirim_backend": settings.BILDIRIM_BACKEND,
@@ -74,10 +83,14 @@ def sistem_bilgi(_user=Depends(require_role(Rol.ADMIN))) -> dict[str, str | int]
         "audit_retention_days": settings.AUDIT_RETENTION_DAYS,
         "otp_ttl_seconds": settings.OTP_TTL_SECONDS,
         "access_token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "phi_encrypt_enabled": settings.PHI_ENCRYPT_ENABLED,
+        "entegrasyon_backend": settings.ENTEGRASYON_BACKEND,
+        "environment": settings.ENVIRONMENT,
     }
 
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(kvkk_router, prefix="/kvkk", tags=["kvkk"])
 app.include_router(denetim_router, prefix="/denetim", tags=["denetim"])
 app.include_router(rbac_router, prefix="/rbac", tags=["rbac"])
 app.include_router(kullanicilar_router, prefix="/kullanicilar", tags=["kullanicilar"])
@@ -88,6 +101,7 @@ app.include_router(hastalar_router, prefix="/hastalar", tags=["hastalar"])
 app.include_router(randevular_router, prefix="/randevular", tags=["randevular"])
 app.include_router(muayeneler_router, prefix="/muayeneler", tags=["muayeneler"])
 app.include_router(tetkikler_router, prefix="/tetkikler", tags=["tetkikler"])
+app.include_router(icd10_router, prefix="/icd10", tags=["icd10"])
 app.include_router(nobet_cizelgesi_router, prefix="/nobet-cizelgesi", tags=["nobet_cizelgesi"])
 app.include_router(
     temizlik_gorevleri_router, prefix="/temizlik-gorevleri", tags=["temizlik_gorevleri"]

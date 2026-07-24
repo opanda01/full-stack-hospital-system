@@ -11,7 +11,10 @@ from app.features.rbac.models import KullaniciRol, Rol as DbRol
 class Kullanici(BaseModel, table=True):
     __tablename__ = "kullanicilar"
 
-    tc_kimlik_no: str = Field(max_length=11, unique=True, index=True)
+    tc_kimlik_no: str = Field(max_length=512, unique=True, index=True)
+    tc_kimlik_no_hash: Optional[str] = Field(
+        default=None, max_length=128, unique=True, index=True
+    )
     ad: str = Field(max_length=100)
     soyad: str = Field(max_length=100)
     email: Optional[str] = Field(default=None, max_length=255, unique=True, index=True)

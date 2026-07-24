@@ -11,8 +11,22 @@ from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.hastalar import service as hasta_service
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
+from app.features.klinik_kodlar.models import TetkikSonucKalemi
 from app.features.tetkikler.models import Tetkik
-from app.features.tetkikler.schemas import TetkikCreate, TetkikRead
+from app.features.tetkikler.schemas import (
+    TetkikCreate,
+    TetkikRead,
+    TetkikSonucKalemCreate,
+    TetkikSonucKalemRead,
+    TetkikTrendNokta,
+)
+
+
+def _kalemler(session: Session, tetkik_id: int) -> list[TetkikSonucKalemRead]:
+    rows = session.exec(
+        select(TetkikSonucKalemi).where(TetkikSonucKalemi.tetkik_id == tetkik_id)
+    ).all()
+    return [TetkikSonucKalemRead.model_validate(r) for r in rows]
 
 
 def _to_read(session: Session, t: Tetkik) -> TetkikRead:
@@ -26,6 +40,7 @@ def _to_read(session: Session, t: Tetkik) -> TetkikRead:
         tetkik_turu=t.tetkik_turu,
         sonuc_dosyasi=t.sonuc_dosyasi,
         durum=t.durum,
+        sonuc_kalemleri=_kalemler(session, t.id) if t.id else [],
     )
 
 
@@ -146,15 +161,84 @@ def sonuc_gir(
     session: Session,
     current_user: Kullanici,
     public_id: UUID,
-    sonuc_dosyasi: str,
+    sonuc_dosyasi: str | None,
     durum: str,
+    sonuc_kalemleri: list[TetkikSonucKalemCreate] | None = None,
 ) -> TetkikRead:
     tetkik = get_by_public_id(session, Tetkik, public_id)
     if current_user.rol not in (Rol.ADMIN, Rol.LABORANT):
         raise HTTPException(status_code=403, detail="Sonuç girme yetkiniz yok")
-    tetkik.sonuc_dosyasi = sonuc_dosyasi
+    if sonuc_dosyasi is not None:
+        tetkik.sonuc_dosyasi = sonuc_dosyasi
     tetkik.durum = durum
     session.add(tetkik)
+    session.flush()
+
+    if sonuc_kalemleri is not None:
+        for old in session.exec(
+            select(TetkikSonucKalemi).where(TetkikSonucKalemi.tetkik_id == tetkik.id)
+        ).all():
+            session.delete(old)
+        for k in sonuc_kalemleri:
+            anormal = k.anormal_mi
+            if (
+                not anormal
+                and k.deger_sayisal is not None
+                and (k.ref_min is not None or k.ref_max is not None)
+            ):
+                if k.ref_min is not None and k.deger_sayisal < k.ref_min:
+                    anormal = True
+                if k.ref_max is not None and k.deger_sayisal > k.ref_max:
+                    anormal = True
+            session.add(
+                TetkikSonucKalemi(
+                    tetkik_id=tetkik.id,  # type: ignore[arg-type]
+                    parametre_adi=k.parametre_adi,
+                    loinc_kodu=k.loinc_kodu,
+                    deger_sayisal=k.deger_sayisal,
+                    deger_metin=k.deger_metin,
+                    birim=k.birim,
+                    ref_min=k.ref_min,
+                    ref_max=k.ref_max,
+                    anormal_mi=anormal,
+                )
+            )
+
     session.commit()
     session.refresh(tetkik)
     return _to_read(session, tetkik)
+
+
+def trend(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    hasta_public_id: UUID,
+    parametre: str,
+    limit: int = 20,
+) -> list[TetkikTrendNokta]:
+    hasta_pk = hasta_pk_from_public_id(session, hasta_public_id)
+    # basit erişim: hasta:goruntule kapsamı çağıran router'da
+    rows = session.exec(
+        select(TetkikSonucKalemi, Tetkik)
+        .join(Tetkik, Tetkik.id == TetkikSonucKalemi.tetkik_id)
+        .where(
+            Tetkik.hasta_id == hasta_pk,
+            TetkikSonucKalemi.parametre_adi.ilike(parametre),
+        )
+        .order_by(TetkikSonucKalemi.id.desc())
+        .limit(limit)
+    ).all()
+    out: list[TetkikTrendNokta] = []
+    for kalem, tetkik in rows:
+        out.append(
+            TetkikTrendNokta(
+                tetkik_id=tetkik.public_id,
+                tarih=tetkik.updated_at.isoformat() if tetkik.updated_at else None,
+                deger_sayisal=kalem.deger_sayisal,
+                deger_metin=kalem.deger_metin,
+                birim=kalem.birim,
+                anormal_mi=kalem.anormal_mi,
+            )
+        )
+    return list(reversed(out))

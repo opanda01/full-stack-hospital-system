@@ -1,13 +1,18 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.tetkikler import service as tetkik_service
-from app.features.tetkikler.schemas import TetkikCreate, TetkikRead, TetkikSonucUpdate
+from app.features.tetkikler.schemas import (
+    TetkikCreate,
+    TetkikRead,
+    TetkikSonucUpdate,
+    TetkikTrendNokta,
+)
 
 router = APIRouter()
 
@@ -21,6 +26,23 @@ def list_tetkikler(
 ):
     return tetkik_service.listele(
         session, current_user, request.state.kapsam, hasta_public_id=hasta_id
+    )
+
+
+@router.get("/trend", response_model=list[TetkikTrendNokta])
+def tetkik_trend(
+    hasta_id: UUID = Query(...),
+    parametre: str = Query(..., min_length=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    current_user: Kullanici = Depends(require_permission("tetkik:goruntule")),
+    session: Session = Depends(get_session),
+):
+    return tetkik_service.trend(
+        session,
+        current_user,
+        hasta_public_id=hasta_id,
+        parametre=parametre,
+        limit=limit,
     )
 
 
@@ -63,5 +85,10 @@ def tetkik_sonuc_gir(
     session: Session = Depends(get_session),
 ):
     return tetkik_service.sonuc_gir(
-        session, current_user, public_id, body.sonuc_dosyasi, body.durum
+        session,
+        current_user,
+        public_id,
+        body.sonuc_dosyasi,
+        body.durum,
+        sonuc_kalemleri=body.sonuc_kalemleri,
     )

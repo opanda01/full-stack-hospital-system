@@ -55,6 +55,24 @@ class Settings(BaseSettings):
     # RFC 8594 Sunset — örn. "Sat, 01 Jan 2027 00:00:00 GMT"
     AUTH_REGISTER_SUNSET: str = "Sat, 01 Jan 2027 00:00:00 GMT"
 
+    ENVIRONMENT: str = "development"
+    DOCS_ENABLED: bool = True
+
+    # PHI encryption / HMAC (ayrı anahtarlar)
+    PHI_ENCRYPT_ENABLED: bool = False
+    PHI_ENCRYPTION_KEY: str = "dev-phi-encryption-key-change-me!!"
+    PHI_ENCRYPTION_KEYS: str = ""
+    PHI_ENCRYPTION_KEY_VERSION: int = 1
+    PHI_HMAC_KEY: str = "dev-phi-hmac-key-change-me-too!!!!"
+    PHI_HMAC_KEYS: str = ""
+    PHI_HMAC_KEY_VERSION: int = 1
+
+    HASTA_RETENTION_YEARS: int = 20
+
+    ENTEGRASYON_BACKEND: str = "mock"  # mock | live
+    MOCK_ENTEGRASYON_FAIL: bool = False
+    KPS_DOGRULAMA_ZORUNLU: bool = False
+
     @property
     def trusted_proxy_ip_set(self) -> frozenset[str]:
         if not self.TRUSTED_PROXY_IPS.strip():

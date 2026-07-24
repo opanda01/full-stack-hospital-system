@@ -77,5 +77,24 @@ services:
       - ./backend:/app
     command: ["/opt/venv/bin/celery", "-A", "app.core.celery_app.celery_app", "worker", "--loglevel=info"]
 
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: hastane-postgres-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: hastane_db
+      POSTGRES_USER: hastane
+      POSTGRES_PASSWORD: hastane
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: "7"
+      BACKUP_DIR: /backups
+    volumes:
+      - postgres_backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+  postgres_backups:

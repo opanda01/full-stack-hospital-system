@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.entegrasyonlar.models import EntegrasyonDurum
 from app.features.kullanicilar.models import Kullanici
+from app.integrations.factory import get_enabiz, get_kps, get_medula
 
 router = APIRouter()
 
@@ -39,23 +40,23 @@ def _ensure_defaults(session: Session) -> None:
     session.commit()
 
 
+def _to_read(r: EntegrasyonDurum) -> EntegrasyonDurumRead:
+    return EntegrasyonDurumRead(
+        id=r.id,  # type: ignore[arg-type]
+        sistem=r.sistem.value if hasattr(r.sistem, "value") else str(r.sistem),
+        durum=r.durum.value if hasattr(r.durum, "value") else str(r.durum),
+        son_senkron=r.son_senkron,
+        hata_ozeti=r.hata_ozeti,
+    )
+
+
 @router.get("/", response_model=list[EntegrasyonDurumRead])
 def list_entegrasyonlar(
     session: Session = Depends(get_session),
     _user=Depends(require_permission("entegrasyon:goruntule")),
 ):
     _ensure_defaults(session)
-    rows = list(session.exec(select(EntegrasyonDurum)).all())
-    return [
-        EntegrasyonDurumRead(
-            id=r.id,
-            sistem=r.sistem.value if hasattr(r.sistem, "value") else str(r.sistem),
-            durum=r.durum.value if hasattr(r.durum, "value") else str(r.durum),
-            son_senkron=r.son_senkron,
-            hata_ozeti=r.hata_ozeti,
-        )
-        for r in rows
-    ]
+    return [_to_read(r) for r in session.exec(select(EntegrasyonDurum)).all()]
 
 
 @router.post("/{sistem}/senkron", response_model=EntegrasyonDurumRead)
@@ -71,26 +72,50 @@ def senkron_entegrasyon(
     ).first()
     if row is None:
         raise HTTPException(status_code=404, detail="Entegrasyon bulunamadı")
-    # Mock: her zaman sağlıklı
-    row.durum = EntegrasyonDurumKod.SAGLIKLI
-    row.son_senkron = datetime.utcnow()
-    row.hata_ozeti = None
+
+    hata: str | None = None
+    durum = EntegrasyonDurumKod.SAGLIKLI
+    try:
+        if sistem == EntegrasyonSistem.ENABIZ:
+            res = get_enabiz().durum_sorgula("health")
+            if not res.basarili:
+                durum = EntegrasyonDurumKod.HATA
+                hata = res.mesaj
+        elif sistem in (EntegrasyonSistem.SGK_PROVIZYON, EntegrasyonSistem.MEDULA):
+            res = get_medula().sonuc_sorgula("health")
+            if not res.basarili:
+                durum = EntegrasyonDurumKod.HATA
+                hata = res.mesaj
+        elif sistem == EntegrasyonSistem.KPS:
+            res = get_kps().dogrula("10000000146")
+            if not res.dogrulandi:
+                durum = EntegrasyonDurumKod.HATA
+                hata = res.mesaj
+        else:
+            # SAGLIK_NET / ITS — iskelet ping
+            durum = EntegrasyonDurumKod.UYARI
+            hata = "Port henüz uygulanmadı (iskelet)"
+    except NotImplementedError as exc:
+        durum = EntegrasyonDurumKod.HATA
+        hata = str(exc)
+    except Exception as exc:  # noqa: BLE001
+        durum = EntegrasyonDurumKod.HATA
+        hata = str(exc)
+
+    row.durum = durum
+    row.son_senkron = datetime.now(timezone.utc)
+    row.hata_ozeti = hata
     session.add(row)
     denetim_kaydi_yaz(
         session,
-        aksiyon="ENTEGRASYON_SENKRON_MOCK",
+        aksiyon="ENTEGRASYON_SENKRON",
         actor_id=current_user.id,
         kaynak="entegrasyon",
         kaynak_id=sistem.value,
         ip_adresi=istemci_ip_al(request),
+        detay={"durum": durum.value, "hata": hata},
         commit=False,
     )
     session.commit()
     session.refresh(row)
-    return EntegrasyonDurumRead(
-        id=row.id,
-        sistem=row.sistem.value if hasattr(row.sistem, "value") else str(row.sistem),
-        durum=row.durum.value if hasattr(row.durum, "value") else str(row.durum),
-        son_senkron=row.son_senkron,
-        hata_ozeti=row.hata_ozeti,
-    )
+    return _to_read(row)

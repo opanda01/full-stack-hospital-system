@@ -257,21 +257,46 @@ def kvkk_onayla(
     *,
     onay: bool,
     ip_adresi: str | None = None,
+    kanal: str = "WEB",
 ) -> Kullanici:
     if not onay:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="KVKK onayı zorunludur",
         )
+    from app.core.enums import KvkkMetinTur, KvkkOnayKanal
+    from app.features.kvkk.models import KvkkOnayKaydi
+    from app.features.kvkk.router import aktif_metin
+
     kullanici.kvkk_onaylandi_mi = True
     kullanici.kvkk_onay_tarihi = utc_now()
     session.add(kullanici)
+
+    metin = aktif_metin(session, KvkkMetinTur.PERSONEL) or aktif_metin(
+        session, KvkkMetinTur.ACIK_RIZA
+    )
+    if metin and metin.id is not None:
+        try:
+            kanal_enum = KvkkOnayKanal(kanal)
+        except ValueError:
+            kanal_enum = KvkkOnayKanal.WEB
+        session.add(
+            KvkkOnayKaydi(
+                kullanici_id=kullanici.id,  # type: ignore[arg-type]
+                metin_id=metin.id,
+                onay_tarihi=utc_now(),
+                ip=ip_adresi,
+                kanal=kanal_enum,
+            )
+        )
+
     denetim_kaydi_yaz(
         session,
         aksiyon="KVKK_ONAY",
         actor_id=kullanici.id,
         kaynak="auth",
         ip_adresi=ip_adresi,
+        detay={"metin_id": metin.id if metin else None, "versiyon": metin.versiyon if metin else None},
         commit=False,
     )
     session.commit()

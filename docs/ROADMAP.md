@@ -88,3 +88,27 @@
 - Yönetim gözetimi: ADMIN/BASHEKIM/MUDUR olay-ziyaretçi-kayıp-eşya-devriye **görüntüleme**
 - Kapsam dışı: CCTV / turnike / Bakanlık Beyaz Kod portal entegrasyonu
 
+## Faz L — Klinik güvenlik (alerji / reçete)
+
+- Yapılandırılmış `recete_kalemleri` + `hasta_alerjileri` + seed DDI
+- Hard-stop (SIDDETLI/ANAFILAKSI/KONTRANDIKE) — break-glass yok; HAFIF/ORTA için `RECETE_UYARI_OVERRIDE`
+
+## Faz M — KVKK + PHI şifreleme
+
+- Versiyonlu `kvkk_metinleri` / `kvkk_onay_kayitlari`
+- AES-GCM + ayrı HMAC blind index; backfill `skip_hasta_audit` + `PHI_ENCRYPT_BACKFILL`
+- Celery `phi_retention.anonimlestir`
+
+## Faz N — Entegrasyon portları (mock)
+
+- `EnabizPort` / `MedulaPort` / `KpsPort`; `ENTEGRASYON_BACKEND=mock|live`
+- Fatura `POST /faturalar/{id}/medula-gonder`; outbox tablosu
+
+## Faz O — Headers + backup
+
+- `SecurityHeadersMiddleware`; Compose `postgres-backup`; haftalık CI restore-smoke
+
+## Faz P — ICD-10 + lab kalemleri
+
+- `icd10_kodlari`, `muayene_tani_kodlari`, `tetkik_sonuc_kalemleri`, `GET /tetkikler/trend`
+
