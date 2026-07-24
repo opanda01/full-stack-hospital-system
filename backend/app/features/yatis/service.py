@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
@@ -89,6 +90,29 @@ def _bakiye(session: Session, hasta_id: int) -> Decimal:
     for f in rows:
         total += f.tutar or Decimal("0")
     return total
+
+
+def _yatak_dolu_yap(session: Session, yatak_id: int) -> None:
+    """Atomik dolu işaretleme; yarışta 409."""
+    result = session.execute(
+        text(
+            "UPDATE yataklar SET dolu_mu = true, updated_at = :now "
+            "WHERE id = :id AND dolu_mu = false "
+            "RETURNING id"
+        ),
+        {"id": yatak_id, "now": utc_now()},
+    )
+    if result.first() is None:
+        raise HTTPException(status_code=409, detail="Hedef yatak dolu veya bulunamadı")
+
+
+def _yatak_bosalt(session: Session, yatak_id: int) -> None:
+    session.execute(
+        text(
+            "UPDATE yataklar SET dolu_mu = false, updated_at = :now WHERE id = :id"
+        ),
+        {"id": yatak_id, "now": utc_now()},
+    )
 
 
 def list_servisler(session: Session) -> list[ServisRead]:
@@ -331,10 +355,7 @@ def uygula_islem(
         y.aktif_mi = False
         y.cikis_tarihi = now
         if y.yatak_id:
-            yatak = session.get(Yatak, y.yatak_id)
-            if yatak:
-                yatak.dolu_mu = False
-                session.add(yatak)
+            _yatak_bosalt(session, y.yatak_id)
         _log(session, yatis_id, yapan.id, tip.value, body.aciklama or "Taburcu edildi")
 
     elif tip == YatisIslemTipi.NAKIL:
@@ -362,17 +383,12 @@ def uygula_islem(
             yeni_y = session.get(Yatak, body.yeni_yatak_id)
             if yeni_y is None:
                 raise HTTPException(status_code=404, detail="Hedef yatak bulunamadı")
-            if yeni_y.dolu_mu and yeni_y.id != y.yatak_id:
-                raise HTTPException(status_code=400, detail="Hedef yatak dolu")
             if body.yeni_servis_id is None and yeni_y.servis_id != y.servis_id:
                 y.servis_id = yeni_y.servis_id
-            if eski_yatak:
-                eski = session.get(Yatak, eski_yatak)
-                if eski:
-                    eski.dolu_mu = False
-                    session.add(eski)
-            yeni_y.dolu_mu = True
-            session.add(yeni_y)
+            if body.yeni_yatak_id != eski_yatak:
+                _yatak_dolu_yap(session, body.yeni_yatak_id)
+                if eski_yatak:
+                    _yatak_bosalt(session, eski_yatak)
             session.add(
                 YatakHareketi(
                     yatis_id=yatis_id,

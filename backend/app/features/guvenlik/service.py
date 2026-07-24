@@ -30,43 +30,56 @@ from app.features.yatis.models import Refakatci, Servis, Yatak, YatisKaydi
 
 
 def ozet(session: Session, current_user: Kullanici) -> GuvenlikOzet:
+    from sqlmodel import func
+
+    from app.core.cache import get_json, set_json
+
+    cache_key = f"guvenlik:ozet:{current_user.id}"
+    cached = get_json(cache_key)
+    if cached is not None:
+        return GuvenlikOzet(**cached)
+
     bugun = date.today()
     bugun_bas = datetime(bugun.year, bugun.month, bugun.day, tzinfo=timezone.utc)
 
-    acik_olay = len(
-        list(
-            session.exec(
-                select(GuvenlikOlayi).where(
-                    col(GuvenlikOlayi.durum).in_(
-                        [GuvenlikOlayDurumu.ACIK, GuvenlikOlayDurumu.MUDAHALE]
-                    )
+    acik_olay = int(
+        session.exec(
+            select(func.count())
+            .select_from(GuvenlikOlayi)
+            .where(
+                col(GuvenlikOlayi.durum).in_(
+                    [GuvenlikOlayDurumu.ACIK, GuvenlikOlayDurumu.MUDAHALE]
                 )
-            ).all()
-        )
+            )
+        ).one()
+        or 0
     )
-    bugun_cozulen = len(
-        list(
-            session.exec(
-                select(GuvenlikOlayi).where(
-                    GuvenlikOlayi.durum == GuvenlikOlayDurumu.COZULDU,
-                    GuvenlikOlayi.updated_at >= bugun_bas,
-                )
-            ).all()
-        )
+    bugun_cozulen = int(
+        session.exec(
+            select(func.count())
+            .select_from(GuvenlikOlayi)
+            .where(
+                GuvenlikOlayi.durum == GuvenlikOlayDurumu.COZULDU,
+                GuvenlikOlayi.updated_at >= bugun_bas,
+            )
+        ).one()
+        or 0
     )
-    acik_ziyaretci = len(
-        list(
-            session.exec(
-                select(GuvenlikZiyaretci).where(GuvenlikZiyaretci.cikis_zamani.is_(None))  # type: ignore[union-attr]
-            ).all()
-        )
+    acik_ziyaretci = int(
+        session.exec(
+            select(func.count())
+            .select_from(GuvenlikZiyaretci)
+            .where(GuvenlikZiyaretci.cikis_zamani.is_(None))  # type: ignore[union-attr]
+        ).one()
+        or 0
     )
-    bekleyen_kayip = len(
-        list(
-            session.exec(
-                select(KayipEsya).where(KayipEsya.durum == KayipEsyaDurumu.BEKLIYOR)
-            ).all()
-        )
+    bekleyen_kayip = int(
+        session.exec(
+            select(func.count())
+            .select_from(KayipEsya)
+            .where(KayipEsya.durum == KayipEsyaDurumu.BEKLIYOR)
+        ).one()
+        or 0
     )
 
     aktif_vardiya = 0
@@ -87,7 +100,7 @@ def ozet(session: Session, current_user: Kullanici) -> GuvenlikOzet:
     except HTTPException:
         pass
 
-    return GuvenlikOzet(
+    result = GuvenlikOzet(
         aktif_vardiya=aktif_vardiya,
         acik_olay=acik_olay,
         bugun_cozulen=bugun_cozulen,
@@ -95,6 +108,9 @@ def ozet(session: Session, current_user: Kullanici) -> GuvenlikOzet:
         acik_ziyaretci=acik_ziyaretci,
         bekleyen_kayip_esya=bekleyen_kayip,
     )
+    set_json(cache_key, result.model_dump(mode="json"), 30)
+    return result
+
 
 
 def olay_listele(session: Session) -> list[GuvenlikOlayi]:

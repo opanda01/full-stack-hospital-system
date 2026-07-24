@@ -1,7 +1,10 @@
-from datetime import date, datetime
+import hashlib
+import json
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.db import get_session
@@ -16,6 +19,7 @@ class MhrsKapasiteCreate(BaseModel):
     doktor_id: int | None = None
     tarih: date
     slot_sayisi: int = Field(default=16, ge=1, le=200)
+    idempotency_key: str | None = Field(default=None, max_length=128)
 
 
 class MhrsKapasiteUpdate(BaseModel):
@@ -31,8 +35,28 @@ class MhrsKapasiteRead(BaseModel):
     slot_sayisi: int
     kaynak: str
     son_senkron: datetime | None
+    idempotency_key: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+def _payload_hash(departman_id: int, doktor_id: int | None, tarih: date, slot_sayisi: int) -> str:
+    raw = json.dumps(
+        {
+            "departman_id": departman_id,
+            "doktor_id": doktor_id,
+            "tarih": tarih.isoformat(),
+            "slot_sayisi": slot_sayisi,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _default_idem_key(departman_id: int, doktor_id: int | None, tarih: date) -> str:
+    d = doktor_id if doktor_id is not None else "none"
+    return f"mhrs:{departman_id}:{d}:{tarih.isoformat()}:create"
 
 
 @router.get("/", response_model=list[MhrsKapasiteRead])
@@ -49,9 +73,45 @@ def create_kapasite(
     session: Session = Depends(get_session),
     _user=Depends(require_permission("mhrs:yonet")),
 ):
-    row = MhrsKapasite(**body.model_dump(), kaynak="MOCK")
+    key = body.idempotency_key or _default_idem_key(
+        body.departman_id, body.doktor_id, body.tarih
+    )
+    ph = _payload_hash(body.departman_id, body.doktor_id, body.tarih, body.slot_sayisi)
+
+    existing = session.exec(
+        select(MhrsKapasite).where(MhrsKapasite.idempotency_key == key)
+    ).first()
+    if existing is not None:
+        if existing.payload_hash == ph:
+            return existing
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Aynı idempotency_key farklı payload ile daha önce kullanıldı",
+        )
+
+    row = MhrsKapasite(
+        departman_id=body.departman_id,
+        doktor_id=body.doktor_id,
+        tarih=body.tarih,
+        slot_sayisi=body.slot_sayisi,
+        kaynak="MOCK",
+        idempotency_key=key,
+        payload_hash=ph,
+    )
     session.add(row)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        existing = session.exec(
+            select(MhrsKapasite).where(MhrsKapasite.idempotency_key == key)
+        ).first()
+        if existing is not None and existing.payload_hash == ph:
+            return existing
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Kapasite kaydı çakışması (unique departman/doktor/tarih veya key)",
+        ) from exc
     session.refresh(row)
     return row
 
@@ -68,6 +128,9 @@ def update_kapasite(
         raise HTTPException(status_code=404, detail="Kapasite bulunamadı")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
+    row.payload_hash = _payload_hash(
+        row.departman_id, row.doktor_id, row.tarih, row.slot_sayisi
+    )
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -85,7 +148,7 @@ def senkron_kapasite(
     if row is None:
         raise HTTPException(status_code=404, detail="Kapasite bulunamadı")
     row.kaynak = "MHRS"
-    row.son_senkron = datetime.utcnow()
+    row.son_senkron = datetime.now(timezone.utc)
     session.add(row)
     session.commit()
     session.refresh(row)

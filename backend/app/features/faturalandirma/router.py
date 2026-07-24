@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from app.core.db import get_session
 from app.core.security import require_permission
@@ -21,6 +21,30 @@ class FaturaRead(BaseModel):
     aciklama: str | None
 
     model_config = {"from_attributes": True}
+
+
+class FaturaOzet(BaseModel):
+    toplam_adet: int
+    toplam_tutar: Decimal
+    durum_dagilim: dict[str, int]
+
+
+@router.get("/ozet", response_model=FaturaOzet)
+def fatura_ozet(
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("fatura:goruntule")),
+):
+    toplam_adet = int(session.exec(select(func.count()).select_from(Fatura)).one() or 0)
+    toplam_tutar = session.exec(select(func.coalesce(func.sum(Fatura.tutar), 0))).one()
+    rows = session.exec(
+        select(Fatura.durum, func.count()).group_by(Fatura.durum)
+    ).all()
+    dagilim = {str(d): int(c) for d, c in rows}
+    return FaturaOzet(
+        toplam_adet=toplam_adet,
+        toplam_tutar=Decimal(str(toplam_tutar or 0)),
+        durum_dagilim=dagilim,
+    )
 
 
 @router.get("/", response_model=list[FaturaRead])

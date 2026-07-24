@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulTime, getApiErrorMessage } from "@/shared/lib";
 import { createRandevu } from "@/features/randevu-olustur/api/createRandevu";
 
 type Departman = { id: number; ad: string };
@@ -171,10 +171,7 @@ export function AdminRandevuOlusturForm() {
               }`}
               onClick={() => setSlot(s)}
             >
-              {new Date(s).toLocaleTimeString("tr-TR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatIstanbulTime(s)}
             </button>
           ))}
           {doktorId && slots.length === 0 && (

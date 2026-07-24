@@ -52,6 +52,9 @@ services:
       # Kaynak kod bind-mount; venv /opt/venv'de (Dockerfile) kalır, ezilmez
       - ./backend:/app
     command: ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Prod örneği (reload yok, multi-worker):
+    # command: ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    # PgBouncer eklerseniz yalnız transaction pooling; session mode SET LOCAL app.actor_id ile uyumsuz.
 
   celery-worker:
     build:

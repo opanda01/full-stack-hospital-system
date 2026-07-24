@@ -162,6 +162,10 @@ async def get_current_user(
     request.state.token_payload = payload
     request.state.current_user = kullanici
 
+    from app.core.db import bind_audit_actor
+
+    bind_audit_actor(session, kullanici.id)
+
     if _onboarding_gerekli_mi(kullanici, oturum_tipi) and not _path_allowlisted(
         request
     ):

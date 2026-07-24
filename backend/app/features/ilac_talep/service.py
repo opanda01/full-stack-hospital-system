@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
@@ -196,6 +197,19 @@ def patch_durum(
             if k.verilen_miktar <= 0:
                 k.verilen_miktar = k.istenen_miktar
                 session.add(k)
+            if k.ilac_id is not None and k.verilen_miktar > 0:
+                result = session.execute(
+                    text(
+                        "UPDATE ilaclar SET stok = stok - :n, updated_at = :now "
+                        "WHERE id = :id AND stok >= :n RETURNING id"
+                    ),
+                    {"id": k.ilac_id, "n": k.verilen_miktar, "now": utc_now()},
+                )
+                if result.first() is None:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Yetersiz stok (ilac_id={k.ilac_id})",
+                    )
     if body.durum == IlacTalepDurumu.ONAYLANDI and t.isteyen_hemsire_id:
         p = session.get(Personel, t.isteyen_hemsire_id)
         if p:

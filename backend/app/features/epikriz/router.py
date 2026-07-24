@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
 from app.core.db import get_session
 from app.core.security import require_permission
+from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.epikriz import service as epikriz_service
 from app.features.epikriz.schemas import EpikrizCreate, EpikrizRead, EpikrizUpdate
 from app.features.kullanicilar.models import Kullanici
@@ -25,10 +26,20 @@ def list_epikriz(
 @router.get("/{epikriz_id}", response_model=EpikrizRead)
 def get_epikriz(
     epikriz_id: int,
+    request: Request,
     session: Session = Depends(get_session),
-    _user: Kullanici = Depends(require_permission("epikriz:goruntule")),
+    current_user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
-    return epikriz_service.get_epikriz(session, epikriz_id)
+    row = epikriz_service.get_epikriz(session, epikriz_id)
+    phi_goruntuleme_logla(
+        session,
+        actor=current_user,
+        kaynak="epikriz",
+        kaynak_id=epikriz_id,
+        request=request,
+    )
+    return row
+
 
 
 @router.post("/", response_model=EpikrizRead, status_code=201)

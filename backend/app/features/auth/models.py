@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Column, JSON
+from sqlalchemy import Column, DateTime, JSON
 from sqlmodel import Field, SQLModel
 
 from app.core.base_model import BaseModel, utc_now
@@ -51,6 +51,7 @@ class PersonelImportIsi(BaseModel, table=True):
 class DenetimKaydi(SQLModel, table=True):
     __tablename__ = "denetim_kayitlari"
 
+    # ORM: tek PK (SQLite test uyumu). Postgres partition PK (id, zaman) migration'da.
     id: Optional[int] = Field(default=None, primary_key=True)
     actor_id: Optional[int] = Field(default=None, foreign_key="kullanicilar.id", index=True)
     aksiyon: str = Field(max_length=100, index=True)
@@ -58,4 +59,7 @@ class DenetimKaydi(SQLModel, table=True):
     kaynak_id: Optional[str] = Field(default=None, max_length=100)
     ip_adresi: Optional[str] = Field(default=None, max_length=64)
     detay: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
-    zaman: datetime = Field(default_factory=utc_now, index=True)
+    zaman: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+    )

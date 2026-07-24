@@ -1,4 +1,5 @@
 import type { Randevu } from "../model/types";
+import { formatIstanbulDateTime } from "@/shared/lib";
 
 export function RandevuCard({ item }: { item: Randevu }) {
   return (
@@ -7,7 +8,7 @@ export function RandevuCard({ item }: { item: Randevu }) {
         Randevu #{item.id} — {item.durum}
       </p>
       <p className="text-muted-foreground">
-        {new Date(item.tarih_saat).toLocaleString("tr-TR")}
+        {formatIstanbulDateTime(item.tarih_saat)}
       </p>
     </div>
   );

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 
 type Randevu = {
   id: number;
@@ -212,7 +212,7 @@ export function HemsireDepartmanRandevulariPage() {
                 {r.hasta_ad_soyad ?? `Hasta #${r.hasta_id}`}
               </span>
               {" — "}
-              {new Date(r.tarih_saat).toLocaleString("tr-TR")}
+              {formatIstanbulDateTime(r.tarih_saat)}
               {" — "}
               <span className="text-muted-foreground">{r.durum}</span>
             </li>

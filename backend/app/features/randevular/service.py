@@ -1,12 +1,14 @@
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.permissions import Kapsam
 from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.core.timezone import ISTANBUL, as_utc, to_istanbul
 from app.features.kullanicilar.models import Kullanici
 from app.features.randevular.models import Randevu
 from app.features.randevular.schemas import RandevuCreate
@@ -15,8 +17,9 @@ SLOT_MINUTES = 15
 
 
 def _cakisma_var_mi(session: Session, doktor_id: int, tarih_saat: datetime) -> bool:
-    bas = tarih_saat - timedelta(minutes=SLOT_MINUTES - 1)
-    bit = tarih_saat + timedelta(minutes=SLOT_MINUTES - 1)
+    ts = as_utc(tarih_saat)
+    bas = ts - timedelta(minutes=SLOT_MINUTES - 1)
+    bit = ts + timedelta(minutes=SLOT_MINUTES - 1)
     rows = session.exec(
         select(Randevu).where(
             Randevu.doktor_id == doktor_id,
@@ -107,7 +110,8 @@ def olustur(
                 detail="Sadece kendi departmanınız için randevu oluşturabilirsiniz.",
             )
 
-    if _cakisma_var_mi(session, veri.doktor_id, veri.tarih_saat):
+    tarih_saat = as_utc(veri.tarih_saat)
+    if _cakisma_var_mi(session, veri.doktor_id, tarih_saat):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Bu saatte doktorun başka randevusu var",
@@ -117,12 +121,19 @@ def olustur(
         hasta_id=veri.hasta_id,
         doktor_id=veri.doktor_id,
         departman_id=veri.departman_id,
-        tarih_saat=veri.tarih_saat,
+        tarih_saat=tarih_saat,
         notlar=veri.notlar,
         durum="BEKLEMEDE",
     )
     session.add(randevu)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Bu saatte doktorun başka randevusu var",
+        ) from exc
     session.refresh(randevu)
     return randevu
 
@@ -152,27 +163,28 @@ def getir(session: Session, current_user: Kullanici, randevu_id: int) -> Randevu
     return randevu
 
 
-def musait_slotlar(
-    session: Session, doktor_id: int, gun: date
-) -> list[datetime]:
-    """09:00–17:00 arası 15 dk slot; dolu olanlar hariç."""
-    baslangic = datetime(gun.year, gun.month, gun.day, 9, 0, 0)
-    bitis = datetime(gun.year, gun.month, gun.day, 17, 0, 0)
+def musait_slotlar(session: Session, doktor_id: int, gun: date) -> list[datetime]:
+    """09:00–17:00 İstanbul slotları; dönüş değeri İstanbul tz-aware."""
+    baslangic = datetime(gun.year, gun.month, gun.day, 9, 0, 0, tzinfo=ISTANBUL)
+    bitis = datetime(gun.year, gun.month, gun.day, 17, 0, 0, tzinfo=ISTANBUL)
+    bas_utc = baslangic.astimezone(timezone.utc)
+    bit_utc = bitis.astimezone(timezone.utc)
     dolu = {
-        r.tarih_saat.replace(tzinfo=None) if r.tarih_saat.tzinfo else r.tarih_saat
+        as_utc(r.tarih_saat)
         for r in session.exec(
             select(Randevu).where(
                 Randevu.doktor_id == doktor_id,
                 Randevu.durum != "IPTAL",
-                Randevu.tarih_saat >= baslangic,
-                Randevu.tarih_saat < bitis,
+                Randevu.tarih_saat >= bas_utc,
+                Randevu.tarih_saat < bit_utc,
             )
         ).all()
     }
     slotlar: list[datetime] = []
     cur = baslangic
     while cur < bitis:
-        if cur not in dolu and not _cakisma_var_mi(session, doktor_id, cur):
-            slotlar.append(cur)
+        cur_utc = cur.astimezone(timezone.utc)
+        if cur_utc not in dolu and not _cakisma_var_mi(session, doktor_id, cur_utc):
+            slotlar.append(to_istanbul(cur_utc))
         cur += timedelta(minutes=SLOT_MINUTES)
     return slotlar

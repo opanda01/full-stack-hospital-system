@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { AppShell, Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 import type { Randevu } from "@/entities/randevu";
@@ -215,7 +215,9 @@ export function AdminRandevularPage() {
           departmanById.get(r.departman_id) ?? "",
           r.durum,
           r.notlar ?? "",
-          new Date(r.tarih_saat).toLocaleString("tr-TR"),
+          new Date(r.tarih_saat).toLocaleString("tr-TR", {
+            timeZone: "Europe/Istanbul",
+          }),
         ].join(" "),
       );
       return haystack.includes(q);
@@ -290,7 +292,7 @@ export function AdminRandevularPage() {
     return (
       <tr key={r.id} className="border-b">
         <td className="py-2">
-          {new Date(r.tarih_saat).toLocaleString("tr-TR")}
+          {formatIstanbulDateTime(r.tarih_saat)}
         </td>
         <td>{hastaLabelById.get(r.hasta_id) ?? `#${r.hasta_id}`}</td>
         <td>{doktorAd}</td>

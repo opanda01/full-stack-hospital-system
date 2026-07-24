@@ -15,3 +15,7 @@ class MhrsKapasite(BaseModel, table=True):
     slot_sayisi: int = Field(default=16)
     kaynak: str = Field(default="MOCK", max_length=20)
     son_senkron: Optional[datetime] = Field(default=None)
+    idempotency_key: Optional[str] = Field(
+        default=None, max_length=128, unique=True, index=True
+    )
+    payload_hash: Optional[str] = Field(default=None, max_length=64)

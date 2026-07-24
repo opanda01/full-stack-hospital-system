@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 
 type Randevu = {
@@ -175,7 +175,7 @@ export function DoktorRandevularimPage() {
                   {hastaLabel.get(r.hasta_id) ?? `Hasta #${r.hasta_id}`}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(r.tarih_saat).toLocaleString("tr-TR")} · {r.durum}
+                  {formatIstanbulDateTime(r.tarih_saat)} · {r.durum}
                 </p>
               </div>
               <div className="flex items-center gap-2">

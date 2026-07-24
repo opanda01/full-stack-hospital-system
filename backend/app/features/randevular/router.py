@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.core.db import get_session
 from app.core.security import require_permission
+from app.core.timezone import to_istanbul
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.randevular import service as randevu_service
@@ -26,11 +27,13 @@ def _to_read(session: Session, r: Randevu) -> RandevuRead:
         hasta_id=r.hasta_id,
         doktor_id=r.doktor_id,
         departman_id=r.departman_id,
-        tarih_saat=r.tarih_saat,
+        # API her zaman Europe/Istanbul duvar saati döner (+03:00)
+        tarih_saat=to_istanbul(r.tarih_saat),
         durum=r.durum,
         notlar=r.notlar,
         hasta_ad_soyad=ad,
     )
+
 
 
 @router.get("/musait", response_model=list[str])

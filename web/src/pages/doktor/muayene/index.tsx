@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
 
 type Randevu = {
   id: number;
@@ -142,7 +142,7 @@ export function DoktorMuayeneEkraniPage() {
             .map((r) => (
               <option key={r.id} value={r.id}>
                 #{r.id} · {hastaLabel.get(r.hasta_id) ?? r.hasta_id} ·{" "}
-                {new Date(r.tarih_saat).toLocaleString("tr-TR")} · {r.durum}
+                {formatIstanbulDateTime(r.tarih_saat)} · {r.durum}
               </option>
             ))}
         </select>

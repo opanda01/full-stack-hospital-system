@@ -8,5 +8,6 @@ class Ilac(BaseModel, table=True):
 
     ad: str = Field(max_length=200)
     barkod: str | None = Field(default=None, max_length=64)
-    stok: int = Field(default=0)
+    stok: int = Field(default=0, ge=0)
     kritik_stok: int = Field(default=10)
+
