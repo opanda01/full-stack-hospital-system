@@ -4,7 +4,6 @@ import { useLocation } from "react-router-dom";
 import { AppShell, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
 import {
-  LOOKUP_PAGE_SIZE,
   getApiErrorMessage,
   pageTotal,
   unwrapPage,
