@@ -74,7 +74,7 @@ def upgrade() -> None:
         """
         UPDATE mhrs_kapasiteler
         SET idempotency_key = 'mhrs:' || departman_id || ':' ||
-            COALESCE(doktor_id::text, 'none') || ':' || tarih::text || ':create',
+            COALESCE(doktor_id::text, 'none') || ':' || tarih::text || ':' || 'create',
             payload_hash = encode(
                 sha256(
                     convert_to(
