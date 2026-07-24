@@ -28,7 +28,10 @@ export function HemsireTetkiklerPage() {
       unwrapPage(
         (
           await api.get<PageResponse<Tetkik>>("/tetkikler/", {
-            params: hastaParam ? { hasta_id: hastaParam } : undefined,
+            params: {
+              ...(hastaParam ? { hasta_id: hastaParam } : {}),
+              page_size: LOOKUP_PAGE_SIZE,
+            },
           })
         ).data,
       ),

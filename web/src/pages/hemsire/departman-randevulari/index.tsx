@@ -73,7 +73,13 @@ export function HemsireDepartmanRandevulariPage() {
   const { data: randevular = [], isLoading, isError, error } = useQuery({
     queryKey: ["hemsire-randevular"],
     queryFn: async () =>
-      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
+      unwrapPage(
+        (
+          await api.get<PageResponse<Randevu>>("/randevular/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-randevu-hemsire"],

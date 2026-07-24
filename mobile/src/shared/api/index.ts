@@ -1,6 +1,5 @@
 import { useAuthStore } from "@/shared/auth";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+import { getApiUrl } from "@/shared/api/resolveApiUrl";
 
 export type OtpAmac = "GIRIS" | "KAYIT";
 
@@ -44,12 +43,23 @@ export async function otpGonder(input: {
   telefon: string;
   tc_kimlik_no: string;
   amac: OtpAmac;
-}): Promise<{ mesaj: string; son_kullanma_saniye: number }> {
-  const res = await fetch(`${API_URL}/auth/otp/gonder`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+}): Promise<{
+  mesaj: string;
+  son_kullanma_saniye: number;
+  gelistirme_kodu?: string | null;
+}> {
+  let res: Response;
+  try {
+    res = await fetch(`${getApiUrl()}/auth/otp/gonder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    throw new Error(
+      `Sunucuya ulaşılamadı (${getApiUrl()}). Backend (docker compose up) çalışıyor mu? Aynı Wi‑Fi / emülatör ayarını kontrol edin.`,
+    );
+  }
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
@@ -63,11 +73,18 @@ export async function otpDogrula(input: {
   soyad?: string;
   kvkk_onay?: boolean;
 }): Promise<TokenResponse> {
-  const res = await fetch(`${API_URL}/auth/otp/dogrula`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${getApiUrl()}/auth/otp/dogrula`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    throw new Error(
+      `Sunucuya ulaşılamadı (${getApiUrl()}). Backend çalışıyor mu?`,
+    );
+  }
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
@@ -78,7 +95,7 @@ async function refreshAccessToken(): Promise<boolean> {
     await clearAuth();
     return false;
   }
-  const res = await fetch(`${API_URL}/auth/refresh`, {
+  const res = await fetch(`${getApiUrl()}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -100,7 +117,7 @@ export async function logoutApi(): Promise<void> {
   const { token, refreshToken, clearAuth } = useAuthStore.getState();
   try {
     if (token && refreshToken) {
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(`${getApiUrl()}/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +143,7 @@ export async function apiFetch(
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiUrl()}${path}`, {
     ...init,
     headers,
   });
@@ -145,4 +162,4 @@ export async function fetchMe(): Promise<MeResponse> {
   return res.json();
 }
 
-export { API_URL };
+export { getApiUrl, resolveApiUrl } from "@/shared/api/resolveApiUrl";

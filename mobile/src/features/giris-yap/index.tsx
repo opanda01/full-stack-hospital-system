@@ -19,11 +19,14 @@ export function GirisYapForm() {
     setHata(null);
     setLoading(true);
     try {
-      await otpGonder({
+      const sonuc = await otpGonder({
         telefon: telefon.trim(),
         tc_kimlik_no: tc.trim(),
         amac: "GIRIS",
       });
+      if (sonuc.gelistirme_kodu) {
+        setKod(sonuc.gelistirme_kodu);
+      }
       setStep("otp");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "OTP gönderilemedi");
@@ -89,7 +92,9 @@ export function GirisYapForm() {
         <>
           <Text style={styles.hint}>
             {telefon} numarasına gönderilen 6 haneli kodu girin.
-            {"\n"}(Dev: SMS konsol/stub çıktısına bakın)
+            {kod
+              ? `\n(Dev: kod otomatik dolduruldu)`
+              : "\n(Dev: SMS konsol/stub çıktısına bakın)"}
           </Text>
           <TextInput
             style={styles.input}

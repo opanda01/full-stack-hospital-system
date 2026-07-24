@@ -37,11 +37,14 @@ export function KayitOlForm() {
     }
     setLoading(true);
     try {
-      await otpGonder({
+      const sonuc = await otpGonder({
         telefon: telefon.trim(),
         tc_kimlik_no: tc.trim(),
         amac: "KAYIT",
       });
+      if (sonuc.gelistirme_kodu) {
+        setKod(sonuc.gelistirme_kodu);
+      }
       setStep("otp");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "OTP gönderilemedi");

@@ -154,22 +154,29 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 select(Kullanici).where(Kullanici.tc_kimlik_no == item["tc"])
             ).first()
             if tc_existing:
-                continue
-            kullanici = Kullanici(
-                tc_kimlik_no=item["tc"],
-                ad=item["ad"],
-                soyad=item["soyad"],
-                email=item["email"],
-                telefon=item.get("telefon"),
-                kullanici_adi=item.get("kullanici_adi"),
-                sifre_hash=sifre_hash,
-                rol=item["rol"],
-                sifre_degistirmeli_mi=False,
-                kvkk_onaylandi_mi=True,
-            )
-            apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
-            session.add(kullanici)
-            session.flush()
+                kullanici = tc_existing
+                if item.get("telefon") and not kullanici.telefon:
+                    kullanici.telefon = item["telefon"]
+                    session.add(kullanici)
+                if not kullanici.email and item.get("email"):
+                    kullanici.email = item["email"]
+                    session.add(kullanici)
+            else:
+                kullanici = Kullanici(
+                    tc_kimlik_no=item["tc"],
+                    ad=item["ad"],
+                    soyad=item["soyad"],
+                    email=item["email"],
+                    telefon=item.get("telefon"),
+                    kullanici_adi=item.get("kullanici_adi"),
+                    sifre_hash=sifre_hash,
+                    rol=item["rol"],
+                    sifre_degistirmeli_mi=False,
+                    kvkk_onaylandi_mi=True,
+                )
+                apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
+                session.add(kullanici)
+                session.flush()
 
         if item["rol"] == Rol.HASTA:
             hasta = session.exec(
