@@ -12,136 +12,66 @@ import { useRoleBasePath } from "@/shared/auth";
 import { RoleDashboard } from "@/shared/ui/RoleDashboard";
 import { api } from "@/shared/api";
 
-type YatisListeItem = { id: number };
-type Gorev = { id: number; tamamlandi_mi: boolean };
-type Randevu = { id: number };
-type Nobet = { id: number; tarih: string };
-type Tetkik = { id: number; durum: string };
-type Mar = { id: number; durum: string };
-type Talep = { id: number; durum: string };
+type HemsireOzet = {
+  aktif_yatis: number;
+  bekleyen_ilac_talep: number;
+  bekleyen_gorev: number;
+  bekleyen_order: number;
+  randevu_sayisi: number;
+  nobet_bugun: number;
+};
 
 export function HemsireDashboardPage() {
   const base = useRoleBasePath();
 
-  const { data: yatislar = [] } = useQuery({
-    queryKey: ["yatis-kayitlar-aktif-count"],
+  const { data: ozet } = useQuery({
+    queryKey: ["dashboard-hemsire-ozet"],
     queryFn: async () =>
-      (
-        await api.get<YatisListeItem[]>("/yatis/kayitlar", {
-          params: { aktif: true, kapsam: "benim" },
-        })
-      ).data,
+      (await api.get<HemsireOzet>("/dashboard/hemsire/ozet")).data,
   });
-
-  const { data: talepler = [] } = useQuery({
-    queryKey: ["ilac-talepleri-dashboard"],
-    queryFn: async () =>
-      (await api.get<Talep[]>("/ilac-talepleri/")).data,
-  });
-
-  const { data: gorevler = [] } = useQuery({
-    queryKey: ["hemsire-gorevler-dash"],
-    queryFn: async () =>
-      (await api.get<Gorev[]>("/yatis/gorevler", { params: { benim: true } })).data,
-  });
-
-  const { data: randevular = [] } = useQuery({
-    queryKey: ["hemsire-randevular-dash"],
-    queryFn: async () => {
-      try {
-        return (await api.get<Randevu[]>("/randevular/")).data;
-      } catch {
-        return [] as Randevu[];
-      }
-    },
-  });
-
-  const { data: nobetler = [] } = useQuery({
-    queryKey: ["hemsire-nobet-dash"],
-    queryFn: async () => {
-      try {
-        return (await api.get<Nobet[]>("/nobet-cizelgesi/")).data;
-      } catch {
-        return [] as Nobet[];
-      }
-    },
-  });
-
-  const { data: tetkikler = [] } = useQuery({
-    queryKey: ["hemsire-tetkik-dash"],
-    queryFn: async () => {
-      try {
-        return (await api.get<Tetkik[]>("/tetkikler/")).data;
-      } catch {
-        return [] as Tetkik[];
-      }
-    },
-  });
-
-  const { data: marlar = [] } = useQuery({
-    queryKey: ["hemsire-mar-dash"],
-    queryFn: async () => {
-      try {
-        return (
-          await api.get<Mar[]>("/yatis/ilac-uygulamalari", {
-            params: { durum: "BEKLIYOR", kapsam: "benim" },
-          })
-        ).data;
-      } catch {
-        return [] as Mar[];
-      }
-    },
-  });
-
-  const bekleyenIlac = talepler.filter((t) => t.durum === "ONAY_BEKLIYOR").length;
-  const bekleyenGorev = gorevler.filter((g) => !g.tamamlandi_mi).length;
-  const bekleyenOrder =
-    marlar.length +
-    tetkikler.filter((t) => t.durum === "ISTEK_ALINDI").length +
-    bekleyenIlac;
 
   return (
     <RoleDashboard
       metrics={[
         {
           label: "Yatan hasta",
-          value: yatislar.length,
+          value: ozet?.aktif_yatis ?? "…",
           icon: Users,
           to: `${base}/servis-takip`,
         },
         {
           label: "Bekleyen order",
-          value: bekleyenOrder,
+          value: ozet?.bekleyen_order ?? "…",
           icon: ListOrdered,
           to: `${base}/order-takip`,
         },
         {
           label: "Bekleyen görev",
-          value: bekleyenGorev,
+          value: ozet?.bekleyen_gorev ?? "…",
           icon: ListTodo,
           to: `${base}/gorevler`,
         },
         {
           label: "Bekleyen ilaç isteği",
-          value: bekleyenIlac,
+          value: ozet?.bekleyen_ilac_talep ?? "…",
           icon: ClipboardList,
           to: `${base}/ilac-talep`,
         },
         {
           label: "İlaç/malzeme talep",
-          value: talepler.length,
+          value: ozet?.bekleyen_ilac_talep ?? "…",
           icon: Pill,
           to: `${base}/ilac-talep`,
         },
         {
           label: "Departman randevusu",
-          value: randevular.length,
+          value: ozet?.randevu_sayisi ?? "…",
           icon: CalendarClock,
           to: `${base}/departman-randevulari`,
         },
         {
           label: "Nöbet çizelgesi",
-          value: nobetler.length,
+          value: ozet?.nobet_bugun ?? "…",
           icon: CalendarDays,
           to: `${base}/nobet`,
         },

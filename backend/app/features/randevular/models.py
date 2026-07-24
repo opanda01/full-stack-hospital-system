@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship
 
 from app.core.base_model import BaseModel
@@ -12,7 +13,9 @@ class Randevu(BaseModel, table=True):
     hasta_id: int = Field(foreign_key="hastalar.id", index=True)
     doktor_id: int = Field(foreign_key="doktorlar.id", index=True)
     departman_id: int = Field(foreign_key="departmanlar.id", index=True)
-    tarih_saat: datetime = Field(index=True)
+    tarih_saat: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
     durum: str = Field(default="BEKLEMEDE", max_length=50, index=True)
     notlar: Optional[str] = Field(default=None, max_length=1000)
 

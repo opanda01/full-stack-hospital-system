@@ -1,6 +1,5 @@
 """TTL-backed bashekim özet + PHI audit yardımcısı."""
 
-import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -9,6 +8,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, col, func, select
 
 from app.core.audit import denetim_kaydi_yaz
+from app.core.cache import get_json, invalidate, set_json
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.enums import ErisimDurumu, KlinikOnayDurumu
@@ -23,7 +23,7 @@ from app.features.tetkikler.models import Tetkik
 
 router = APIRouter()
 
-_OZET_CACHE: dict[str, Any] = {"ts": 0.0, "data": None}
+_OZET_CACHE_KEY = "bashekim:ozet"
 _OZET_TTL_SEC = 45
 
 
@@ -40,8 +40,7 @@ class BashekimOzet(BaseModel):
 
 
 def invalidate_bashekim_ozet() -> None:
-    _OZET_CACHE["ts"] = 0.0
-    _OZET_CACHE["data"] = None
+    invalidate(_OZET_CACHE_KEY)
 
 
 def phi_goruntuleme_logla(
@@ -71,40 +70,35 @@ def _build_ozet(session: Session) -> BashekimOzet:
     ).one()
 
     bugun = date.today()
-    # tarih_saat string/datetime — count loosely via all + filter if needed
-    randevular = list(session.exec(select(Randevu)).all())
-    bugun_randevu = 0
-    for r in randevular:
-        ts = getattr(r, "tarih_saat", None)
-        if ts is None:
-            continue
-        if isinstance(ts, datetime):
-            d = ts.date()
-        else:
-            try:
-                d = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).date()
-            except ValueError:
-                continue
-        durum = getattr(r, "durum", None)
-        durum_s = durum.value if hasattr(durum, "value") else str(durum or "")
-        if d == bugun and durum_s != "IPTAL":
-            bugun_randevu += 1
+    bugun_bas = datetime(bugun.year, bugun.month, bugun.day, tzinfo=timezone.utc)
+    bugun_bit = bugun_bas + timedelta(days=1)
+    bugun_randevu = session.exec(
+        select(func.count())
+        .select_from(Randevu)
+        .where(
+            Randevu.durum != "IPTAL",
+            Randevu.tarih_saat >= bugun_bas,
+            Randevu.tarih_saat < bugun_bit,
+        )
+    ).one()
 
     acik_sikayet = session.exec(select(func.count()).select_from(SikayetOneri)).one()
 
-    bekleyen_tetkik = 0
-    for t in session.exec(select(Tetkik)).all():
-        durum = getattr(t, "durum", None)
-        ds = durum.value if hasattr(durum, "value") else str(durum or "")
-        if ds in ("ISTENDI", "BEKLEMEDE", "ISLENIYOR", ""):
-            bekleyen_tetkik += 1
+    bekleyen_tetkik = session.exec(
+        select(func.count())
+        .select_from(Tetkik)
+        .where(
+            col(Tetkik.durum).in_(
+                ["ISTENDI", "BEKLEMEDE", "ISLENIYOR", "ISTEK_ALINDI", ""]
+            )
+        )
+    ).one()
 
-    acik_temizlik = 0
-    for t in session.exec(select(TemizlikGorevi)).all():
-        durum = getattr(t, "durum", None)
-        ds = durum.value if hasattr(durum, "value") else str(durum or "")
-        if ds not in ("TAMAMLANDI", "IPTAL"):
-            acik_temizlik += 1
+    acik_temizlik = session.exec(
+        select(func.count())
+        .select_from(TemizlikGorevi)
+        .where(~col(TemizlikGorevi.durum).in_(["TAMAMLANDI", "IPTAL"]))
+    ).one()
 
     bekleyen_klinik = 0
     try:
@@ -122,13 +116,12 @@ def _build_ozet(session: Session) -> BashekimOzet:
     retention = settings.AUDIT_RETENTION_DAYS
     q = select(DenetimKaydi)
     if retention > 0:
-        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
-            days=retention
-        )
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention)
         q = q.where(DenetimKaydi.zaman >= cutoff)
     q = q.order_by(col(DenetimKaydi.zaman).desc()).limit(8)
     son = []
     for k in session.exec(q).all():
+        # detay asla yok — PHI sızıntı önleme
         son.append(
             {
                 "id": k.id,
@@ -141,10 +134,10 @@ def _build_ozet(session: Session) -> BashekimOzet:
 
     return BashekimOzet(
         bekleyen_erisim=int(bekleyen_erisim or 0),
-        bugun_randevu=bugun_randevu,
+        bugun_randevu=int(bugun_randevu or 0),
         acik_sikayet=int(acik_sikayet or 0),
-        bekleyen_tetkik=bekleyen_tetkik,
-        acik_temizlik=acik_temizlik,
+        bekleyen_tetkik=int(bekleyen_tetkik or 0),
+        acik_temizlik=int(acik_temizlik or 0),
         bekleyen_klinik_onay=int(bekleyen_klinik or 0),
         son_denetim=son,
         cache_ttl_sec=_OZET_TTL_SEC,
@@ -157,11 +150,9 @@ def bashekim_ozet(
     session: Session = Depends(get_session),
     _user=Depends(require_permission("bashekim:ozet")),
 ):
-    now = time.time()
-    if _OZET_CACHE["data"] is not None and (now - _OZET_CACHE["ts"]) < _OZET_TTL_SEC:
-        data: BashekimOzet = _OZET_CACHE["data"]
-        return data.model_copy(update={"cached": True})
+    cached = get_json(_OZET_CACHE_KEY)
+    if cached is not None:
+        return BashekimOzet(**{**cached, "cached": True})
     data = _build_ozet(session)
-    _OZET_CACHE["ts"] = now
-    _OZET_CACHE["data"] = data
+    set_json(_OZET_CACHE_KEY, data.model_dump(mode="json"), _OZET_TTL_SEC)
     return data

@@ -25,10 +25,22 @@ def list_tetkikler(
 @router.get("/{tetkik_id}", response_model=TetkikRead)
 def get_tetkik(
     tetkik_id: int,
+    request: Request,
     current_user: Kullanici = Depends(require_permission("tetkik:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return tetkik_service.getir(session, current_user, tetkik_id)
+    from app.features.bashekim.router import phi_goruntuleme_logla
+
+    row = tetkik_service.getir(session, current_user, tetkik_id)
+    phi_goruntuleme_logla(
+        session,
+        actor=current_user,
+        kaynak="tetkik",
+        kaynak_id=tetkik_id,
+        request=request,
+    )
+    return row
+
 
 
 @router.post("/", response_model=TetkikRead, status_code=status.HTTP_201_CREATED)

@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlmodel import Session
 
+from app.core.audit_mask import mask_dict
 from app.features.auth.models import DenetimKaydi
 
 
@@ -17,6 +18,7 @@ def denetim_kaydi_yaz(
     ip_adresi: str | None = None,
     detay: dict[str, Any] | None = None,
     commit: bool = True,
+    narrow_diff: bool = False,
 ) -> DenetimKaydi:
     kayit = DenetimKaydi(
         actor_id=actor_id,
@@ -24,7 +26,7 @@ def denetim_kaydi_yaz(
         kaynak=kaynak,
         kaynak_id=str(kaynak_id) if kaynak_id is not None else None,
         ip_adresi=ip_adresi,
-        detay=detay,
+        detay=mask_dict(detay, narrow=narrow_diff) if detay else None,
     )
     session.add(kayit)
     if commit:

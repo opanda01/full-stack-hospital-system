@@ -12,59 +12,38 @@ import {
 import { RoleDashboard } from "@/shared/ui/RoleDashboard";
 import { api } from "@/shared/api";
 
-type Kullanici = { id: number };
-type Doktor = { id: number };
-type Departman = { id: number };
-type Randevu = { id: number; tarih_saat: string; durum: string };
+type AdminOzet = {
+  kullanici_sayisi: number;
+  doktor_sayisi: number;
+  departman_sayisi: number;
+  personel_sayisi: number;
+  randevu_bekleyen: number;
+  randevu_toplam: number;
+};
+
 type Sikayet = { id: number };
 type Temizlik = { id: number; durum?: string };
-
-function isToday(iso: string): boolean {
-  const d = new Date(iso);
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
+type Hasta = { id: number };
 
 export function AdminDashboardPage() {
-  const { data: kullanicilar = [], isLoading: l1 } = useQuery({
-    queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
+  const { data: ozet, isLoading } = useQuery({
+    queryKey: ["dashboard-admin-ozet"],
+    queryFn: async () => (await api.get<AdminOzet>("/dashboard/admin/ozet")).data,
   });
-  const { data: doktorlar = [], isLoading: l2 } = useQuery({
-    queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
-  });
-  const { data: departmanlar = [], isLoading: l3 } = useQuery({
-    queryKey: ["departmanlar"],
-    queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
-  });
-  const { data: randevular = [], isLoading: l4 } = useQuery({
-    queryKey: ["randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
-  });
-  const { data: sikayetler = [], isLoading: l5 } = useQuery({
+  const { data: sikayetler = [] } = useQuery({
     queryKey: ["sikayet-oneri"],
-    queryFn: async () =>
-      (await api.get<Sikayet[]>("/sikayet-oneri/")).data,
+    queryFn: async () => (await api.get<Sikayet[]>("/sikayet-oneri/")).data,
   });
-  const { data: hastalar = [], isLoading: lHastalar } = useQuery({
-    queryKey: ["hastalar"],
-    queryFn: async () => (await api.get<{ id: number }[]>("/hastalar/")).data,
+  const { data: hastalar = [] } = useQuery({
+    queryKey: ["hastalar-count"],
+    queryFn: async () => (await api.get<Hasta[]>("/hastalar/")).data,
   });
-  const { data: temizlikler = [], isLoading: l6 } = useQuery({
+  const { data: temizlikler = [] } = useQuery({
     queryKey: ["temizlik-gorevleri"],
     queryFn: async () =>
       (await api.get<Temizlik[]>("/temizlik-gorevleri/")).data,
   });
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6 || lHastalar;
-  const bugunRandevu = randevular.filter(
-    (r) => r.durum !== "IPTAL" && isToday(r.tarih_saat),
-  ).length;
   const acikTemizlik = temizlikler.filter(
     (t) => t.durum !== "TAMAMLANDI" && t.durum !== "IPTAL",
   ).length;
@@ -74,31 +53,31 @@ export function AdminDashboardPage() {
       metrics={[
         {
           label: "Toplam kullanıcı",
-          value: loading ? "…" : kullanicilar.length,
+          value: isLoading ? "…" : (ozet?.kullanici_sayisi ?? 0),
           icon: Users,
           to: "/admin/kullanicilar",
         },
         {
           label: "Aktif doktor",
-          value: loading ? "…" : doktorlar.length,
+          value: isLoading ? "…" : (ozet?.doktor_sayisi ?? 0),
           icon: Stethoscope,
           to: "/admin/doktorlar",
         },
         {
           label: "Departman",
-          value: loading ? "…" : departmanlar.length,
+          value: isLoading ? "…" : (ozet?.departman_sayisi ?? 0),
           icon: Building2,
           to: "/admin/departmanlar",
         },
         {
-          label: "Bugünkü randevu",
-          value: loading ? "…" : bugunRandevu,
+          label: "Bekleyen randevu",
+          value: isLoading ? "…" : (ozet?.randevu_bekleyen ?? 0),
           icon: CalendarClock,
           to: "/admin/randevular",
         },
         {
           label: "Hastalar",
-          value: loading ? "…" : hastalar.length,
+          value: hastalar.length,
           icon: HeartPulse,
           to: "/admin/hastalar",
         },
@@ -110,13 +89,13 @@ export function AdminDashboardPage() {
         },
         {
           label: "Açık temizlik",
-          value: loading ? "…" : acikTemizlik,
+          value: acikTemizlik,
           icon: Sparkles,
           to: "/admin/temizlik",
         },
         {
           label: "Şikayet / öneri",
-          value: loading ? "…" : sikayetler.length,
+          value: sikayetler.length,
           icon: MessageSquareWarning,
           to: "/admin/sikayet",
         },

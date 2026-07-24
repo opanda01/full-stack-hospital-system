@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     # Denetim kayıtlarının listelenen / saklanan max yaşı (gün); 0 = sınırsız
     AUDIT_RETENTION_DAYS: int = 365
 
+    # SQLAlchemy pool (prod: worker sayısı × pool_size < Postgres max_connections)
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE: int = 1800
+
+    # Redis cache (boş = CELERY_BROKER host /2)
+    REDIS_CACHE_URL: str = ""
+
     # RFC 8594 Sunset — örn. "Sat, 01 Jan 2027 00:00:00 GMT"
     AUTH_REGISTER_SUNSET: str = "Sat, 01 Jan 2027 00:00:00 GMT"
 

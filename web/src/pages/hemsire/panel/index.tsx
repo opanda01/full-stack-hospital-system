@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { formatIstanbulDateTime } from "@/shared/lib";
 
 type Randevu = {
   id: number;
@@ -24,14 +25,16 @@ export function HemsirePanelPage() {
         { to: "/sikayet", label: "Şikayet" },
       ]}
     >
-      <p className="mb-4 text-sm text-muted-foreground">Departmanınızdaki randevular</p>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Departmanınızdaki randevular
+      </p>
       {isLoading ? (
         <p>Yükleniyor…</p>
       ) : (
         <ul className="space-y-2">
           {data.map((r) => (
             <li key={r.id} className="rounded border bg-card p-3 text-sm">
-              #{r.id} — {new Date(r.tarih_saat).toLocaleString("tr-TR")} — {r.durum}
+              #{r.id} — {formatIstanbulDateTime(r.tarih_saat)} — {r.durum}
             </li>
           ))}
           {!data.length && <p className="text-muted-foreground">Kayıt yok.</p>}

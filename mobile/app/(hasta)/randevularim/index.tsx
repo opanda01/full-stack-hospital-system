@@ -87,7 +87,9 @@ export default function RandevularimScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>
-              {new Date(item.tarih_saat).toLocaleString("tr-TR")}
+              {new Date(item.tarih_saat).toLocaleString("tr-TR", {
+                timeZone: "Europe/Istanbul",
+              })}
             </Text>
             <Text>Durum: {item.durum}</Text>
             <Text style={styles.meta}>Doktor #{item.doktor_id}</Text>
