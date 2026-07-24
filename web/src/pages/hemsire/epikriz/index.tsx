@@ -9,7 +9,7 @@ import { getApiErrorMessage } from "@/shared/lib";
 type Epikriz = {
   id: number;
   yatis_id: number;
-  hasta_id: number;
+  hasta_id: string;
   durum: string;
   sikayet_oyku: string | null;
   fizik_muayene: string | null;
@@ -17,7 +17,7 @@ type Epikriz = {
   tedavi_ozeti: string | null;
   taburcu_onerileri: string | null;
 };
-type Yatis = { id: number; protokol_no: string; hasta_ad_soyad: string; hasta_id: number };
+type Yatis = { id: number; protokol_no: string; hasta_ad_soyad: string; hasta_id: string };
 
 export function HemsireEpikrizPage() {
   const qc = useQueryClient();

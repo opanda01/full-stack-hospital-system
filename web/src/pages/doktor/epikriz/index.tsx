@@ -7,7 +7,7 @@ import { getApiErrorMessage } from "@/shared/lib";
 type Epikriz = {
   id: number;
   yatis_id: number;
-  hasta_id: number;
+  hasta_id: string;
   durum: string;
   sikayet_oyku: string | null;
   tani: string | null;

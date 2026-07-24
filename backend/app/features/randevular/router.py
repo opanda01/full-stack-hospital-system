@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
@@ -18,13 +19,14 @@ router = APIRouter()
 def _to_read(session: Session, r: Randevu) -> RandevuRead:
     ad = None
     hasta = session.get(Hasta, r.hasta_id)
-    if hasta:
-        k = session.get(Kullanici, hasta.kullanici_id)
-        if k:
-            ad = f"{k.ad} {k.soyad}".strip()
+    if hasta is None:
+        raise ValueError("Randevu hasta kaydı bulunamadı")
+    k = session.get(Kullanici, hasta.kullanici_id)
+    if k:
+        ad = f"{k.ad} {k.soyad}".strip()
     return RandevuRead(
-        id=r.id,
-        hasta_id=r.hasta_id,
+        id=r.public_id,
+        hasta_id=hasta.public_id,
         doktor_id=r.doktor_id,
         departman_id=r.departman_id,
         # API her zaman Europe/Istanbul duvar saati döner (+03:00)
@@ -33,7 +35,6 @@ def _to_read(session: Session, r: Randevu) -> RandevuRead:
         notlar=r.notlar,
         hasta_ad_soyad=ad,
     )
-
 
 
 @router.get("/musait", response_model=list[str])
@@ -57,14 +58,14 @@ def randevu_listele(
     return [_to_read(session, r) for r in rows]
 
 
-@router.get("/{randevu_id}", response_model=RandevuRead)
+@router.get("/{public_id}", response_model=RandevuRead)
 def randevu_getir(
-    randevu_id: int,
+    public_id: UUID,
     current_user: Kullanici = Depends(require_permission("randevu:goruntule")),
     session: Session = Depends(get_session),
 ):
     return _to_read(
-        session, randevu_service.getir(session, current_user, randevu_id)
+        session, randevu_service.getir(session, current_user, public_id)
     )
 
 
@@ -79,12 +80,12 @@ def randevu_olustur(
     return _to_read(session, r)
 
 
-@router.delete("/{randevu_id}", response_model=RandevuRead)
+@router.delete("/{public_id}", response_model=RandevuRead)
 def randevu_iptal(
-    randevu_id: int,
+    public_id: UUID,
     current_user: Kullanici = Depends(require_permission("randevu:iptal")),
     session: Session = Depends(get_session),
 ):
     return _to_read(
-        session, randevu_service.iptal_et(session, current_user, randevu_id)
+        session, randevu_service.iptal_et(session, current_user, public_id)
     )

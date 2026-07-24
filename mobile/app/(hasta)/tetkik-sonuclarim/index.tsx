@@ -11,7 +11,7 @@ import { useFocusEffect } from "expo-router";
 import { apiFetch } from "@/shared/api";
 
 type Tetkik = {
-  id: number;
+  id: string;
   tetkik_turu: string;
   durum: string;
   sonuc_dosyasi: string | null;

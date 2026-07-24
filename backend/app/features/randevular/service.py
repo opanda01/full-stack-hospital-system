@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -7,6 +8,7 @@ from sqlmodel import Session, select
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import get_by_public_id, hasta_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.core.timezone import ISTANBUL, as_utc, to_istanbul
 from app.features.kullanicilar.models import Kullanici
@@ -95,9 +97,12 @@ def randevu_erisim_kontrolu(
 def olustur(
     session: Session, current_user: Kullanici, veri: RandevuCreate, kapsam: Kapsam
 ) -> Randevu:
+    hasta = hasta_from_public_id(session, veri.hasta_id)
+    assert hasta.id is not None
+
     if kapsam == Kapsam.KENDI_KAYDIM and current_user.rol == Rol.HASTA:
-        hasta = hasta_getir(session, current_user.id)
-        if veri.hasta_id != hasta.id:
+        kendi = hasta_getir(session, current_user.id)
+        if hasta.id != kendi.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sadece kendi adınıza randevu oluşturabilirsiniz.",
@@ -110,6 +115,16 @@ def olustur(
                 detail="Sadece kendi departmanınız için randevu oluşturabilirsiniz.",
             )
 
+    if veri.public_id is not None:
+        clash = session.exec(
+            select(Randevu).where(Randevu.public_id == veri.public_id)
+        ).first()
+        if clash:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="public_id zaten kullanılıyor",
+            )
+
     tarih_saat = as_utc(veri.tarih_saat)
     if _cakisma_var_mi(session, veri.doktor_id, tarih_saat):
         raise HTTPException(
@@ -117,14 +132,17 @@ def olustur(
             detail="Bu saatte doktorun başka randevusu var",
         )
 
-    randevu = Randevu(
-        hasta_id=veri.hasta_id,
-        doktor_id=veri.doktor_id,
-        departman_id=veri.departman_id,
-        tarih_saat=tarih_saat,
-        notlar=veri.notlar,
-        durum="BEKLEMEDE",
-    )
+    kwargs: dict = {
+        "hasta_id": hasta.id,
+        "doktor_id": veri.doktor_id,
+        "departman_id": veri.departman_id,
+        "tarih_saat": tarih_saat,
+        "notlar": veri.notlar,
+        "durum": "BEKLEMEDE",
+    }
+    if veri.public_id is not None:
+        kwargs["public_id"] = veri.public_id
+    randevu = Randevu(**kwargs)
     session.add(randevu)
     try:
         session.commit()
@@ -138,12 +156,8 @@ def olustur(
     return randevu
 
 
-def iptal_et(session: Session, current_user: Kullanici, randevu_id: int) -> Randevu:
-    randevu = session.get(Randevu, randevu_id)
-    if randevu is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Randevu bulunamadı"
-        )
+def iptal_et(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu:
+    randevu = get_by_public_id(session, Randevu, public_id)
     randevu_erisim_kontrolu(session, randevu, current_user)
     randevu.durum = "IPTAL"
     randevu.updated_at = datetime.now(timezone.utc)
@@ -153,12 +167,8 @@ def iptal_et(session: Session, current_user: Kullanici, randevu_id: int) -> Rand
     return randevu
 
 
-def getir(session: Session, current_user: Kullanici, randevu_id: int) -> Randevu:
-    randevu = session.get(Randevu, randevu_id)
-    if randevu is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Randevu bulunamadı"
-        )
+def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu:
+    randevu = get_by_public_id(session, Randevu, public_id)
     randevu_erisim_kontrolu(session, randevu, current_user)
     return randevu
 

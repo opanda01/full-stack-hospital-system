@@ -10,11 +10,11 @@ type Tur = "RECETE" | "SEVK" | "TIBBI_RAPOR";
 type Kayit = {
   id: number;
   tur: string;
-  hasta_id: number | null;
+  hasta_id: string | null;
   icerik: string;
   onay_durumu: string;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 const TITLES: Record<Tur, string> = {
   RECETE: "Reçeteler",
@@ -46,7 +46,7 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
   });
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
@@ -57,7 +57,7 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
     mutationFn: async () =>
       api.post("/klinik-onay/", {
         tur,
-        hasta_id: hastaId ? Number(hastaId) : null,
+        hasta_id: hastaId || null,
         icerik,
       }),
     onSuccess: () => {

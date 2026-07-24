@@ -198,16 +198,17 @@ def list_ilac_uygulamalari_toplu(
     out: list[dict] = []
     for uygulama, yatis in rows:
         hasta = session.get(Hasta, yatis.hasta_id)
+        if hasta is None:
+            continue
         ad = ""
-        if hasta:
-            k = session.get(KullaniciModel, hasta.kullanici_id)
-            if k:
-                ad = f"{k.ad} {k.soyad}".strip()
+        k = session.get(KullaniciModel, hasta.kullanici_id)
+        if k:
+            ad = f"{k.ad} {k.soyad}".strip()
         out.append(
             {
                 "id": uygulama.id,
                 "yatis_id": uygulama.yatis_id,
-                "hasta_id": yatis.hasta_id,
+                "hasta_id": hasta.public_id,
                 "hasta_ad_soyad": ad or f"Hasta #{yatis.hasta_id}",
                 "protokol_no": yatis.protokol_no,
                 "ilac_adi": uygulama.ilac_adi,

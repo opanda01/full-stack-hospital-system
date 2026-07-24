@@ -32,7 +32,7 @@ def test_doktor_klinik_onay_olustur(client, seeded):
         headers=auth_header(seeded["doktor_a"]),
         json={
             "tur": "RECETE",
-            "hasta_id": seeded["hasta_a_entity"].id,
+            "hasta_id": str(seeded["hasta_a_entity"].public_id),
             "icerik": "Parasetamol 500mg 3x1",
         },
     )
@@ -49,7 +49,7 @@ def test_bashekim_onayla_ve_reddet(client, seeded):
         headers=auth_header(seeded["doktor_a"]),
         json={
             "tur": "SEVK",
-            "hasta_id": seeded["hasta_a_entity"].id,
+            "hasta_id": str(seeded["hasta_a_entity"].public_id),
             "icerik": "Ortopedi sevk",
         },
     )
@@ -69,7 +69,7 @@ def test_bashekim_onayla_ve_reddet(client, seeded):
         headers=auth_header(seeded["doktor_a"]),
         json={
             "tur": "TIBBI_RAPOR",
-            "hasta_id": seeded["hasta_a_entity"].id,
+            "hasta_id": str(seeded["hasta_a_entity"].public_id),
             "icerik": "Rapor metni",
         },
     )
@@ -92,7 +92,7 @@ def test_mudur_klinik_onay_403(client, session, seeded):
         headers=auth_header(seeded["doktor_a"]),
         json={
             "tur": "RECETE",
-            "hasta_id": seeded["hasta_a_entity"].id,
+            "hasta_id": str(seeded["hasta_a_entity"].public_id),
             "icerik": "Test",
         },
     )

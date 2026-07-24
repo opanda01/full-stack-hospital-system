@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -8,6 +9,10 @@ from app.core.audit import denetim_kaydi_yaz
 from app.core.db import get_session
 from app.core.enums import KlinikOnayDurumu, Rol
 from app.core.permissions import Kapsam
+from app.core.public_id import (
+    optional_hasta_pk_from_public_id,
+    optional_hasta_public_id_from_pk,
+)
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
@@ -21,7 +26,7 @@ router = APIRouter()
 class KlinikOnayCreate(BaseModel):
     tur: str = Field(pattern="^(RECETE|SEVK|TIBBI_RAPOR)$")
     muayene_id: int | None = None
-    hasta_id: int | None = None
+    hasta_id: UUID | None = None
     icerik: str = Field(min_length=1, max_length=4000)
 
 
@@ -29,7 +34,7 @@ class KlinikOnayRead(BaseModel):
     id: int
     tur: str
     muayene_id: int | None
-    hasta_id: int | None
+    hasta_id: UUID | None
     icerik: str
     onay_durumu: str
     olusturan_id: int | None
@@ -39,12 +44,12 @@ class KlinikOnayRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-def _to_read(row: KlinikOnayKaydi) -> KlinikOnayRead:
+def _to_read(session: Session, row: KlinikOnayKaydi) -> KlinikOnayRead:
     return KlinikOnayRead(
         id=row.id,
         tur=row.tur,
         muayene_id=row.muayene_id,
-        hasta_id=row.hasta_id,
+        hasta_id=optional_hasta_public_id_from_pk(session, row.hasta_id),
         icerik=row.icerik,
         onay_durumu=row.onay_durumu.value
         if hasattr(row.onay_durumu, "value")
@@ -88,7 +93,7 @@ def list_klinik_onay(
         q = q.where(KlinikOnayKaydi.olusturan_id == current_user.id)
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Klinik onay listesi için yetkiniz yok")
-    return [_to_read(r) for r in session.exec(q).all()]
+    return [_to_read(session, r) for r in session.exec(q).all()]
 
 
 @router.get("/{kayit_id}", response_model=KlinikOnayRead)
@@ -110,7 +115,7 @@ def get_klinik_onay(
             kaynak_id=kayit_id,
             request=request,
         )
-    return _to_read(row)
+    return _to_read(session, row)
 
 
 @router.post("/", response_model=KlinikOnayRead, status_code=status.HTTP_201_CREATED)
@@ -121,22 +126,26 @@ def create_klinik_onay(
     current_user: Kullanici = Depends(require_permission("klinik_onay:olustur")),
 ):
     kapsam = request.state.kapsam
-    if body.hasta_id is not None and kapsam == Kapsam.KENDI_KAYDIM:
+    hasta_pk = optional_hasta_pk_from_public_id(session, body.hasta_id)
+    if hasta_pk is not None and kapsam == Kapsam.KENDI_KAYDIM:
         if current_user.rol == Rol.DOKTOR and not hasta_service.doktor_hasta_erisim_var_mi(
-            session, current_user, body.hasta_id
+            session, current_user, hasta_pk
         ):
             raise HTTPException(
                 status_code=403, detail="Bu hasta için klinik belge oluşturamazsınız"
             )
     row = KlinikOnayKaydi(
-        **body.model_dump(),
+        tur=body.tur,
+        muayene_id=body.muayene_id,
+        hasta_id=hasta_pk,
+        icerik=body.icerik,
         olusturan_id=current_user.id,
         onay_durumu=KlinikOnayDurumu.BEKLEMEDE,
     )
     session.add(row)
     session.commit()
     session.refresh(row)
-    return _to_read(row)
+    return _to_read(session, row)
 
 
 @router.post("/{kayit_id}/onayla", response_model=KlinikOnayRead)
@@ -164,7 +173,7 @@ def onayla(
     )
     session.commit()
     session.refresh(row)
-    return _to_read(row)
+    return _to_read(session, row)
 
 
 @router.post("/{kayit_id}/reddet", response_model=KlinikOnayRead)
@@ -192,4 +201,4 @@ def reddet(
     )
     session.commit()
     session.refresh(row)
-    return _to_read(row)
+    return _to_read(session, row)

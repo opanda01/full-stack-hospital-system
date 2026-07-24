@@ -57,7 +57,7 @@ def test_randevu_liste_laborant_403(client, seeded):
 
 def test_randevu_olustur_hasta_201(client, seeded):
     body = {
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "doktor_id": seeded["doktor_a_entity"].id,
         "departman_id": seeded["dep_a"].id,
         "tarih_saat": "2030-01-15T10:00:00",
@@ -69,7 +69,7 @@ def test_randevu_olustur_hasta_201(client, seeded):
 
 def test_randevu_olustur_doktor_403(client, seeded):
     body = {
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "doktor_id": seeded["doktor_a_entity"].id,
         "departman_id": seeded["dep_a"].id,
         "tarih_saat": "2030-01-16T10:00:00",
@@ -80,7 +80,7 @@ def test_randevu_olustur_doktor_403(client, seeded):
 
 def test_tetkik_iste_doktor_201(client, seeded):
     body = {
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "istek_yapan_doktor_id": seeded["doktor_a_entity"].id,
         "tetkik_turu": "EKG",
     }
@@ -90,7 +90,7 @@ def test_tetkik_iste_doktor_201(client, seeded):
 
 def test_tetkik_iste_hasta_403(client, seeded):
     body = {
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "istek_yapan_doktor_id": seeded["doktor_a_entity"].id,
         "tetkik_turu": "EKG",
     }
@@ -139,7 +139,7 @@ def test_sikayet_tumunu_goruntule_mudur_global():
 
 def test_doktor_baska_doktor_randevu_get_403(client, seeded):
     r = client.get(
-        f"/randevular/{seeded['randevu_b'].id}",
+        f"/randevular/{seeded['randevu_b'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 403
@@ -147,7 +147,7 @@ def test_doktor_baska_doktor_randevu_get_403(client, seeded):
 
 def test_doktor_baska_doktor_randevu_delete_403(client, seeded):
     r = client.delete(
-        f"/randevular/{seeded['randevu_b'].id}",
+        f"/randevular/{seeded['randevu_b'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 403
@@ -155,7 +155,7 @@ def test_doktor_baska_doktor_randevu_delete_403(client, seeded):
 
 def test_doktor_kendi_randevu_get_200(client, seeded):
     r = client.get(
-        f"/randevular/{seeded['randevu_a'].id}",
+        f"/randevular/{seeded['randevu_a'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 200
@@ -163,7 +163,7 @@ def test_doktor_kendi_randevu_get_200(client, seeded):
 
 def test_hasta_baska_tetkik_403(client, seeded):
     r = client.get(
-        f"/tetkikler/{seeded['tetkik_b'].id}",
+        f"/tetkikler/{seeded['tetkik_b'].public_id}",
         headers=auth_header(seeded["hasta_a"]),
     )
     assert r.status_code == 403
@@ -171,7 +171,7 @@ def test_hasta_baska_tetkik_403(client, seeded):
 
 def test_hasta_kendi_tetkik_200(client, seeded):
     r = client.get(
-        f"/tetkikler/{seeded['tetkik_a'].id}",
+        f"/tetkikler/{seeded['tetkik_a'].public_id}",
         headers=auth_header(seeded["hasta_a"]),
     )
     assert r.status_code == 200
@@ -198,7 +198,7 @@ def test_temizlik_kendi_gorev_guncelle_200(client, seeded):
 
 def test_hemsire_farkli_departman_randevu_403(client, seeded):
     r = client.get(
-        f"/randevular/{seeded['randevu_b'].id}",
+        f"/randevular/{seeded['randevu_b'].public_id}",
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 403
@@ -206,7 +206,7 @@ def test_hemsire_farkli_departman_randevu_403(client, seeded):
 
 def test_hemsire_kendi_departman_randevu_200(client, seeded):
     r = client.get(
-        f"/randevular/{seeded['randevu_a'].id}",
+        f"/randevular/{seeded['randevu_a'].public_id}",
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 200
@@ -438,7 +438,7 @@ def test_idari_personel_izin_matrisi():
 def test_doktor_a_doktor_b_kaynak_403(client, seeded):
     """DOKTOR A → DOKTOR B kaynağı — sahiplik (Faz 3 tamamlandı)."""
     r = client.get(
-        f"/randevular/{seeded['randevu_b'].id}",
+        f"/randevular/{seeded['randevu_b'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 403
@@ -453,13 +453,13 @@ def test_doktor_benim_hastalar_scoped(client, seeded):
     r = client.get("/hastalar/benim", headers=auth_header(seeded["doktor_a"]))
     assert r.status_code == 200
     ids = {h["id"] for h in r.json()}
-    assert seeded["hasta_a_entity"].id in ids
-    assert seeded["hasta_b_entity"].id not in ids
+    assert str(seeded["hasta_a_entity"].public_id) in ids
+    assert str(seeded["hasta_b_entity"].public_id) not in ids
 
 
 def test_doktor_baska_hasta_detay_403(client, seeded):
     r = client.get(
-        f"/hastalar/{seeded['hasta_b_entity'].id}",
+        f"/hastalar/{seeded['hasta_b_entity'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 403
@@ -467,7 +467,7 @@ def test_doktor_baska_hasta_detay_403(client, seeded):
 
 def test_doktor_kendi_hasta_detay_200(client, seeded):
     r = client.get(
-        f"/hastalar/{seeded['hasta_a_entity'].id}",
+        f"/hastalar/{seeded['hasta_a_entity'].public_id}",
         headers=auth_header(seeded["doktor_a"]),
     )
     assert r.status_code == 200
@@ -476,7 +476,7 @@ def test_doktor_kendi_hasta_detay_200(client, seeded):
 def test_doktor_klinik_onay_kendi_kapsam(client, seeded):
     body = {
         "tur": "RECETE",
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "icerik": "Parasetamol 500mg",
     }
     c = client.post("/klinik-onay/", json=body, headers=auth_header(seeded["doktor_a"]))

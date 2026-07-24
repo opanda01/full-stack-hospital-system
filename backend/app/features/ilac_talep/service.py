@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
 from app.core.enums import IlacTalepDurumu, PanelBildirimTipi
+from app.core.public_id import hasta_public_id_from_pk
 from app.features.eczane.models import Ilac
 from app.features.hastalar.models import Hasta
 from app.features.ilac_talep.models import IlacTalebi, IlacTalepKalemi
@@ -50,7 +51,7 @@ def _to_read(session: Session, talep: IlacTalebi) -> IlacTalepRead:
     return IlacTalepRead(
         id=talep.id,
         yatis_id=talep.yatis_id,
-        hasta_id=talep.hasta_id,
+        hasta_id=hasta_public_id_from_pk(session, talep.hasta_id),
         hasta_ad_soyad=_hasta_ad(session, talep.hasta_id),
         protokol_no=yatis.protokol_no if yatis else None,
         servis_id=talep.servis_id,

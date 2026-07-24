@@ -12,7 +12,7 @@ type Doktor = {
   personel_id: number;
   online_randevu_acik_mi?: boolean;
 };
-type Hasta = { id: number };
+type Hasta = { id: string };
 
 export function RandevuOlusturForm() {
   const qc = useQueryClient();

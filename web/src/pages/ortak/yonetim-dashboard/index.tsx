@@ -15,10 +15,10 @@ import { api } from "@/shared/api";
 type Personel = { id: number };
 type Doktor = { id: number };
 type Departman = { id: number };
-type Randevu = { id: number; tarih_saat: string; durum: string };
+type Randevu = { id: string; tarih_saat: string; durum: string };
 type Sikayet = { id: number };
 type Temizlik = { id: number; durum?: string };
-type Hasta = { id: number };
+type Hasta = { id: string };
 
 function isToday(iso: string): boolean {
   const d = new Date(iso);

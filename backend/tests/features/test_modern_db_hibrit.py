@@ -74,7 +74,7 @@ def test_randevu_cakisma_409(client, seeded):
     headers = auth_header(admin)
     ts = datetime(2026, 8, 1, 10, 0, 0, tzinfo=timezone.utc)
     body = {
-        "hasta_id": seeded["hasta_a_entity"].id,
+        "hasta_id": str(seeded["hasta_a_entity"].public_id),
         "doktor_id": seeded["doktor_a_entity"].id,
         "departman_id": seeded["dep_a"].id,
         "tarih_saat": ts.isoformat(),

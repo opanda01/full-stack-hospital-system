@@ -1,14 +1,32 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir
 from app.core.permissions import Kapsam
+from app.core.public_id import get_by_public_id, hasta_from_public_id, hasta_pk_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.hastalar import service as hasta_service
+from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.tetkikler.models import Tetkik
-from app.features.tetkikler.schemas import TetkikCreate
+from app.features.tetkikler.schemas import TetkikCreate, TetkikRead
+
+
+def _to_read(session: Session, t: Tetkik) -> TetkikRead:
+    hasta = session.get(Hasta, t.hasta_id)
+    if hasta is None:
+        raise HTTPException(status_code=404, detail="Hasta bulunamadı")
+    return TetkikRead(
+        id=t.public_id,
+        hasta_id=hasta.public_id,
+        istek_yapan_doktor_id=t.istek_yapan_doktor_id,
+        tetkik_turu=t.tetkik_turu,
+        sonuc_dosyasi=t.sonuc_dosyasi,
+        durum=t.durum,
+    )
 
 
 def listele(
@@ -16,11 +34,12 @@ def listele(
     current_user: Kullanici,
     kapsam: Kapsam,
     *,
-    hasta_id: int | None = None,
-) -> list[Tetkik]:
+    hasta_public_id: UUID | None = None,
+) -> list[TetkikRead]:
     query = select(Tetkik)
-    if hasta_id is not None:
-        query = query.where(Tetkik.hasta_id == hasta_id)
+    if hasta_public_id is not None:
+        hasta_pk = hasta_pk_from_public_id(session, hasta_public_id)
+        query = query.where(Tetkik.hasta_id == hasta_pk)
 
     def kendi(q):
         if current_user.rol == Rol.DOKTOR:
@@ -50,7 +69,8 @@ def listele(
         kendi_kaydim_filtresi=kendi,
         departmanim_filtresi=departman,
     )
-    return list(session.exec(query).all())
+    rows = list(session.exec(query).all())
+    return [_to_read(session, t) for t in rows]
 
 
 def tetkik_erisim_kontrolu(
@@ -80,17 +100,15 @@ def tetkik_erisim_kontrolu(
     )
 
 
-def getir(session: Session, current_user: Kullanici, tetkik_id: int) -> Tetkik:
-    tetkik = session.get(Tetkik, tetkik_id)
-    if tetkik is None:
-        raise HTTPException(status_code=404, detail="Tetkik bulunamadı")
+def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Tetkik:
+    tetkik = get_by_public_id(session, Tetkik, public_id)
     tetkik_erisim_kontrolu(session, tetkik, current_user)
     return tetkik
 
 
 def olustur(
     session: Session, current_user: Kullanici, veri: TetkikCreate, kapsam: Kapsam
-) -> Tetkik:
+) -> TetkikRead:
     if current_user.rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if veri.istek_yapan_doktor_id != doktor.id:
@@ -98,24 +116,40 @@ def olustur(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sadece kendi adınıza tetkik isteyebilirsiniz.",
             )
-    tetkik = Tetkik(
-        hasta_id=veri.hasta_id,
-        istek_yapan_doktor_id=veri.istek_yapan_doktor_id,
-        tetkik_turu=veri.tetkik_turu,
-        durum="ISTEK_ALINDI",
-    )
+    hasta = hasta_from_public_id(session, veri.hasta_id)
+    assert hasta.id is not None
+    if veri.public_id is not None:
+        clash = session.exec(
+            select(Tetkik).where(Tetkik.public_id == veri.public_id)
+        ).first()
+        if clash:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="public_id zaten kullanılıyor",
+            )
+    kwargs: dict = {
+        "hasta_id": hasta.id,
+        "istek_yapan_doktor_id": veri.istek_yapan_doktor_id,
+        "tetkik_turu": veri.tetkik_turu,
+        "durum": "ISTEK_ALINDI",
+    }
+    if veri.public_id is not None:
+        kwargs["public_id"] = veri.public_id
+    tetkik = Tetkik(**kwargs)
     session.add(tetkik)
     session.commit()
     session.refresh(tetkik)
-    return tetkik
+    return _to_read(session, tetkik)
 
 
 def sonuc_gir(
-    session: Session, current_user: Kullanici, tetkik_id: int, sonuc_dosyasi: str, durum: str
-) -> Tetkik:
-    tetkik = session.get(Tetkik, tetkik_id)
-    if tetkik is None:
-        raise HTTPException(status_code=404, detail="Tetkik bulunamadı")
+    session: Session,
+    current_user: Kullanici,
+    public_id: UUID,
+    sonuc_dosyasi: str,
+    durum: str,
+) -> TetkikRead:
+    tetkik = get_by_public_id(session, Tetkik, public_id)
     if current_user.rol not in (Rol.ADMIN, Rol.LABORANT):
         raise HTTPException(status_code=403, detail="Sonuç girme yetkiniz yok")
     tetkik.sonuc_dosyasi = sonuc_dosyasi
@@ -123,4 +157,4 @@ def sonuc_gir(
     session.add(tetkik)
     session.commit()
     session.refresh(tetkik)
-    return tetkik
+    return _to_read(session, tetkik)

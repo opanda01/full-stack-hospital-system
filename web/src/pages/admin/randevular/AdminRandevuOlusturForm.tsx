@@ -12,7 +12,7 @@ type Doktor = {
   ad?: string | null;
   soyad?: string | null;
 };
-type Hasta = { id: number; tc_kimlik_no: string; kullanici_id: number };
+type Hasta = { id: string; tc_kimlik_no: string; kullanici_id: number };
 type Kullanici = { id: number; ad: string; soyad: string };
 
 /** Admin: hasta seçerek randevu oluşturur. */
@@ -74,7 +74,7 @@ export function AdminRandevuOlusturForm() {
         throw new Error("Eksik seçim");
       }
       return createRandevu({
-        hastaId: Number(hastaId),
+        hastaId: hastaId,
         doktorId: Number(doktorId),
         departmanId: Number(depId),
         tarihSaat: slot,

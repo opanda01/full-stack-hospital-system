@@ -6,10 +6,10 @@ import { getApiErrorMessage } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Tetkik = {
-  id: number;
+  id: string;
   tetkik_turu?: string;
   durum: string;
-  hasta_id?: number;
+  hasta_id?: string;
   doktor_id?: number;
 };
 

@@ -1,6 +1,6 @@
 ﻿export type Randevu = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   doktor_id: number;
   departman_id: number;
   tarih_saat: string;

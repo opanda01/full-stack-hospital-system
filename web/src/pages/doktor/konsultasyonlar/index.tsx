@@ -9,7 +9,7 @@ type Konsultasyon = {
   id: number;
   isteyen_doktor_id: number;
   hedef_doktor_id: number;
-  hasta_id: number;
+  hasta_id: string;
   notlar: string | null;
   durum: string;
   yanit_notu: string | null;
@@ -20,7 +20,7 @@ type Doktor = {
   soyad?: string | null;
   uzmanlik_alani: string;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 export function DoktorKonsultasyonlarPage() {
   const qc = useQueryClient();
@@ -59,7 +59,7 @@ export function DoktorKonsultasyonlarPage() {
   }, [doktorlar]);
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
@@ -70,7 +70,7 @@ export function DoktorKonsultasyonlarPage() {
     mutationFn: async () =>
       api.post("/konsultasyonlar/", {
         hedef_doktor_id: Number(hedefId),
-        hasta_id: Number(hastaId),
+        hasta_id: hastaId,
         notlar: notlar || null,
       }),
     onSuccess: () => {

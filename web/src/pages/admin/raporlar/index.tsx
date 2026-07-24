@@ -23,7 +23,7 @@ type Kullanici = { id: number; rol: string; aktif_mi: boolean };
 type Doktor = { id: number; departman_id?: number | null };
 type Departman = { id: number; ad: string; birim_ad?: string | null };
 type Randevu = {
-  id: number;
+  id: string;
   durum: string;
   tarih_saat?: string;
   doktor_id?: number;

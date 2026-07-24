@@ -7,13 +7,13 @@ import { useRoleBasePath } from "@/shared/auth";
 import { getApiErrorMessage } from "@/shared/lib";
 
 type Tetkik = {
-  id: number;
-  hasta_id: number;
+  id: string;
+  hasta_id: string;
   tetkik_turu: string;
   sonuc_dosyasi: string | null;
   durum: string;
 };
-type Hasta = { id: number; ad?: string | null; soyad?: string | null };
+type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 export function HemsireTetkiklerPage() {
   const base = useRoleBasePath();
@@ -27,7 +27,7 @@ export function HemsireTetkiklerPage() {
     queryFn: async () =>
       (
         await api.get<Tetkik[]>("/tetkikler/", {
-          params: hastaParam ? { hasta_id: Number(hastaParam) } : undefined,
+          params: hastaParam ? { hasta_id: hastaParam } : undefined,
         })
       ).data,
   });
@@ -38,7 +38,7 @@ export function HemsireTetkiklerPage() {
   });
 
   const hastaLabel = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const h of hastalar) {
       m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
     }
