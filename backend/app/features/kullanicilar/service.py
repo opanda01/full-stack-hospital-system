@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, Rol
+from app.core.pagination import Page, make_page, paginate
 from app.core.security import hash_password
 from app.features.kullanicilar.models import Kullanici
 from app.features.kullanicilar.schemas import KullaniciCreate, KullaniciUpdate
@@ -12,12 +13,17 @@ from app.features.personel.erisim_service import (
 
 
 def list_kullanicilar(
-    session: Session, *, rol: Rol | None = None
-) -> list[Kullanici]:
-    stmt = select(Kullanici).order_by(Kullanici.id)
+    session: Session,
+    *,
+    rol: Rol | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[Kullanici]:
+    stmt = select(Kullanici).order_by(Kullanici.id.desc())
     if rol is not None:
         stmt = stmt.where(Kullanici.rol == rol)
-    return list(session.exec(stmt).all())
+    rows, total = paginate(session, stmt, page=page, page_size=page_size)
+    return make_page(rows, total=total, page=page, page_size=page_size)
 
 
 def get_kullanici(session: Session, kullanici_id: int) -> Kullanici:

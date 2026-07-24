@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { RoleDashboard } from "@/shared/ui/RoleDashboard";
 import { api } from "@/shared/api";
+import { LOOKUP_PAGE_SIZE, pageTotal, unwrapPage, type PageResponse } from "@/shared/lib";
 
 type Personel = { id: number };
 type Doktor = { id: number };
@@ -34,13 +35,23 @@ type Props = { root: "/bashekim" | "/mudur" };
 
 /** Başhekim / Müdür canlı KPI paneli */
 export function YonetimDashboardPage({ root }: Props) {
-  const { data: personeller = [], isLoading: l1 } = useQuery({
-    queryKey: ["personel"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+  const { data: personelPage, isLoading: l1 } = useQuery({
+    queryKey: ["personel-count"],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Personel>>("/personel/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
-  const { data: doktorlar = [], isLoading: l2 } = useQuery({
-    queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+  const { data: doktorPage, isLoading: l2 } = useQuery({
+    queryKey: ["doktorlar-count"],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Doktor>>("/doktorlar/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
   const { data: departmanlar = [], isLoading: l3 } = useQuery({
     queryKey: ["departmanlar"],
@@ -48,20 +59,37 @@ export function YonetimDashboardPage({ root }: Props) {
   });
   const { data: randevular = [], isLoading: l4 } = useQuery({
     queryKey: ["randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Randevu>>("/randevular/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
-  const { data: sikayetler = [], isLoading: l5 } = useQuery({
-    queryKey: ["sikayet-oneri"],
-    queryFn: async () => (await api.get<Sikayet[]>("/sikayet-oneri/")).data,
+  const { data: sikayetPage, isLoading: l5 } = useQuery({
+    queryKey: ["sikayet-oneri-count"],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Sikayet>>("/sikayet-oneri/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
   const { data: temizlikler = [], isLoading: l6 } = useQuery({
     queryKey: ["temizlik-gorevleri"],
     queryFn: async () =>
-      (await api.get<Temizlik[]>("/temizlik-gorevleri/")).data,
+      unwrapPage((await api.get<PageResponse<Temizlik>>("/temizlik-gorevleri/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
-  const { data: hastalar = [], isLoading: l7 } = useQuery({
-    queryKey: ["hastalar"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/")).data,
+  const { data: hastaPage, isLoading: l7 } = useQuery({
+    queryKey: ["hastalar-count"],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Hasta>>("/hastalar/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
   });
 
   const loading = l1 || l2 || l3 || l4 || l5 || l6 || l7;
@@ -77,13 +105,13 @@ export function YonetimDashboardPage({ root }: Props) {
       metrics={[
         {
           label: "Personel",
-          value: loading ? "…" : personeller.length,
+          value: loading ? "…" : pageTotal(personelPage ?? []),
           icon: IdCard,
           to: `${root}/personel`,
         },
         {
           label: "Doktor",
-          value: loading ? "…" : doktorlar.length,
+          value: loading ? "…" : pageTotal(doktorPage ?? []),
           icon: Stethoscope,
           to: `${root}/doktorlar`,
         },
@@ -101,7 +129,7 @@ export function YonetimDashboardPage({ root }: Props) {
         },
         {
           label: "Hastalar",
-          value: loading ? "…" : hastalar.length,
+          value: loading ? "…" : pageTotal(hastaPage ?? []),
           icon: HeartPulse,
           to: `${root}/hastalar`,
         },
@@ -119,7 +147,7 @@ export function YonetimDashboardPage({ root }: Props) {
         },
         {
           label: "Şikayet / öneri",
-          value: loading ? "…" : sikayetler.length,
+          value: loading ? "…" : pageTotal(sikayetPage ?? []),
           icon: MessageSquareWarning,
           to: `${root}/sikayet`,
         },

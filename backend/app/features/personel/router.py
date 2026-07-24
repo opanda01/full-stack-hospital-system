@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
@@ -23,12 +24,15 @@ from app.core.enums import ErisimDurumu
 router = APIRouter()
 
 
-@router.get("/", response_model=list[PersonelRead])
+@router.get("/", response_model=Page[PersonelRead])
 def list_personel(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("personel:listele")),
 ):
-    return personel_service.list_personel(session)
+    return personel_service.list_personel(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.post(

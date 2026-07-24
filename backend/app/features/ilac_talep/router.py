@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.public_id import hasta_pk_from_public_id, optional_hasta_pk_from_public_id
 from app.core.security import require_permission
 from app.features.ilac_talep import service as ilac_service
@@ -20,10 +21,11 @@ from app.features.kullanicilar.models import Kullanici
 router = APIRouter()
 
 
-@router.get("/", response_model=list[IlacTalepRead])
+@router.get("/", response_model=Page[IlacTalepRead])
 def list_talepler(
     hasta_id: UUID | None = None,
     yatis_id: int | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
@@ -31,13 +33,16 @@ def list_talepler(
         session,
         hasta_id=optional_hasta_pk_from_public_id(session, hasta_id),
         yatis_id=yatis_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
-@router.get("/satirlar", response_model=list[IlacTalepSatirRead])
+@router.get("/satirlar", response_model=Page[IlacTalepSatirRead])
 def list_satirlar(
     hasta_id: UUID | None = None,
     yatis_id: int | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
@@ -45,6 +50,8 @@ def list_satirlar(
         session,
         hasta_id=optional_hasta_pk_from_public_id(session, hasta_id),
         yatis_id=yatis_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
@@ -58,14 +65,18 @@ def get_stok(
     return ilac_service.stok_durumu(session, ilac_id=ilac_id, urun_kodu=urun_kodu)
 
 
-@router.get("/hasta/{hasta_id}/verilen", response_model=list[VerilenIlacRead])
+@router.get("/hasta/{hasta_id}/verilen", response_model=Page[VerilenIlacRead])
 def get_verilen(
     hasta_id: UUID,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("ilac_talep:goruntule")),
 ):
     return ilac_service.verilen_ilaclar(
-        session, hasta_pk_from_public_id(session, hasta_id)
+        session,
+        hasta_pk_from_public_id(session, hasta_id),
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

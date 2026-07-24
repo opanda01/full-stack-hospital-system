@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 
 type Randevu = {
@@ -81,11 +81,12 @@ export function DoktorRandevularimPage() {
     error,
   } = useQuery({
     queryKey: ["randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
+    queryFn: async () =>
+      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-benim"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/benim")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/benim", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const hastaLabel = useMemo(() => {

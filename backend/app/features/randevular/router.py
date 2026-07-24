@@ -4,7 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
+from app.core.batch_load import batch_by_ids
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.core.timezone import to_istanbul
 from app.features.hastalar.models import Hasta
@@ -16,26 +18,44 @@ from app.features.randevular.schemas import RandevuCreate, RandevuRead
 router = APIRouter()
 
 
-def _to_read(session: Session, r: Randevu) -> RandevuRead:
-    ad = None
-    hasta = session.get(Hasta, r.hasta_id)
+def _to_read_maps(
+    r: Randevu,
+    *,
+    hastalar: dict[int, Hasta],
+    kullanicilar: dict[int, Kullanici],
+) -> RandevuRead:
+    hasta = hastalar.get(r.hasta_id)
     if hasta is None:
         raise ValueError("Randevu hasta kaydı bulunamadı")
-    k = session.get(Kullanici, hasta.kullanici_id)
-    if k:
-        ad = f"{k.ad} {k.soyad}".strip()
+    k = kullanicilar.get(hasta.kullanici_id)
+    ad = f"{k.ad} {k.soyad}".strip() if k else None
     return RandevuRead(
         id=r.public_id,
         hasta_id=hasta.public_id,
         doktor_id=r.doktor_id,
         departman_id=r.departman_id,
-        # API her zaman Europe/Istanbul duvar saati döner (+03:00)
         tarih_saat=to_istanbul(r.tarih_saat),
         durum=r.durum,
         notlar=r.notlar,
         hasta_ad_soyad=ad,
     )
 
+
+def _to_read(session: Session, r: Randevu) -> RandevuRead:
+    hastalar = batch_by_ids(session, Hasta, [r.hasta_id])
+    kullanici_ids = {h.kullanici_id for h in hastalar.values()}
+    kullanicilar = batch_by_ids(session, Kullanici, kullanici_ids)
+    return _to_read_maps(r, hastalar=hastalar, kullanicilar=kullanicilar)
+
+
+def _rows_to_read(session: Session, rows: list[Randevu]) -> list[RandevuRead]:
+    hastalar = batch_by_ids(session, Hasta, (r.hasta_id for r in rows))
+    kullanicilar = batch_by_ids(
+        session, Kullanici, (h.kullanici_id for h in hastalar.values())
+    )
+    return [
+        _to_read_maps(r, hastalar=hastalar, kullanicilar=kullanicilar) for r in rows
+    ]
 
 
 @router.get("/musait", response_model=list[str])
@@ -49,14 +69,23 @@ def musait_slotlar(
     return [s.isoformat() for s in slots]
 
 
-@router.get("/", response_model=list[RandevuRead])
+@router.get("/", response_model=Page[RandevuRead])
 def randevu_listele(
     request: Request,
+    pagination: PaginationParams = Depends(get_pagination),
     current_user: Kullanici = Depends(require_permission("randevu:goruntule")),
     session: Session = Depends(get_session),
 ):
-    rows = randevu_service.listele(session, current_user, request.state.kapsam)
-    return [_to_read(session, r) for r in rows]
+    q = randevu_service.listele_sorgu(session, current_user, request.state.kapsam)
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        _rows_to_read(session, rows),
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.get("/{public_id}", response_model=RandevuRead)

@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
-import { Button, Input } from "@/shared/ui";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
+import { Button, Input, ListPager } from "@/shared/ui";
 
 type Olay = {
   id: number;
@@ -26,9 +31,11 @@ const TIPLER = [
 ] as const;
 
 const DURUMLAR = ["ACIK", "MUDAHALE", "COZULDU", "IPTAL"] as const;
+const PAGE_SIZE = 50;
 
 export function GuvenlikOlaylarPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [tip, setTip] = useState<string>("GENEL");
   const [yer, setYer] = useState("");
   const [ozet, setOzet] = useState("");
@@ -36,10 +43,17 @@ export function GuvenlikOlaylarPage() {
   const [kolluk, setKolluk] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const { data: olaylar = [], isLoading } = useQuery({
-    queryKey: ["guvenlik-olaylar"],
-    queryFn: async () => (await api.get<Olay[]>("/guvenlik/olaylar")).data,
+  const { data, isLoading } = useQuery({
+    queryKey: ["guvenlik-olaylar", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Olay>>("/guvenlik/olaylar", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const olaylar = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -194,6 +208,12 @@ export function GuvenlikOlaylarPage() {
           )}
         </ul>
       )}
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

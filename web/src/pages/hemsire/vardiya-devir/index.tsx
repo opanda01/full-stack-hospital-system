@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  LOOKUP_PAGE_SIZE,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { Button, Input } from "@/shared/ui";
 
 type Devir = {
@@ -24,17 +29,25 @@ export function HemsireVardiyaDevirPage() {
   const { data: notlar = [], isLoading } = useQuery({
     queryKey: ["vardiya-devir", tarih],
     queryFn: async () =>
-      (
-        await api.get<Devir[]>("/yatis/vardiya-devir", {
-          params: { vardiya_tarihi: tarih },
-        })
-      ).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Devir>>("/yatis/vardiya-devir", {
+            params: { vardiya_tarihi: tarih, page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const { data: yatislar = [] } = useQuery({
     queryKey: ["yatis-kayitlar-aktif"],
     queryFn: async () =>
-      (await api.get<Yatis[]>("/yatis/kayitlar", { params: { aktif: true } })).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Yatis>>("/yatis/kayitlar", {
+            params: { aktif: true, page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const createMut = useMutation({

@@ -6,7 +6,9 @@ from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
+from app.core.batch_load import batch_by_ids
 from app.core.enums import YatisIslemTipi
+from app.core.pagination import Page, make_page, paginate
 from app.features.doktorlar.models import Doktor
 from app.features.faturalandirma.models import Fatura
 from app.features.hastalar.models import Hasta
@@ -56,6 +58,43 @@ def _gecen_gun(yatis_tarihi: datetime) -> int:
     return max(0, delta.days)
 
 
+def _kullanici_ad(k: Kullanici | None, *, fallback: str) -> str:
+    if k is None:
+        return fallback
+    return f"{k.ad} {k.soyad}".strip() or fallback
+
+
+def _personel_ad_from_maps(
+    personel_id: int | None,
+    *,
+    personeller: dict[int, Personel],
+    kullanicilar: dict[int, Kullanici],
+) -> str | None:
+    if personel_id is None:
+        return None
+    p = personeller.get(personel_id)
+    if p is None:
+        return None
+    return _kullanici_ad(kullanicilar.get(p.kullanici_id), fallback="")
+
+
+def _doktor_ad_from_maps(
+    doktor_id: int | None,
+    *,
+    doktorlar: dict[int, Doktor],
+    personeller: dict[int, Personel],
+    kullanicilar: dict[int, Kullanici],
+) -> str | None:
+    if doktor_id is None:
+        return None
+    d = doktorlar.get(doktor_id)
+    if d is None:
+        return None
+    return _personel_ad_from_maps(
+        d.personel_id, personeller=personeller, kullanicilar=kullanicilar
+    )
+
+
 def _personel_ad(session: Session, personel_id: int | None) -> str | None:
     if personel_id is None:
         return None
@@ -63,9 +102,7 @@ def _personel_ad(session: Session, personel_id: int | None) -> str | None:
     if p is None:
         return None
     k = session.get(Kullanici, p.kullanici_id)
-    if k is None:
-        return None
-    return f"{k.ad} {k.soyad}".strip()
+    return _kullanici_ad(k, fallback="") or None
 
 
 def _doktor_ad(session: Session, doktor_id: int | None) -> str | None:
@@ -79,9 +116,7 @@ def _doktor_ad(session: Session, doktor_id: int | None) -> str | None:
 
 def _hasta_ad(session: Session, hasta: Hasta) -> str:
     k = session.get(Kullanici, hasta.kullanici_id)
-    if k is None:
-        return f"Hasta #{hasta.id}"
-    return f"{k.ad} {k.soyad}".strip() or f"Hasta #{hasta.id}"
+    return _kullanici_ad(k, fallback=f"Hasta #{hasta.id}")
 
 
 def _bakiye(session: Session, hasta_id: int) -> Decimal:
@@ -138,8 +173,12 @@ def list_kayitlar(
     aktif: bool | None = True,
     kapsam: str | None = None,
     current_user: Kullanici | None = None,
-) -> list[YatisListeItem]:
-    q = select(YatisKaydi).order_by(YatisKaydi.yatis_tarihi.desc())
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[YatisListeItem]:
+    q = select(YatisKaydi).order_by(
+        YatisKaydi.yatis_tarihi.desc(), YatisKaydi.id.desc()
+    )
     if aktif is not None:
         q = q.where(YatisKaydi.aktif_mi == aktif)
     if servis_id is not None:
@@ -158,7 +197,7 @@ def list_kayitlar(
             select(Personel).where(Personel.kullanici_id == current_user.id)
         ).first()
         if personel is None:
-            return []
+            return make_page([], total=0, page=page, page_size=page_size)
         servis_idler: list[int] = []
         if personel.departman_id is not None:
             servis_idler = list(
@@ -177,20 +216,36 @@ def list_kayitlar(
             )
         else:
             q = q.where(YatisKaydi.sorumlu_hemsire_id == personel.id)
+
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    hastalar = batch_by_ids(session, Hasta, (y.hasta_id for y in rows))
+    yataklar = batch_by_ids(session, Yatak, (y.yatak_id for y in rows))
+    servisler = batch_by_ids(session, Servis, (y.servis_id for y in rows))
+    doktorlar = batch_by_ids(session, Doktor, (y.sorumlu_doktor_id for y in rows))
+    hemsire_ids = {y.sorumlu_hemsire_id for y in rows}
+    hemsire_ids.update(d.personel_id for d in doktorlar.values() if d.personel_id)
+    personeller = batch_by_ids(session, Personel, hemsire_ids)
+    kullanici_ids = {h.kullanici_id for h in hastalar.values()}
+    kullanici_ids.update(p.kullanici_id for p in personeller.values())
+    kullanicilar = batch_by_ids(session, Kullanici, kullanici_ids)
+
     items: list[YatisListeItem] = []
-    for y in session.exec(q).all():
-        hasta = session.get(Hasta, y.hasta_id)
+    for y in rows:
+        hasta = hastalar.get(y.hasta_id)
         if hasta is None:
             continue
-        yatak = session.get(Yatak, y.yatak_id) if y.yatak_id else None
-        servis = session.get(Servis, y.servis_id)
+        yatak = yataklar.get(y.yatak_id) if y.yatak_id else None
+        servis = servisler.get(y.servis_id)
         durum = y.klinik_durum.value if hasattr(y.klinik_durum, "value") else str(y.klinik_durum)
         items.append(
             YatisListeItem(
                 id=y.id,
                 protokol_no=y.protokol_no,
                 hasta_id=hasta.public_id,
-                hasta_ad_soyad=_hasta_ad(session, hasta),
+                hasta_ad_soyad=_kullanici_ad(
+                    kullanicilar.get(hasta.kullanici_id),
+                    fallback=f"Hasta #{hasta.id}",
+                ),
                 yas=_yas(hasta.dogum_tarihi),
                 cinsiyet=hasta.cinsiyet,
                 yatak_no=yatak.yatak_no if yatak else None,
@@ -198,16 +253,25 @@ def list_kayitlar(
                 yatis_tarihi=y.yatis_tarihi,
                 gecen_gun=_gecen_gun(y.yatis_tarihi),
                 sorumlu_doktor_id=y.sorumlu_doktor_id,
-                sorumlu_doktor_ad=_doktor_ad(session, y.sorumlu_doktor_id),
+                sorumlu_doktor_ad=_doktor_ad_from_maps(
+                    y.sorumlu_doktor_id,
+                    doktorlar=doktorlar,
+                    personeller=personeller,
+                    kullanicilar=kullanicilar,
+                ),
                 sorumlu_hemsire_id=y.sorumlu_hemsire_id,
-                sorumlu_hemsire_ad=_personel_ad(session, y.sorumlu_hemsire_id),
+                sorumlu_hemsire_ad=_personel_ad_from_maps(
+                    y.sorumlu_hemsire_id,
+                    personeller=personeller,
+                    kullanicilar=kullanicilar,
+                ),
                 klinik_durum=durum,
                 kontrol_edildi_mi=y.kontrol_edildi_mi,
                 servis_id=y.servis_id,
                 servis_ad=servis.ad if servis else None,
             )
         )
-    return items
+    return make_page(items, total=total, page=page, page_size=page_size)
 
 
 def get_detay(session: Session, yatis_id: int) -> YatisDetay:

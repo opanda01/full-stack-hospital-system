@@ -63,7 +63,7 @@ def test_guvenlik_ozet_ve_olay_akisi(client, session):
 
     r = client.get("/guvenlik/olaylar", headers=headers)
     assert r.status_code == 200
-    assert any(o["id"] == olay_id for o in r.json())
+    assert any(o["id"] == olay_id for o in r.json()["items"])
 
     r = client.patch(
         f"/guvenlik/olaylar/{olay_id}",

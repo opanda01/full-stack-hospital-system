@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Kullanici = { id: number; rol: string; aktif_mi: boolean };
@@ -68,11 +68,11 @@ export function AdminRaporlarPage() {
     error,
   } = useQuery({
     queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
@@ -80,11 +80,18 @@ export function AdminRaporlarPage() {
   });
   const { data: randevular = [] } = useQuery({
     queryKey: ["randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Randevu>>("/randevular/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: personeller = [] } = useQuery({
     queryKey: ["personel"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Personel>>("/personel/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const doktorById = useMemo(() => {

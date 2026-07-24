@@ -1,10 +1,13 @@
+from collections import defaultdict
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
+from app.core.batch_load import batch_by_ids
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir
+from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import get_by_public_id, hasta_from_public_id, hasta_pk_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
@@ -44,13 +47,13 @@ def _to_read(session: Session, t: Tetkik) -> TetkikRead:
     )
 
 
-def listele(
+def _liste_sorgu(
     session: Session,
     current_user: Kullanici,
     kapsam: Kapsam,
     *,
     hasta_public_id: UUID | None = None,
-) -> list[TetkikRead]:
+):
     query = select(Tetkik)
     if hasta_public_id is not None:
         hasta_pk = hasta_pk_from_public_id(session, hasta_public_id)
@@ -84,8 +87,48 @@ def listele(
         kendi_kaydim_filtresi=kendi,
         departmanim_filtresi=departman,
     )
-    rows = list(session.exec(query).all())
-    return [_to_read(session, t) for t in rows]
+    return query.order_by(Tetkik.id.desc())
+
+
+def listele(
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    hasta_public_id: UUID | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[TetkikRead]:
+    query = _liste_sorgu(
+        session, current_user, kapsam, hasta_public_id=hasta_public_id
+    )
+    rows, total = paginate(session, query, page=page, page_size=page_size)
+    hastalar = batch_by_ids(session, Hasta, (t.hasta_id for t in rows))
+    tetkik_ids = [t.id for t in rows if t.id is not None]
+    kalem_map: dict[int, list[TetkikSonucKalemRead]] = defaultdict(list)
+    if tetkik_ids:
+        for k in session.exec(
+            select(TetkikSonucKalemi).where(TetkikSonucKalemi.tetkik_id.in_(tetkik_ids))
+        ).all():
+            kalem_map[k.tetkik_id].append(TetkikSonucKalemRead.model_validate(k))
+
+    items: list[TetkikRead] = []
+    for t in rows:
+        hasta = hastalar.get(t.hasta_id)
+        if hasta is None:
+            continue
+        items.append(
+            TetkikRead(
+                id=t.public_id,
+                hasta_id=hasta.public_id,
+                istek_yapan_doktor_id=t.istek_yapan_doktor_id,
+                tetkik_turu=t.tetkik_turu,
+                sonuc_dosyasi=t.sonuc_dosyasi,
+                durum=t.durum,
+                sonuc_kalemleri=kalem_map.get(t.id, []) if t.id else [],
+            )
+        )
+    return make_page(items, total=total, page=page, page_size=page_size)
 
 
 def tetkik_erisim_kontrolu(

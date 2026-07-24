@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
-import { Button, Input } from "@/shared/ui";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
+import { Button, Input, ListPager } from "@/shared/ui";
 
 type KayipEsya = {
   id: number;
@@ -15,19 +20,27 @@ type KayipEsya = {
 };
 
 const DURUMLAR = ["BEKLIYOR", "TESLIM", "POLISE"] as const;
+const PAGE_SIZE = 50;
 
 export function GuvenlikKayipEsyaPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [tanim, setTanim] = useState("");
   const [yer, setYer] = useState("");
   const [notlar, setNotlar] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  const { data: liste = [], isLoading } = useQuery({
-    queryKey: ["guvenlik-kayip-esyalar"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["guvenlik-kayip-esyalar", page],
     queryFn: async () =>
-      (await api.get<KayipEsya[]>("/guvenlik/kayip-esyalar")).data,
+      (
+        await api.get<PageResponse<KayipEsya>>("/guvenlik/kayip-esyalar", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const liste = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -150,6 +163,12 @@ export function GuvenlikKayipEsyaPage() {
           )}
         </ul>
       )}
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

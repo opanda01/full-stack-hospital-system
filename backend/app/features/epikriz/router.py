@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.epikriz import service as epikriz_service
@@ -13,15 +14,20 @@ from app.features.kullanicilar.models import Kullanici
 router = APIRouter()
 
 
-@router.get("/", response_model=list[EpikrizRead])
+@router.get("/", response_model=Page[EpikrizRead])
 def list_epikriz(
     yatis_id: int | None = Query(default=None),
     hasta_id: UUID | None = Query(default=None),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
     return epikriz_service.list_epikriz(
-        session, yatis_id=yatis_id, hasta_id=hasta_id
+        session,
+        yatis_id=yatis_id,
+        hasta_id=hasta_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

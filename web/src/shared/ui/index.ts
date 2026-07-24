@@ -26,3 +26,4 @@ export {
   SearchableCombobox,
   type ComboboxOption,
 } from "./searchable-combobox";
+export { ListPager } from "./list-pager";

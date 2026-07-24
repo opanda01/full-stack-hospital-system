@@ -5,12 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
+from app.core.batch_load import batch_by_ids
 from app.core.db import get_session
 from app.core.enums import MedulaGonderimDurumu
-from app.core.public_id import optional_hasta_public_id_from_pk
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.faturalandirma.models import Fatura
+from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.integrations.factory import get_medula
 
@@ -36,10 +38,11 @@ class FaturaOzet(BaseModel):
     durum_dagilim: dict[str, int]
 
 
-def _to_read(session: Session, row: Fatura) -> FaturaRead:
+def _to_read_maps(row: Fatura, hastalar: dict[int, Hasta]) -> FaturaRead:
+    hasta = hastalar.get(row.hasta_id) if row.hasta_id else None
     return FaturaRead(
         id=row.id,  # type: ignore[arg-type]
-        hasta_id=optional_hasta_public_id_from_pk(session, row.hasta_id),
+        hasta_id=hasta.public_id if hasta else None,
         tutar=row.tutar,
         durum=row.durum,
         aciklama=row.aciklama,
@@ -47,6 +50,11 @@ def _to_read(session: Session, row: Fatura) -> FaturaRead:
         provizyon_no=row.provizyon_no,
         gonderim_durumu=row.gonderim_durumu,
     )
+
+
+def _to_read(session: Session, row: Fatura) -> FaturaRead:
+    hastalar = batch_by_ids(session, Hasta, [row.hasta_id] if row.hasta_id else [])
+    return _to_read_maps(row, hastalar)
 
 
 @router.get("/ozet", response_model=FaturaOzet)
@@ -67,15 +75,23 @@ def fatura_ozet(
     )
 
 
-@router.get("/", response_model=list[FaturaRead])
+@router.get("/", response_model=Page[FaturaRead])
 def list_faturalar(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("fatura:goruntule")),
 ):
-    return [
-        _to_read(session, r)
-        for r in session.exec(select(Fatura).order_by(Fatura.id.desc())).all()
-    ]
+    q = select(Fatura).order_by(Fatura.id.desc())
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    hastalar = batch_by_ids(session, Hasta, (r.hasta_id for r in rows))
+    return make_page(
+        [_to_read_maps(r, hastalar) for r in rows],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.get("/{fatura_id}", response_model=FaturaRead)

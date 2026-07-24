@@ -53,7 +53,7 @@ export function GirisYapForm() {
         const detail = err.response?.data?.detail;
         if (!err.response) {
           setHata(
-            "API'ye ulaşılamadı. Backend'in :8000 portunda çalıştığından emin olun.",
+            "API'ye ulaşılamadı. Proje kökünde `docker compose up -d` ile backend'in ayakta olduğundan emin olun (http://localhost:8000/health).",
           );
         } else {
           setHata(

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
 from app.features.yatis import klinik_service
@@ -55,7 +56,7 @@ def get_yataklar(
     return yatis_service.list_yataklar(session, servis_id=servis_id)
 
 
-@router.get("/kayitlar", response_model=list[YatisListeItem])
+@router.get("/kayitlar", response_model=Page[YatisListeItem])
 def get_kayitlar(
     servis_id: int | None = None,
     doktor_id: int | None = None,
@@ -64,6 +65,7 @@ def get_kayitlar(
     bitis: date | None = None,
     aktif: bool | None = Query(default=True),
     kapsam: str | None = Query(default=None),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("yatis:goruntule")),
 ):
@@ -77,6 +79,8 @@ def get_kayitlar(
         aktif=aktif,
         kapsam=kapsam,
         current_user=current_user,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
@@ -191,16 +195,22 @@ def post_vital(
 
 @router.get(
     "/ilac-uygulamalari",
-    response_model=list[IlacUygulamaListeItem],
+    response_model=Page[IlacUygulamaListeItem],
 )
 def get_ilac_uygulamalari_toplu(
     durum: str | None = Query(default=None),
     kapsam: str | None = Query(default="benim"),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("ilac_uygulama:goruntule")),
 ):
     return klinik_service.list_ilac_uygulamalari_toplu(
-        session, current_user, durum=durum, kapsam=kapsam
+        session,
+        current_user,
+        durum=durum,
+        kapsam=kapsam,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
@@ -268,10 +278,11 @@ def post_not(
     return klinik_service.create_not(session, yatis_id, body.metin, current_user)
 
 
-@router.get("/gorevler", response_model=list[GorevRead])
+@router.get("/gorevler", response_model=Page[GorevRead])
 def get_gorevler(
     tamamlandi: bool | None = None,
     benim: bool = Query(default=True),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hemsire_gorev:goruntule")),
 ):
@@ -279,7 +290,11 @@ def get_gorevler(
     if benim:
         hid = klinik_service.personel_id_of(session, current_user)
     return klinik_service.list_gorevler(
-        session, hemsire_id=hid, tamamlandi=tamamlandi
+        session,
+        hemsire_id=hid,
+        tamamlandi=tamamlandi,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
@@ -301,13 +316,19 @@ def toggle_gorev(
     return klinik_service.toggle_gorev(session, gorev_id)
 
 
-@router.get("/vardiya-devir", response_model=list[DevirNotRead])
+@router.get("/vardiya-devir", response_model=Page[DevirNotRead])
 def get_devir(
     vardiya_tarihi: date | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("vardiya_devir:goruntule")),
 ):
-    return klinik_service.list_devir_notlari(session, vardiya_tarihi=vardiya_tarihi)
+    return klinik_service.list_devir_notlari(
+        session,
+        vardiya_tarihi=vardiya_tarihi,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post("/vardiya-devir", response_model=DevirNotRead, status_code=201)
@@ -319,14 +340,19 @@ def post_devir(
     return klinik_service.create_devir_notu(session, body.model_dump(), current_user)
 
 
-@router.get("/bildirimler", response_model=list[BildirimRead])
+@router.get("/bildirimler", response_model=Page[BildirimRead])
 def get_bildirimler(
     okunmamis: bool | None = None,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("panel_bildirim:goruntule")),
 ):
     return klinik_service.list_bildirimler(
-        session, current_user.id, okunmamis=okunmamis
+        session,
+        current_user.id,
+        okunmamis=okunmamis,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

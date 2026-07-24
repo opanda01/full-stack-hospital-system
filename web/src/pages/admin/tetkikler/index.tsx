@@ -1,8 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { AppShell } from "@/shared/ui";
+import { AppShell, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Tetkik = {
@@ -13,12 +19,22 @@ type Tetkik = {
   doktor_id?: number;
 };
 
+const PAGE_SIZE = 50;
+
 export function AdminTetkiklerPage() {
   const roleRoot = roleRootFromPath(useLocation().pathname);
-  const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: ["tetkikler"],
-    queryFn: async () => (await api.get<Tetkik[]>("/tetkikler/")).data,
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["tetkikler", page],
+    queryFn: async () =>
+      (
+        await api.get<PageResponse<Tetkik>>("/tetkikler/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const items = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   return (
     <AppShell title="Tetkik özeti" links={[{ to: roleRoot, label: "Ana" }]}>
@@ -31,31 +47,39 @@ export function AdminTetkiklerPage() {
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
-      ) : data.length === 0 ? (
+      ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Tetkik kaydı yok.</p>
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">ID</th>
-              <th>Tür</th>
-              <th>Durum</th>
-              <th>Hasta</th>
-              <th>Doktor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((t) => (
-              <tr key={t.id} className="border-b">
-                <td className="py-2">{t.id}</td>
-                <td>{t.tetkik_turu ?? "—"}</td>
-                <td>{t.durum}</td>
-                <td>{t.hasta_id ?? "—"}</td>
-                <td>{t.doktor_id ?? "—"}</td>
+        <>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-2">ID</th>
+                <th>Tür</th>
+                <th>Durum</th>
+                <th>Hasta</th>
+                <th>Doktor</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((t) => (
+                <tr key={t.id} className="border-b">
+                  <td className="py-2">{t.id}</td>
+                  <td>{t.tetkik_turu ?? "—"}</td>
+                  <td>{t.durum}</td>
+                  <td>{t.hasta_id ?? "—"}</td>
+                  <td>{t.doktor_id ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ListPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </AppShell>
   );

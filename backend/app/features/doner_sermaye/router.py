@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.doner_sermaye.models import DonerSermayeKayit
 
@@ -53,24 +54,31 @@ def doner_ozet(
     )
 
 
-@router.get("/", response_model=list[DonerRead])
+@router.get("/", response_model=Page[DonerRead])
 def list_doner(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("doner:goruntule")),
 ):
-    rows = list(
-        session.exec(
-            select(DonerSermayeKayit).order_by(DonerSermayeKayit.donem.desc())
-        ).all()
+    q = select(DonerSermayeKayit).order_by(
+        DonerSermayeKayit.donem.desc(), DonerSermayeKayit.id.desc()
     )
-    return [
-        DonerRead(
-            id=r.id,
-            donem=r.donem,
-            gelir=r.gelir,
-            gider=r.gider,
-            net=r.gelir - r.gider,
-            aciklama=r.aciklama,
-        )
-        for r in rows
-    ]
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        [
+            DonerRead(
+                id=r.id,
+                donem=r.donem,
+                gelir=r.gelir,
+                gider=r.gider,
+                net=r.gelir - r.gider,
+                aciklama=r.aciklama,
+            )
+            for r in rows
+        ],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )

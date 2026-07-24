@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.mhrs.models import MhrsKapasite
 
@@ -59,12 +60,22 @@ def _default_idem_key(departman_id: int, doktor_id: int | None, tarih: date) -> 
     return f"mhrs:{departman_id}:{d}:{tarih.isoformat()}:create"
 
 
-@router.get("/", response_model=list[MhrsKapasiteRead])
+@router.get("/", response_model=Page[MhrsKapasiteRead])
 def list_kapasite(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("mhrs:yonet")),
 ):
-    return list(session.exec(select(MhrsKapasite).order_by(MhrsKapasite.tarih)).all())
+    q = select(MhrsKapasite).order_by(MhrsKapasite.tarih, MhrsKapasite.id.desc())
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        list(rows),
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post("/", response_model=MhrsKapasiteRead, status_code=status.HTTP_201_CREATED)

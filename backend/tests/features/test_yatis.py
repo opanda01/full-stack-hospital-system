@@ -70,7 +70,8 @@ def test_hemsire_yatis_liste_kapsam_benim(client, session, seeded):
         headers=auth_header(seeded["hemsire"]),
     )
     assert r.status_code == 200
-    ids = [row["id"] for row in r.json()]
+    body = r.json()
+    ids = [row["id"] for row in body["items"]]
     assert yatis.id in ids
 
 

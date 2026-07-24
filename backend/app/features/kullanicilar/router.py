@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from app.core.db import get_session
 from app.core.enums import Rol
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_role
 from app.features.kullanicilar import service as kullanici_service
 from app.features.kullanicilar.schemas import (
@@ -16,13 +17,16 @@ from app.features.kullanicilar.schemas import (
 router = APIRouter()
 
 
-@router.get("/", response_model=list[KullaniciRead])
+@router.get("/", response_model=Page[KullaniciRead])
 def list_kullanicilar(
     rol: Rol | None = Query(default=None),
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)),
 ):
-    return kullanici_service.list_kullanicilar(session, rol=rol)
+    return kullanici_service.list_kullanicilar(
+        session, rol=rol, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.get("/{kullanici_id}", response_model=KullaniciRead)

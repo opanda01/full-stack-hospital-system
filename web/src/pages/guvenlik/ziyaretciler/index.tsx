@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
-import { Button, Input } from "@/shared/ui";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
+import { Button, Input, ListPager } from "@/shared/ui";
 
 type Ziyaretci = {
   id: number;
@@ -15,8 +20,11 @@ type Ziyaretci = {
   notlar: string | null;
 };
 
+const PAGE_SIZE = 50;
+
 export function GuvenlikZiyaretcilerPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [adSoyad, setAdSoyad] = useState("");
   const [tc, setTc] = useState("");
   const [ziyaretEdilen, setZiyaretEdilen] = useState("");
@@ -25,15 +33,17 @@ export function GuvenlikZiyaretcilerPage() {
   const [sadeceAcik, setSadeceAcik] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const { data: liste = [], isLoading } = useQuery({
-    queryKey: ["guvenlik-ziyaretciler", sadeceAcik],
+  const { data, isLoading } = useQuery({
+    queryKey: ["guvenlik-ziyaretciler", sadeceAcik, page],
     queryFn: async () =>
       (
-        await api.get<Ziyaretci[]>("/guvenlik/ziyaretciler", {
-          params: { sadece_acik: sadeceAcik },
+        await api.get<PageResponse<Ziyaretci>>("/guvenlik/ziyaretciler", {
+          params: { sadece_acik: sadeceAcik, page, page_size: PAGE_SIZE },
         })
       ).data,
   });
+  const liste = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -168,6 +178,12 @@ export function GuvenlikZiyaretcilerPage() {
           )}
         </ul>
       )}
+      <ListPager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Users, X } from "lucide-react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import type { Personel } from "@/entities/personel";
 
 type Birim = { id: number; ad: string; kod: string | null; sira: number };
@@ -63,7 +63,7 @@ export function DepartmanDetayPage() {
     error: perErr,
   } = useQuery({
     queryKey: ["personel"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Personel>>("/personel/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const departman = useMemo(

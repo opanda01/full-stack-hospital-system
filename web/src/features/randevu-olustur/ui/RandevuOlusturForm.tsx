@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulTime } from "@/shared/lib";
+import { formatIstanbulTime, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { createRandevu } from "../api/createRandevu";
 
 type Departman = { id: number; ad: string };
@@ -31,7 +31,7 @@ export function RandevuOlusturForm() {
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const yarin = (() => {

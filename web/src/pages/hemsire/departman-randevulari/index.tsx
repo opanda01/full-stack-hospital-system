@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulDateTime, getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
 
 type Randevu = {
   id: string;
@@ -72,16 +72,17 @@ export function HemsireDepartmanRandevulariPage() {
 
   const { data: randevular = [], isLoading, isError, error } = useQuery({
     queryKey: ["hemsire-randevular"],
-    queryFn: async () => (await api.get<Randevu[]>("/randevular/")).data,
+    queryFn: async () =>
+      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
   });
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar-randevu-hemsire"],
     queryFn: async () =>
-      (await api.get<Hasta[]>("/hastalar/", { params: { kapsam: "tumu" } })).data,
+      unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { kapsam: "tumu", page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar-list"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const filtered = useMemo(() => {

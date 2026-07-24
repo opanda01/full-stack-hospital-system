@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
 from app.core.enums import IlacTalepDurumu, PanelBildirimTipi
+from app.core.pagination import Page, make_page, paginate
 from app.core.public_id import hasta_public_id_from_pk
 from app.features.eczane.models import Ilac
 from app.features.hastalar.models import Hasta
@@ -87,13 +88,23 @@ def list_talepler(
     *,
     hasta_id: int | None = None,
     yatis_id: int | None = None,
-) -> list[IlacTalepRead]:
-    q = select(IlacTalebi).order_by(IlacTalebi.istek_tarihi.desc())
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[IlacTalepRead]:
+    q = select(IlacTalebi).order_by(
+        IlacTalebi.istek_tarihi.desc(), IlacTalebi.id.desc()
+    )
     if hasta_id is not None:
         q = q.where(IlacTalebi.hasta_id == hasta_id)
     if yatis_id is not None:
         q = q.where(IlacTalebi.yatis_id == yatis_id)
-    return [_to_read(session, t) for t in session.exec(q).all()]
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    return make_page(
+        [_to_read(session, t) for t in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def list_talepler_satir(
@@ -101,10 +112,19 @@ def list_talepler_satir(
     *,
     hasta_id: int | None = None,
     yatis_id: int | None = None,
-) -> list[IlacTalepSatirRead]:
-    talepler = list_talepler(session, hasta_id=hasta_id, yatis_id=yatis_id)
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[IlacTalepSatirRead]:
+    """Parent talepleri sayfalar, sonra kalem satırlarına açar (total = talep sayısı)."""
+    talepler_page = list_talepler(
+        session,
+        hasta_id=hasta_id,
+        yatis_id=yatis_id,
+        page=page,
+        page_size=page_size,
+    )
     out: list[IlacTalepSatirRead] = []
-    for t in talepler:
+    for t in talepler_page.items:
         for k in t.kalemler:
             out.append(
                 IlacTalepSatirRead(
@@ -121,7 +141,12 @@ def list_talepler_satir(
                     acil_mi=t.acil_mi,
                 )
             )
-    return out
+    return make_page(
+        out,
+        total=talepler_page.total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_talep(session: Session, talep_id: int) -> IlacTalepRead:
@@ -252,30 +277,34 @@ def stok_durumu(
     )
 
 
-def verilen_ilaclar(session: Session, hasta_id: int) -> list[VerilenIlacRead]:
-    talepler = session.exec(
-        select(IlacTalebi).where(
+def verilen_ilaclar(
+    session: Session,
+    hasta_id: int,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[VerilenIlacRead]:
+    q = (
+        select(IlacTalebi, IlacTalepKalemi)
+        .join(IlacTalepKalemi, IlacTalepKalemi.talep_id == IlacTalebi.id)
+        .where(
             IlacTalebi.hasta_id == hasta_id,
             IlacTalebi.durum == IlacTalepDurumu.VERILDI,
         )
-    ).all()
-    out: list[VerilenIlacRead] = []
-    for t in talepler:
-        kalemler = session.exec(
-            select(IlacTalepKalemi).where(IlacTalepKalemi.talep_id == t.id)
-        ).all()
-        for k in kalemler:
-            out.append(
-                VerilenIlacRead(
-                    talep_id=t.id,
-                    istek_tarihi=t.istek_tarihi,
-                    urun_kodu=k.urun_kodu,
-                    urun_adi=k.urun_adi,
-                    verilen_miktar=k.verilen_miktar,
-                    kullanim_sekli=_enum_val(k.kullanim_sekli),
-                    doz=k.doz,
-                    olcu_birimi=k.olcu_birimi,
-                )
-            )
-    out.sort(key=lambda x: x.istek_tarihi, reverse=True)
-    return out
+        .order_by(IlacTalebi.istek_tarihi.desc(), IlacTalepKalemi.id.desc())
+    )
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    items = [
+        VerilenIlacRead(
+            talep_id=t.id,
+            istek_tarihi=t.istek_tarihi,
+            urun_kodu=k.urun_kodu,
+            urun_adi=k.urun_adi,
+            verilen_miktar=k.verilen_miktar,
+            kullanim_sekli=_enum_val(k.kullanim_sekli),
+            doz=k.doz,
+            olcu_birimi=k.olcu_birimi,
+        )
+        for t, k in rows
+    ]
+    return make_page(items, total=total, page=page, page_size=page_size)

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.guvenlik import service as guvenlik_service
 from app.features.guvenlik.schemas import (
@@ -33,12 +34,15 @@ def guvenlik_ozet(
     return guvenlik_service.ozet(session, current_user)
 
 
-@router.get("/olaylar", response_model=list[GuvenlikOlayRead])
+@router.get("/olaylar", response_model=Page[GuvenlikOlayRead])
 def list_olaylar(
+    pagination: PaginationParams = Depends(get_pagination),
     _: Kullanici = Depends(require_permission("guvenlik_olay:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return guvenlik_service.olay_listele(session)
+    return guvenlik_service.olay_listele(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.post("/olaylar", response_model=GuvenlikOlayRead, status_code=status.HTTP_201_CREATED)
@@ -60,13 +64,19 @@ def update_olay(
     return guvenlik_service.olay_guncelle(session, olay_id, body)
 
 
-@router.get("/ziyaretciler", response_model=list[ZiyaretciRead])
+@router.get("/ziyaretciler", response_model=Page[ZiyaretciRead])
 def list_ziyaretciler(
     sadece_acik: bool = Query(default=False),
+    pagination: PaginationParams = Depends(get_pagination),
     _: Kullanici = Depends(require_permission("guvenlik_ziyaretci:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return guvenlik_service.ziyaretci_listele(session, sadece_acik=sadece_acik)
+    return guvenlik_service.ziyaretci_listele(
+        session,
+        sadece_acik=sadece_acik,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post(
@@ -101,12 +111,15 @@ def ziyaretci_cikis(
     return guvenlik_service.ziyaretci_cikis(session, ziyaretci_id)
 
 
-@router.get("/kayip-esyalar", response_model=list[KayipEsyaRead])
+@router.get("/kayip-esyalar", response_model=Page[KayipEsyaRead])
 def list_kayip_esyalar(
+    pagination: PaginationParams = Depends(get_pagination),
     _: Kullanici = Depends(require_permission("kayip_esya:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return guvenlik_service.kayip_esya_listele(session)
+    return guvenlik_service.kayip_esya_listele(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.post(
@@ -132,12 +145,15 @@ def update_kayip_esya(
     return guvenlik_service.kayip_esya_guncelle(session, esya_id, body)
 
 
-@router.get("/devriyeler", response_model=list[DevriyeRead])
+@router.get("/devriyeler", response_model=Page[DevriyeRead])
 def list_devriyeler(
+    pagination: PaginationParams = Depends(get_pagination),
     _: Kullanici = Depends(require_permission("guvenlik_devriye:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return guvenlik_service.devriye_listele(session)
+    return guvenlik_service.devriye_listele(
+        session, page=pagination.page, page_size=pagination.page_size
+    )
 
 
 @router.post(

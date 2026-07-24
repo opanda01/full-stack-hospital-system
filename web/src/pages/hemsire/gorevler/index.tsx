@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { Button, Input } from "@/shared/ui";
 
 type Gorev = {
@@ -23,13 +23,19 @@ export function HemsireGorevlerPage() {
   const { data: gorevler = [], isLoading } = useQuery({
     queryKey: ["hemsire-gorevler"],
     queryFn: async () =>
-      (await api.get<Gorev[]>("/yatis/gorevler", { params: { benim: true } })).data,
+      unwrapPage((await api.get<PageResponse<Gorev>>("/yatis/gorevler", { params: { benim: true, page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: yatislar = [] } = useQuery({
     queryKey: ["yatis-kayitlar-aktif"],
     queryFn: async () =>
-      (await api.get<Yatis[]>("/yatis/kayitlar", { params: { aktif: true } })).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<Yatis>>("/yatis/kayitlar", {
+            params: { aktif: true, page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const createMut = useMutation({

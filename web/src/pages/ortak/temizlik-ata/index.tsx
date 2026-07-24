@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import {
+  LOOKUP_PAGE_SIZE,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Personel = { id: number; sicil_no: string; unvan: string | null };
 type Gorev = {
@@ -16,11 +21,11 @@ export function TemizlikAtaPage() {
   const qc = useQueryClient();
   const { data: personeller = [] } = useQuery({
     queryKey: ["personeller"],
-    queryFn: async () => (await api.get<Personel[]>("/personel/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Personel>>("/personel/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: gorevler = [] } = useQuery({
     queryKey: ["temizlik-yonetim"],
-    queryFn: async () => (await api.get<Gorev[]>("/temizlik-gorevleri/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Gorev>>("/temizlik-gorevleri/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const [personelId, setPersonelId] = useState("");

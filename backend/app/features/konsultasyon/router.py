@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from app.core.db import get_session
 from app.core.enums import KonsultasyonDurumu
 from app.core.lookups import doktor_getir
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_pk_from_public_id, hasta_public_id_from_pk
 from app.core.security import require_permission
@@ -55,9 +56,10 @@ def _to_read(session: Session, row: KonsultasyonIstegi) -> KonsultasyonRead:
     )
 
 
-@router.get("/", response_model=list[KonsultasyonRead])
+@router.get("/", response_model=Page[KonsultasyonRead])
 def list_konsultasyonlar(
     request: Request,
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("konsultasyon:goruntule")),
 ):
@@ -71,7 +73,15 @@ def list_konsultasyonlar(
         )
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Konsültasyon listesi için yetkiniz yok")
-    return [_to_read(session, r) for r in session.exec(q).all()]
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        [_to_read(session, r) for r in rows],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post("/", response_model=KonsultasyonRead, status_code=status.HTTP_201_CREATED)

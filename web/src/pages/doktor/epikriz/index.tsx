@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  getApiErrorMessage,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Epikriz = {
   id: number;
@@ -20,7 +25,14 @@ export function DoktorEpikrizPage() {
 
   const { data: liste = [], isLoading, isError, error } = useQuery({
     queryKey: ["doktor-epikriz"],
-    queryFn: async () => (await api.get<Epikriz[]>("/epikriz/")).data,
+    queryFn: async () =>
+      unwrapPage(
+        (
+          await api.get<PageResponse<Epikriz>>("/epikriz/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   const onayMut = useMutation({

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/shared/api";
 import { useRoleBasePath } from "@/shared/auth";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
 import {
   Button,
   ConfirmDialog,
@@ -144,7 +144,7 @@ export function HemsireServisTakipPage() {
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const listParams = useMemo(() => {
@@ -165,7 +165,13 @@ export function HemsireServisTakipPage() {
   } = useQuery({
     queryKey: ["yatis-kayitlar", listParams],
     queryFn: async () =>
-      (await api.get<YatisListeItem[]>("/yatis/kayitlar", { params: listParams })).data,
+      unwrapPage(
+        (
+          await api.get<PageResponse<YatisListeItem>>("/yatis/kayitlar", {
+            params: listParams,
+          })
+        ).data,
+      ),
   });
 
   const { data: detay } = useQuery({
@@ -224,12 +230,15 @@ export function HemsireServisTakipPage() {
     queryKey: ["yatis-tetkik", detay?.hasta_id],
     enabled: tab === "tetkik" && !!detay?.hasta_id,
     queryFn: async () =>
-      (
-        await api.get<{ id: string; tetkik_turu: string; durum: string }[]>(
-          "/tetkikler/",
-          { params: { hasta_id: detay!.hasta_id } },
-        )
-      ).data,
+      unwrapPage(
+        (
+          await api.get<
+            PageResponse<{ id: string; tetkik_turu: string; durum: string }>
+          >("/tetkikler/", {
+            params: { hasta_id: detay!.hasta_id },
+          })
+        ).data,
+      ),
   });
 
   const { data: yataklar = [] } = useQuery({

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulTime, getApiErrorMessage } from "@/shared/lib";
+import { formatIstanbulTime, getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { createRandevu } from "@/features/randevu-olustur/api/createRandevu";
 
 type Departman = { id: number; ad: string };
@@ -32,11 +32,11 @@ export function AdminRandevuOlusturForm() {
 
   const { data: hastalar = [] } = useQuery({
     queryKey: ["hastalar"],
-    queryFn: async () => (await api.get<Hasta[]>("/hastalar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: kullanicilar = [] } = useQuery({
     queryKey: ["kullanicilar"],
-    queryFn: async () => (await api.get<Kullanici[]>("/kullanicilar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
@@ -44,7 +44,7 @@ export function AdminRandevuOlusturForm() {
   });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
-    queryFn: async () => (await api.get<Doktor[]>("/doktorlar/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   const { data: slots = [] } = useQuery({

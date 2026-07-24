@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
+import {
+  LOOKUP_PAGE_SIZE,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { TemizlikGoreviTamamlaButton } from "@/features/temizlik-gorevi-tamamla";
 
 type Gorev = {
@@ -13,7 +18,7 @@ type Gorev = {
 export function TemizlikGorevlerimPage() {
   const { data = [] } = useQuery({
     queryKey: ["temizlik"],
-    queryFn: async () => (await api.get<Gorev[]>("/temizlik-gorevleri/")).data,
+    queryFn: async () => unwrapPage((await api.get<PageResponse<Gorev>>("/temizlik-gorevleri/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
   return (

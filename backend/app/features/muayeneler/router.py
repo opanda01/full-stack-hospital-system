@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
@@ -47,13 +48,17 @@ def update_muayene(
     return muayene_service.muayene_to_read(session, kayit)
 
 
-@router.get("/", response_model=list[MuayeneRead])
+@router.get("/", response_model=Page[MuayeneRead])
 def list_muayeneler(
     request: Request,
+    pagination: PaginationParams = Depends(get_pagination),
     current_user: Kullanici = Depends(require_permission("muayene:goruntule")),
     session: Session = Depends(get_session),
 ):
-    rows = muayene_service.list_muayeneler(
-        session, current_user, request.state.kapsam
+    return muayene_service.list_muayeneler(
+        session,
+        current_user,
+        request.state.kapsam,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
-    return [muayene_service.muayene_to_read(session, r) for r in rows]

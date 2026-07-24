@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from app.core.audit import denetim_kaydi_yaz
 from app.core.config import get_settings
 from app.core.db import get_session
+from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
@@ -47,13 +48,21 @@ class SistemGozetim(BaseModel):
     health: str = "ok"
 
 
-@router.get("/", response_model=list[YetkiDevriRead])
+@router.get("/", response_model=Page[YetkiDevriRead])
 def list_yetki_devri(
+    pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_permission("yetki:devret")),
 ):
-    return list(
-        session.exec(select(YetkiDevriKaydi).order_by(YetkiDevriKaydi.id.desc())).all()
+    q = select(YetkiDevriKaydi).order_by(YetkiDevriKaydi.id.desc())
+    rows, total = paginate(
+        session, q, page=pagination.page, page_size=pagination.page_size
+    )
+    return make_page(
+        list(rows),
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

@@ -33,9 +33,9 @@ def _cakisma_var_mi(session: Session, doktor_id: int, tarih_saat: datetime) -> b
     return len(rows) > 0
 
 
-def listele(
+def listele_sorgu(
     session: Session, current_user: Kullanici, kapsam: Kapsam
-) -> list[Randevu]:
+):
     query = select(Randevu)
 
     def kendi(q):
@@ -65,7 +65,13 @@ def listele(
         kendi_kaydim_filtresi=kendi,
         departmanim_filtresi=departman,
     )
-    return list(session.exec(query).all())
+    return query.order_by(Randevu.tarih_saat.desc(), Randevu.id.desc())
+
+
+def listele(
+    session: Session, current_user: Kullanici, kapsam: Kapsam
+) -> list[Randevu]:
+    return list(session.exec(listele_sorgu(session, current_user, kapsam)).all())
 
 
 def randevu_erisim_kontrolu(
