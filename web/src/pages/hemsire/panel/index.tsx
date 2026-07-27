@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulDateTime, unwrapPage, type PageResponse } from "@/shared/lib";
+import {
+  LOOKUP_PAGE_SIZE,
+  formatIstanbulDateTime,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 
 type Randevu = {
   id: string;
@@ -15,7 +20,13 @@ export function HemsirePanelPage() {
   const { data = [], isLoading } = useQuery({
     queryKey: ["hemsire-randevular"],
     queryFn: async () =>
-      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
+      unwrapPage(
+        (
+          await api.get<PageResponse<Randevu>>("/randevular/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
 
   return (

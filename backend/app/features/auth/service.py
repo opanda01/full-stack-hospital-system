@@ -395,7 +395,11 @@ def otp_gonder(
     get_bildirim().sms_gonder(
         telefon, f"Doğrulama kodunuz: {kod}. {settings.OTP_TTL_SECONDS // 60} dk geçerlidir."
     )
-    return OtpGonderResponse(son_kullanma_saniye=settings.OTP_TTL_SECONDS)
+    dev_kod = kod if settings.ENVIRONMENT == "development" else None
+    return OtpGonderResponse(
+        son_kullanma_saniye=settings.OTP_TTL_SECONDS,
+        gelistirme_kodu=dev_kod,
+    )
 
 
 def otp_dogrula(

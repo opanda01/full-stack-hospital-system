@@ -24,7 +24,13 @@ export function DoktorTetkiklerimPage() {
   const { data: tetkikler = [], isLoading, isError, error } = useQuery({
     queryKey: ["tetkikler"],
     queryFn: async () =>
-      unwrapPage((await api.get<PageResponse<Tetkik>>("/tetkikler/")).data),
+      unwrapPage(
+        (
+          await api.get<PageResponse<Tetkik>>("/tetkikler/", {
+            params: { page_size: LOOKUP_PAGE_SIZE },
+          })
+        ).data,
+      ),
   });
   const { data: doktor } = useQuery({
     queryKey: ["doktor-ben"],

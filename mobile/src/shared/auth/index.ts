@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import { storageDelete, storageGet, storageSet } from "./storage";
 import { create } from "zustand";
 
 const ACCESS_KEY = "hbys_access_token";
@@ -22,25 +22,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrated: false,
 
   setAuth: async (access, refresh, rol) => {
-    await SecureStore.setItemAsync(ACCESS_KEY, access);
-    await SecureStore.setItemAsync(REFRESH_KEY, refresh);
-    await SecureStore.setItemAsync(ROL_KEY, rol);
+    await storageSet(ACCESS_KEY, access);
+    await storageSet(REFRESH_KEY, refresh);
+    await storageSet(ROL_KEY, rol);
     set({ token: access, refreshToken: refresh, rol });
   },
 
   clearAuth: async () => {
-    await SecureStore.deleteItemAsync(ACCESS_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_KEY);
-    await SecureStore.deleteItemAsync(ROL_KEY);
+    await storageDelete(ACCESS_KEY);
+    await storageDelete(REFRESH_KEY);
+    await storageDelete(ROL_KEY);
     set({ token: null, refreshToken: null, rol: null });
   },
 
   hydrate: async () => {
     try {
       const [token, refreshToken, rol] = await Promise.all([
-        SecureStore.getItemAsync(ACCESS_KEY),
-        SecureStore.getItemAsync(REFRESH_KEY),
-        SecureStore.getItemAsync(ROL_KEY),
+        storageGet(ACCESS_KEY),
+        storageGet(REFRESH_KEY),
+        storageGet(ROL_KEY),
       ]);
       set({
         token,

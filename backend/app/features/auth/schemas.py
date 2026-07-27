@@ -73,6 +73,8 @@ class OtpGonderRequest(BaseModel):
 class OtpGonderResponse(BaseModel):
     mesaj: str = "Doğrulama kodu gönderildi"
     son_kullanma_saniye: int
+    # Yalnızca development ortamında doldurulur (mobil test / Docker konsolu yerine)
+    gelistirme_kodu: str | None = None
 
 
 class OtpDogrulaRequest(BaseModel):

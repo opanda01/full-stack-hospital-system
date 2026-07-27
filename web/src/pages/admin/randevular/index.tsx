@@ -1,9 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { AppShell, Button, Input } from "@/shared/ui";
+import { AppShell, Button, Input, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
+import {
+  formatIstanbulDateTime,
+  getApiErrorMessage,
+  LOOKUP_PAGE_SIZE,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 import type { Randevu } from "@/entities/randevu";
@@ -15,6 +22,7 @@ type Kullanici = { id: number; ad: string; soyad: string };
 type Departman = { id: number; ad: string };
 
 const DURUMLAR = ["BEKLEMEDE", "TAMAMLANDI", "IPTAL"] as const;
+const PAGE_SIZE = 50;
 
 type ZamanDilimi =
   | "hepsi"
@@ -117,6 +125,7 @@ function exclusiveGroup(
 
 export function AdminRandevularPage() {
   const roleRoot = roleRootFromPath(useLocation().pathname);
+  const [page, setPage] = useState(1);
   const [arama, setArama] = useState("");
   const [durumFiltre, setDurumFiltre] = useState("");
   const [departmanFiltre, setDepartmanFiltre] = useState("");
@@ -124,15 +133,21 @@ export function AdminRandevularPage() {
   const [zamanDilimi, setZamanDilimi] = useState<ZamanDilimi>("gelecek_hafta");
 
   const {
-    data: randevular = [],
+    data,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["randevular"],
+    queryKey: ["randevular", page],
     queryFn: async () =>
-      unwrapPage((await api.get<PageResponse<Randevu>>("/randevular/")).data),
+      (
+        await api.get<PageResponse<Randevu>>("/randevular/", {
+          params: { page, page_size: PAGE_SIZE },
+        })
+      ).data,
   });
+  const randevular = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
@@ -468,6 +483,12 @@ export function AdminRandevularPage() {
               <tbody>{filtered.map(renderRow)}</tbody>
             </table>
           )}
+          <ListPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
     </AppShell>
