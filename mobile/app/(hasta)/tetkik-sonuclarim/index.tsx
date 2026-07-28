@@ -1,65 +1,124 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Text,
   View,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { apiFetch } from "@/shared/api";
+import { fetchTetkikler } from "@/shared/api/hastaApi";
+import type { TetkikDto } from "@/shared/api/types";
+import { go } from "@/shared/nav";
+import {
+  Card,
+  EmptyText,
+  ErrorText,
+  Loading,
+  Screen,
+  colors,
+} from "@/shared/ui";
 
-type Tetkik = {
-  id: string;
-  tetkik_turu: string;
-  durum: string;
-  sonuc_dosyasi: string | null;
-  istek_yapan_doktor_id: number;
+type IstekGrubu = {
+  key: string;
+  doktorId: number;
+  label: string;
+  items: TetkikDto[];
 };
 
-type Page<T> = { items: T[]; total: number; page: number; page_size: number };
+type TarihGrubu = {
+  key: string;
+  label: string;
+  sortKey: string;
+  istekler: IstekGrubu[];
+  toplam: number;
+};
 
-const PAGE_SIZE = 20;
+function tarihKey(iso: string | null | undefined): string {
+  if (!iso) return "bilinmeyen";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "bilinmeyen";
+  return d.toISOString().slice(0, 10);
+}
 
-function unwrapPage<T>(data: Page<T> | T[]): T[] {
-  if (Array.isArray(data)) return data;
-  return data?.items ?? [];
+function tarihLabel(key: string): string {
+  if (key === "bilinmeyen") return "Tarih bilinmiyor";
+  const d = new Date(`${key}T12:00:00`);
+  return d.toLocaleDateString("tr-TR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function durumEtiket(durum: string): string {
+  if (durum === "SONUCLANDI") return "Sonuçlandı";
+  if (durum === "ISTEK_ALINDI") return "İstek alındı";
+  return durum;
+}
+
+function groupTetkikler(items: TetkikDto[]): TarihGrubu[] {
+  const byDate = new Map<string, TetkikDto[]>();
+  for (const t of items) {
+    const k = tarihKey(t.created_at);
+    const list = byDate.get(k) ?? [];
+    list.push(t);
+    byDate.set(k, list);
+  }
+
+  const groups: TarihGrubu[] = [];
+  for (const [key, list] of byDate.entries()) {
+    const byDoktor = new Map<number, TetkikDto[]>();
+    for (const t of list) {
+      const dList = byDoktor.get(t.istek_yapan_doktor_id) ?? [];
+      dList.push(t);
+      byDoktor.set(t.istek_yapan_doktor_id, dList);
+    }
+    const istekler: IstekGrubu[] = [...byDoktor.entries()].map(
+      ([doktorId, dokItems]) => ({
+        key: `${key}-d${doktorId}`,
+        doktorId,
+        label: `İstek grubu · Doktor #${doktorId}`,
+        items: dokItems,
+      }),
+    );
+    groups.push({
+      key,
+      label: tarihLabel(key),
+      sortKey: key === "bilinmeyen" ? "0000-00-00" : key,
+      istekler,
+      toplam: list.length,
+    });
+  }
+
+  return groups.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 }
 
 export default function TetkikSonuclarimScreen() {
-  const [items, setItems] = useState<Tetkik[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [items, setItems] = useState<TetkikDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
-  const loadingMoreRef = useRef(false);
+  const [openDate, setOpenDate] = useState<string | null>(null);
+  const [openIstek, setOpenIstek] = useState<string | null>(null);
 
-  const loadPage = useCallback(async (pageNum: number, append: boolean) => {
-    const res = await apiFetch(
-      `/tetkikler/?page=${pageNum}&page_size=${PAGE_SIZE}`,
-    );
-    if (!res.ok) {
-      throw new Error("Tetkikler yüklenemedi");
-    }
-    const body = (await res.json()) as Page<Tetkik>;
-    const chunk = unwrapPage(body);
-    setTotal(body.total ?? chunk.length);
-    setPage(pageNum);
-    setItems((prev) => (append ? [...prev, ...chunk] : chunk));
-  }, []);
+  const groups = useMemo(() => groupTetkikler(items), [items]);
 
   const refresh = useCallback(async () => {
     setHata(null);
     try {
-      await loadPage(1, false);
+      // Hasta ekranında tarih grupları için yeterli kayıt çek
+      const body = await fetchTetkikler(1, 100);
+      setItems(body.items);
+      setOpenDate(null);
+      setOpenIstek(null);
     } catch {
       setHata("Sunucuya bağlanılamadı");
     } finally {
       setLoading(false);
     }
-  }, [loadPage]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,80 +127,117 @@ export default function TetkikSonuclarimScreen() {
     }, [refresh]),
   );
 
-  const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current || items.length >= total) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    try {
-      await loadPage(page + 1, true);
-    } catch {
-      setHata("Daha fazla yüklenemedi");
-    } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
-    }
-  }, [items.length, loadPage, page, total]);
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#0369a1" />
-      </View>
-    );
-  }
+  if (loading) return <Loading />;
 
   return (
-    <View style={styles.container}>
-      {hata ? <Text style={styles.error}>{hata}</Text> : null}
+    <Screen>
+      <ErrorText>{hata}</ErrorText>
       <FlatList
-        data={items}
-        keyExtractor={(i) => String(i.id)}
+        data={groups}
+        keyExtractor={(g) => g.key}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
         }
-        onEndReached={() => void loadMore()}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={
-          loadingMore ? (
-            <ActivityIndicator color="#0369a1" style={{ marginVertical: 12 }} />
-          ) : null
-        }
-        ListEmptyComponent={
-          <Text style={styles.empty}>Tetkik sonucu yok</Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.tetkik_turu}</Text>
-            <Text>Durum: {item.durum}</Text>
-            <Text style={styles.meta}>
-              {item.sonuc_dosyasi ?? "Sonuç bekleniyor"}
-            </Text>
-          </View>
-        )}
+        ListEmptyComponent={<EmptyText>Tetkik sonucu yok</EmptyText>}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        renderItem={({ item: gun }) => {
+          const dateOpen = openDate === gun.key;
+          return (
+            <View style={styles.block}>
+              <Pressable
+                style={[styles.dateHeader, dateOpen && styles.dateHeaderOpen]}
+                onPress={() => {
+                  setOpenDate(dateOpen ? null : gun.key);
+                  setOpenIstek(null);
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.dateTitle}>{gun.label}</Text>
+                </View>
+                <Text style={styles.chevron}>{dateOpen ? "▾" : "▸"}</Text>
+              </Pressable>
+
+              {dateOpen
+                ? gun.istekler.map((istek) => {
+                    const istekOpen = openIstek === istek.key;
+                    return (
+                      <View key={istek.key} style={styles.istekWrap}>
+                        <Pressable
+                          style={styles.istekHeader}
+                          onPress={() =>
+                            setOpenIstek(istekOpen ? null : istek.key)
+                          }
+                        >
+                          <Text style={styles.istekTitle}>{istek.label}</Text>
+                          <Text style={styles.dateMeta}>
+                            {istek.items.length} kalem {istekOpen ? "▾" : "▸"}
+                          </Text>
+                        </Pressable>
+                        {istekOpen
+                          ? istek.items.map((t) => (
+                              <Pressable
+                                key={t.id}
+                                onPress={() =>
+                                  go(`/(hasta)/tetkik-sonuclarim/${t.id}`)
+                                }
+                              >
+                                <Card style={styles.itemCard}>
+                                  <Text style={styles.cardTitle}>
+                                    {t.tetkik_turu}
+                                  </Text>
+                                  <Text style={styles.meta}>
+                                    {durumEtiket(t.durum)}
+                                  </Text>
+                                  <Text style={styles.meta} numberOfLines={1}>
+                                    {t.sonuc_dosyasi ?? "Sonuç bekleniyor"}
+                                  </Text>
+                                </Card>
+                              </Pressable>
+                            ))
+                          : null}
+                      </View>
+                    );
+                  })
+                : null}
+            </View>
+          );
+        }}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f8fafc" },
-  center: {
-    flex: 1,
-    justifyContent: "center",
+  block: { marginBottom: 10 },
+  dateHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 10,
   },
-  card: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+  dateHeaderOpen: { borderBottomLeftRadius: 4, borderBottomRightRadius: 4 },
+  dateTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  dateMeta: { color: "#bae6fd", fontSize: 12, marginTop: 2 },
+  chevron: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  istekWrap: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    gap: 4,
+    borderColor: colors.border,
+    borderTopWidth: 0,
+    paddingHorizontal: 10,
+    paddingBottom: 8,
   },
-  cardTitle: { fontWeight: "600", color: "#0f172a" },
-  meta: { color: "#64748b", fontSize: 13 },
-  empty: { color: "#64748b", textAlign: "center", marginTop: 24 },
-  error: { color: "#dc2626", marginBottom: 8 },
+  istekHeader: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 2,
+  },
+  istekTitle: { fontWeight: "600", color: colors.text },
+  itemCard: { marginTop: 8, marginBottom: 0 },
+  cardTitle: { fontWeight: "700", color: colors.text },
+  meta: { color: colors.muted, fontSize: 13 },
 });

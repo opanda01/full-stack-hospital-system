@@ -16,14 +16,17 @@ router = APIRouter()
 
 @router.get("/", response_model=Page[EpikrizRead])
 def list_epikriz(
+    request: Request,
     yatis_id: int | None = Query(default=None),
     hasta_id: UUID | None = Query(default=None),
     pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
-    _user: Kullanici = Depends(require_permission("epikriz:goruntule")),
+    current_user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
     return epikriz_service.list_epikriz(
         session,
+        current_user=current_user,
+        kapsam=request.state.kapsam,
         yatis_id=yatis_id,
         hasta_id=hasta_id,
         page=pagination.page,
@@ -38,7 +41,12 @@ def get_epikriz(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
-    row = epikriz_service.get_epikriz(session, epikriz_id)
+    row = epikriz_service.get_epikriz(
+        session,
+        epikriz_id,
+        current_user=current_user,
+        kapsam=request.state.kapsam,
+    )
     phi_goruntuleme_logla(
         session,
         actor=current_user,
@@ -47,7 +55,6 @@ def get_epikriz(
         request=request,
     )
     return row
-
 
 
 @router.post("/", response_model=EpikrizRead, status_code=201)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -42,6 +43,7 @@ class TetkikRead(BaseModel):
     tetkik_turu: str
     sonuc_dosyasi: str | None = None
     durum: str
+    created_at: datetime | None = None
     sonuc_kalemleri: list[TetkikSonucKalemRead] = []
 
     model_config = {"from_attributes": True}

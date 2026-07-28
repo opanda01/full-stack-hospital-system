@@ -1,10 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, TextInput, Pressable, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
-import { otpDogrula, otpGonder } from "@/shared/api";
+import Constants from "expo-constants";
+import { getApiUrl, otpDogrula, otpGonder } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
+import { goReplace } from "@/shared/nav";
 
 type Step = "bilgi" | "otp";
+
+function metroGosterim(): string | null {
+  const uri =
+    Constants.expoConfig?.hostUri ??
+    (Constants as { expoGoConfig?: { debuggerHost?: string } }).expoGoConfig
+      ?.debuggerHost;
+  const fallbackPort =
+    (
+      Constants.expoConfig?.extra as { metroPort?: number } | undefined
+    )?.metroPort ?? 8081;
+  if (!uri) return null;
+  return uri.includes(":") ? uri : `${uri}:${fallbackPort}`;
+}
 
 export function GirisYapForm() {
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -14,6 +28,25 @@ export function GirisYapForm() {
   const [kod, setKod] = useState("");
   const [hata, setHata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [backendDurum, setBackendDurum] = useState<
+    "bekliyor" | "tamam" | "hata"
+  >("bekliyor");
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    let iptal = false;
+    const api = getApiUrl();
+    fetch(`${api}/health`)
+      .then((r) => {
+        if (!iptal) setBackendDurum(r.ok ? "tamam" : "hata");
+      })
+      .catch(() => {
+        if (!iptal) setBackendDurum("hata");
+      });
+    return () => {
+      iptal = true;
+    };
+  }, []);
 
   const gonder = async () => {
     setHata(null);
@@ -54,7 +87,7 @@ export function GirisYapForm() {
         data.refresh_token,
         data.rol ?? "HASTA",
       );
-      router.replace("/(hasta)/randevularim");
+      goReplace("/(hasta)/ozet");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Doğrulama başarısız");
     } finally {
@@ -64,6 +97,21 @@ export function GirisYapForm() {
 
   return (
     <View style={styles.form}>
+      {__DEV__ ? (
+        <View style={styles.devBox}>
+          <Text style={styles.devApi} numberOfLines={2}>
+            Metro (uygulama kodu): {metroGosterim() ?? "—"}
+          </Text>
+          <Text style={styles.devApi} numberOfLines={3}>
+            API (Metro proxy): {getApiUrl()}
+            {backendDurum === "tamam"
+              ? " ✓"
+              : backendDurum === "hata"
+                ? " — ulaşılamıyor (Metro’yu yeniden başlatın, Docker ayakta mı?)"
+                : " …"}
+          </Text>
+        </View>
+      ) : null}
       {step === "bilgi" ? (
         <>
           <TextInput
@@ -144,5 +192,7 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "600" },
   error: { color: "#dc2626", fontSize: 12 },
   hint: { color: "#64748b", fontSize: 13, marginBottom: 4 },
+  devBox: { marginBottom: 8, gap: 4 },
+  devApi: { color: "#94a3b8", fontSize: 11 },
   link: { color: "#0369a1", textAlign: "center", marginTop: 4 },
 });

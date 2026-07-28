@@ -7,9 +7,9 @@ import {
   View,
   Switch,
 } from "react-native";
-import { router } from "expo-router";
 import { otpDogrula, otpGonder } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
+import { goReplace } from "@/shared/nav";
 
 type Step = "bilgi" | "otp";
 
@@ -71,7 +71,7 @@ export function KayitOlForm() {
         data.refresh_token,
         data.rol ?? "HASTA",
       );
-      router.replace("/(hasta)/randevularim");
+      goReplace("/(hasta)/ozet");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Kayıt doğrulama başarısız");
     } finally {

@@ -34,6 +34,10 @@ def test_hasta_tetkik_kendi():
     assert kapsam_getir(Rol.HASTA, "tetkik:goruntule") == Kapsam.KENDI_KAYDIM
 
 
+def test_hasta_epikriz_kendi():
+    assert kapsam_getir(Rol.HASTA, "epikriz:goruntule") == Kapsam.KENDI_KAYDIM
+
+
 def test_temizlik_guncelle_kendi():
     assert kapsam_getir(Rol.TEMIZLIK_PERSONELI, "temizlik_gorevi:guncelle") == Kapsam.KENDI_KAYDIM
 

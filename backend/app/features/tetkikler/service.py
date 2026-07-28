@@ -43,6 +43,7 @@ def _to_read(session: Session, t: Tetkik) -> TetkikRead:
         tetkik_turu=t.tetkik_turu,
         sonuc_dosyasi=t.sonuc_dosyasi,
         durum=t.durum,
+        created_at=t.created_at,
         sonuc_kalemleri=_kalemler(session, t.id) if t.id else [],
     )
 
@@ -125,6 +126,7 @@ def listele(
                 tetkik_turu=t.tetkik_turu,
                 sonuc_dosyasi=t.sonuc_dosyasi,
                 durum=t.durum,
+                created_at=t.created_at,
                 sonuc_kalemleri=kalem_map.get(t.id, []) if t.id else [],
             )
         )
