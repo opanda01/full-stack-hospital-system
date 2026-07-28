@@ -14,6 +14,7 @@ from app.features.hastalar.models import Hasta
 from app.features.hastalar.schemas import (
     HastaCreate,
     HastaCreateWithUser,
+    HastaProfilUpdate,
     HastaRead,
     HastaUpdate,
 )
@@ -172,8 +173,11 @@ def _hasta_to_read(session: Session, h: Hasta) -> HastaRead:
         cinsiyet=h.cinsiyet,
         kan_grubu=h.kan_grubu,
         adres=decrypt_phi(h.adres) if h.adres else None,
+        boy_cm=h.boy_cm,
+        kilo_kg=h.kilo_kg,
         ad=k.ad if k else None,
         soyad=k.soyad if k else None,
+        telefon=k.telefon if k else None,
     )
 
 
@@ -404,6 +408,8 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
         cinsiyet=data.cinsiyet,
         kan_grubu=data.kan_grubu,
         adres=store_adres,
+        boy_cm=data.boy_cm,
+        kilo_kg=data.kilo_kg,
         **({"public_id": data.public_id} if data.public_id is not None else {}),
     )
     session.add(h)
@@ -413,10 +419,41 @@ def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta
 
 
 def update_hasta(session: Session, public_id: UUID, data: HastaUpdate) -> Hasta:
+    from app.core.crypto import encrypt_phi, phi_encrypt_enabled
+
     h = get_hasta_by_public_id(session, public_id)
-    for k, v in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    if "adres" in payload and payload["adres"] is not None and phi_encrypt_enabled():
+        payload["adres"] = encrypt_phi(payload["adres"])
+    for k, v in payload.items():
         setattr(h, k, v)
     session.add(h)
+    session.commit()
+    session.refresh(h)
+    return h
+
+
+def update_benim_profil(
+    session: Session, kullanici: Kullanici, data: HastaProfilUpdate
+) -> Hasta:
+    """Hasta kendi kaydını günceller (kimlik TC değiştirilemez)."""
+    from app.core.crypto import encrypt_phi, phi_encrypt_enabled
+    from app.core.lookups import hasta_getir
+
+    h = hasta_getir(session, kullanici.id)
+    payload = data.model_dump(exclude_unset=True)
+    telefon = payload.pop("telefon", None)
+
+    if "adres" in payload and payload["adres"] is not None and phi_encrypt_enabled():
+        payload["adres"] = encrypt_phi(payload["adres"])
+    for k, v in payload.items():
+        setattr(h, k, v)
+    session.add(h)
+
+    if telefon is not None:
+        kullanici.telefon = telefon
+        session.add(kullanici)
+
     session.commit()
     session.refresh(h)
     return h

@@ -19,6 +19,8 @@ class Hasta(BaseModel, table=True):
     cinsiyet: Optional[str] = Field(default=None, max_length=20)
     kan_grubu: Optional[str] = Field(default=None, max_length=10)
     adres: Optional[str] = Field(default=None, max_length=2000)
+    boy_cm: Optional[float] = Field(default=None)
+    kilo_kg: Optional[float] = Field(default=None)
     anonymized_at: Optional[datetime] = Field(default=None)
 
     kullanici: Optional["Kullanici"] = Relationship(back_populates="hasta")  # noqa: F821

@@ -72,11 +72,15 @@ Tarayıcı: `http://localhost:5173`
 
 ```bash
 pnpm --filter mobile dev
+# LAN IP / Expo Go adresi:
+pnpm --filter mobile lan-ip
 ```
 
-Expo Dev Tools açılır; emülatör veya Expo Go ile çalıştırın.
+Expo **LAN + port 8081** ile açılır. `dev` start öncesi eski Metro artıklarını (8081/8082) temizler ve LAN IP’yi `REACT_NATIVE_PACKAGER_HOSTNAME` olarak yazar. Aynı ağdaki telefonda Expo Go: QR veya `exp://<LAN>:8081`.
 
-Hasta girişi **OTP** ile yapılır (e-posta/şifre yok). Demo: TC `10000000006`, telefon `05551234567` — doğrulama kodu backend SMS stub / konsol çıktısında görünür. API adresi için `mobile/.env.example` → `EXPO_PUBLIC_API_URL` (Android emülatör: `http://10.0.2.2:8000`).
+Not: Windows’ta “Expo Metro” firewall kuralı genelde yalnızca **8081**’i açar; farklı port kullanırsanız telefonda loading’de kalır (PC’den erişim çalışsa bile). Geliştirmede API Metro proxy: `http://<LAN>:8081/hbys-api`.
+
+Hasta girişi **OTP** ile yapılır (e-posta/şifre yok). Demo: TC `10000000006`, telefon `05551234567` — doğrulama kodu backend SMS stub / konsol çıktısında görünür. İsteğe bağlı doğrudan API: `mobile/.env.example` → `EXPO_PUBLIC_API_URL` (Android emülatör: `http://10.0.2.2:8000`).
 
 ## Shared types üretimi
 

@@ -5,8 +5,9 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.enums import EpikrizDurumu, Rol
-from app.core.lookups import doktor_getir
+from app.core.lookups import doktor_getir, hasta_getir
 from app.core.pagination import Page, make_page, paginate
+from app.core.permissions import Kapsam
 from app.core.public_id import hasta_pk_from_public_id, hasta_public_id_from_pk
 from app.features.epikriz.models import Epikriz
 from app.features.epikriz.schemas import EpikrizCreate, EpikrizRead, EpikrizUpdate
@@ -33,19 +34,39 @@ def _to_read(session: Session, row: Epikriz) -> EpikrizRead:
     )
 
 
+def _hasta_pk_for_kendi(session: Session, current_user: Kullanici) -> int:
+    if current_user.rol != Rol.HASTA:
+        raise HTTPException(
+            status_code=403, detail="Kendi kaydı kapsamı bu rol için tanımlı değil"
+        )
+    hasta = hasta_getir(session, current_user.id)
+    assert hasta.id is not None
+    return hasta.id
+
+
 def list_epikriz(
     session: Session,
     *,
+    current_user: Kullanici | None = None,
+    kapsam: Kapsam | None = None,
     yatis_id: int | None = None,
     hasta_id: UUID | None = None,
     page: int = 1,
     page_size: int = 50,
 ) -> Page[EpikrizRead]:
     q = select(Epikriz).order_by(Epikriz.id.desc())
-    if yatis_id is not None:
-        q = q.where(Epikriz.yatis_id == yatis_id)
-    if hasta_id is not None:
-        q = q.where(Epikriz.hasta_id == hasta_pk_from_public_id(session, hasta_id))
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        if current_user is None:
+            raise HTTPException(status_code=403, detail="Kapsam için kullanıcı gerekli")
+        kendi_pk = _hasta_pk_for_kendi(session, current_user)
+        q = q.where(Epikriz.hasta_id == kendi_pk)
+        if current_user.rol == Rol.HASTA:
+            q = q.where(Epikriz.durum == EpikrizDurumu.ONAYLANDI.value)
+    else:
+        if yatis_id is not None:
+            q = q.where(Epikriz.yatis_id == yatis_id)
+        if hasta_id is not None:
+            q = q.where(Epikriz.hasta_id == hasta_pk_from_public_id(session, hasta_id))
     rows, total = paginate(session, q, page=page, page_size=page_size)
     return make_page(
         [_to_read(session, r) for r in rows],
@@ -55,10 +76,27 @@ def list_epikriz(
     )
 
 
-def get_epikriz(session: Session, epikriz_id: int) -> EpikrizRead:
+def get_epikriz(
+    session: Session,
+    epikriz_id: int,
+    *,
+    current_user: Kullanici | None = None,
+    kapsam: Kapsam | None = None,
+) -> EpikrizRead:
     row = session.get(Epikriz, epikriz_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Epikriz bulunamadı")
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        if current_user is None:
+            raise HTTPException(status_code=403, detail="Kapsam için kullanıcı gerekli")
+        kendi_pk = _hasta_pk_for_kendi(session, current_user)
+        if row.hasta_id != kendi_pk:
+            raise HTTPException(status_code=403, detail="Bu epikrize erişim yetkiniz yok")
+        if (
+            current_user.rol == Rol.HASTA
+            and row.durum != EpikrizDurumu.ONAYLANDI.value
+        ):
+            raise HTTPException(status_code=404, detail="Epikriz bulunamadı")
     return _to_read(session, row)
 
 
@@ -91,10 +129,8 @@ def update_epikriz(
     row = session.get(Epikriz, epikriz_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Epikriz bulunamadı")
-    if row.durum != EpikrizDurumu.TASLAK.value:
-        raise HTTPException(
-            status_code=400, detail="Onaylanmış epikriz güncellenemez"
-        )
+    if row.durum == EpikrizDurumu.ONAYLANDI.value:
+        raise HTTPException(status_code=400, detail="Onaylı epikriz güncellenemez")
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(row, k, v)
@@ -112,12 +148,9 @@ def onayla_epikriz(
         raise HTTPException(status_code=404, detail="Epikriz bulunamadı")
     if row.durum == EpikrizDurumu.ONAYLANDI.value:
         raise HTTPException(status_code=400, detail="Epikriz zaten onaylı")
-    doktor_id = None
-    if current_user.rol == Rol.DOKTOR:
-        doktor = doktor_getir(session, current_user.id)
-        doktor_id = doktor.id
+    doktor = doktor_getir(session, current_user.id)
     row.durum = EpikrizDurumu.ONAYLANDI.value
-    row.onaylayan_doktor_id = doktor_id
+    row.onaylayan_doktor_id = doktor.id
     row.onaylandi_at = datetime.now(timezone.utc)
     session.add(row)
     session.commit()

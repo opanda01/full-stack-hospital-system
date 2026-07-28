@@ -1,0 +1,69 @@
+import { useCallback, useState } from "react";
+import { ScrollView, Text, StyleSheet } from "react-native";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { fetchEpikriz } from "@/shared/api/hastaApi";
+import type { EpikrizDto } from "@/shared/api/types";
+import { Card, ErrorText, Loading, Screen, SectionTitle, colors } from "@/shared/ui";
+
+export default function BelgeDetayScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [item, setItem] = useState<EpikrizDto | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const eid = Number(id);
+      if (!eid) {
+        setHata("Geçersiz belge");
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setHata(null);
+      (async () => {
+        try {
+          setItem(await fetchEpikriz(eid));
+        } catch (e) {
+          setHata(e instanceof Error ? e.message : "Yüklenemedi");
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }, [id]),
+  );
+
+  if (loading) return <Loading />;
+
+  return (
+    <Screen>
+      <ScrollView>
+        <ErrorText>{hata}</ErrorText>
+        {item ? (
+          <>
+            <SectionTitle>Epikriz #{item.id}</SectionTitle>
+            <Card>
+              <Text style={styles.label}>Durum</Text>
+              <Text style={styles.value}>{item.durum}</Text>
+              <Text style={styles.label}>Tanı</Text>
+              <Text style={styles.value}>{item.tani ?? "—"}</Text>
+              <Text style={styles.label}>Şikayet / öykü</Text>
+              <Text style={styles.value}>{item.sikayet_oyku ?? "—"}</Text>
+              <Text style={styles.label}>Fizik muayene</Text>
+              <Text style={styles.value}>{item.fizik_muayene ?? "—"}</Text>
+              <Text style={styles.label}>Tedavi özeti</Text>
+              <Text style={styles.value}>{item.tedavi_ozeti ?? "—"}</Text>
+              <Text style={styles.label}>Taburcu önerileri</Text>
+              <Text style={styles.value}>{item.taburcu_onerileri ?? "—"}</Text>
+            </Card>
+          </>
+        ) : null}
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  label: { color: colors.muted, fontSize: 12, fontWeight: "600", marginTop: 8 },
+  value: { color: colors.text, fontSize: 15 },
+});

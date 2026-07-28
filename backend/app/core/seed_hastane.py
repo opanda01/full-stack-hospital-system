@@ -83,12 +83,118 @@ ESKI_AD_MAP = {
     "Çocuk Hastalıkları": "Çocuk Sağlığı ve Hastalıkları",
 }
 
+# Bilinen örnek doktorlar (ilgili poliklinikte 1. sıra olarak korunur)
 ORNEK_DOKTORLAR = [
     ("Kardiyoloji", "Ufuk", "Öztürk", "doktor.kardiyoloji@hastane.example.com", "DIP-KARD-01"),
     ("Genel Cerrahi", "Ali", "Yarımkaya", "doktor.cerrahi@hastane.example.com", "DIP-CER-01"),
     ("Ortopedi ve Travmatoloji", "Ahmet", "Filiz", "doktor.ortopedi@hastane.example.com", "DIP-ORT-01"),
     ("Acil Servis", "Begüm", "Kartal", "doktor.acil@hastane.example.com", "DIP-ACL-01"),
 ]
+
+# Hasta randevu ekranı için her poliklinikte en az bu kadar doktor
+DOKTOR_SAYISI_POLIKLINIK = 3
+
+_ADLAR = [
+    "Ahmet", "Mehmet", "Ayşe", "Fatma", "Mustafa", "Emine", "Ali", "Zeynep",
+    "Hüseyin", "Elif", "Hasan", "Merve", "İbrahim", "Selin", "Yusuf", "Deniz",
+    "Ömer", "Ceren", "Can", "Burcu", "Emre", "Gül", "Murat", "Pınar",
+    "Serkan", "Esra", "Onur", "Melis", "Kerem", "İrem",
+]
+_SOYADLAR = [
+    "Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Yıldız", "Yıldırım", "Öztürk",
+    "Aydın", "Özdemir", "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara",
+    "Koç", "Kurt", "Özkan", "Şimşek", "Erdoğan", "Güneş", "Aksoy", "Polat",
+    "Tekin", "Karaca", "Bulut", "Acar", "Keskin", "Avcı",
+]
+
+
+def _slug(ad: str) -> str:
+    tr = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
+    s = ad.translate(tr).lower()
+    return "".join(ch if ch.isalnum() else "-" for ch in s).strip("-")
+
+
+def _ensure_doktor(
+    session: Session,
+    *,
+    dep: Departman,
+    ad: str,
+    soyad: str,
+    email: str,
+    diploma: str,
+    tc: str,
+    sifre: str,
+) -> None:
+    kullanici = session.exec(select(Kullanici).where(Kullanici.email == email)).first()
+    if not kullanici:
+        kullanici = session.exec(
+            select(Kullanici).where(Kullanici.tc_kimlik_no == tc)
+        ).first()
+    if not kullanici:
+        kullanici = Kullanici(
+            tc_kimlik_no=tc,
+            ad=ad,
+            soyad=soyad,
+            email=email,
+            sifre_hash=sifre,
+            rol=Rol.DOKTOR,
+            aktif_mi=True,
+        )
+        session.add(kullanici)
+        session.flush()
+    else:
+        kullanici.email = email
+        kullanici.ad = ad
+        kullanici.soyad = soyad
+        kullanici.rol = Rol.DOKTOR
+        kullanici.aktif_mi = True
+        session.add(kullanici)
+        session.flush()
+
+    personel = session.exec(
+        select(Personel).where(Personel.kullanici_id == kullanici.id)
+    ).first()
+    if not personel:
+        personel = Personel(
+            kullanici_id=kullanici.id,
+            sicil_no=f"SIC-{diploma}",
+            departman_id=dep.id,
+            unvan="Uzman Doktor",
+        )
+        session.add(personel)
+        session.flush()
+    else:
+        personel.departman_id = dep.id
+        personel.sicil_no = f"SIC-{diploma}"
+        personel.unvan = "Uzman Doktor"
+        session.add(personel)
+        session.flush()
+
+    doktor = session.exec(
+        select(Doktor).where(Doktor.personel_id == personel.id)
+    ).first()
+    if not doktor:
+        session.add(
+            Doktor(
+                personel_id=personel.id,
+                uzmanlik_alani=dep.ad,
+                diploma_no=diploma,
+                online_randevu_acik_mi=True,
+            )
+        )
+    else:
+        doktor.uzmanlik_alani = dep.ad
+        doktor.online_randevu_acik_mi = True
+        session.add(doktor)
+
+
+def _departman_doktor_sayisi(session: Session, departman_id: int) -> int:
+    rows = session.exec(
+        select(Doktor)
+        .join(Personel, Doktor.personel_id == Personel.id)
+        .where(Personel.departman_id == departman_id)
+    ).all()
+    return len(rows)
 
 
 def seed_hastane_referans(session: Session) -> None:
@@ -160,55 +266,46 @@ def seed_hastane_referans(session: Session) -> None:
                     session.add(dep)
 
     sifre = hash_password("Test1234!")
+    named_by_dep: dict[str, list[tuple[str, str, str, str]]] = {}
+    for dep_ad, ad, soyad, email, diploma in ORNEK_DOKTORLAR:
+        named_by_dep.setdefault(dep_ad, []).append((ad, soyad, email, diploma))
+
+    # İsimli örnek doktorlar: eski seed ile uyumlu TC (20…)
     for i, (dep_ad, ad, soyad, email, diploma) in enumerate(ORNEK_DOKTORLAR, start=1):
-        tc = f"2000000000{i}"
-        kullanici = session.exec(
-            select(Kullanici).where(
-                (Kullanici.email == email) | (Kullanici.tc_kimlik_no == tc)
-            )
-        ).first()
-        if not kullanici:
-            kullanici = Kullanici(
-                tc_kimlik_no=tc,
+        if dep_ad not in deps:
+            continue
+        _ensure_doktor(
+            session,
+            dep=deps[dep_ad],
+            ad=ad,
+            soyad=soyad,
+            email=email,
+            diploma=diploma,
+            tc=f"20{i:09d}",
+            sifre=sifre,
+        )
+
+    # Her poliklinikte en az DOKTOR_SAYISI_POLIKLINIK doktor (üretim TC: 21…)
+    seq = 0
+    for dep_ad, dep in deps.items():
+        mevcut = _departman_doktor_sayisi(session, dep.id)
+        for slot in range(mevcut, DOKTOR_SAYISI_POLIKLINIK):
+            seq += 1
+            slug = _slug(dep_ad)
+            ad = _ADLAR[(seq + slot) % len(_ADLAR)]
+            soyad = _SOYADLAR[(seq * 3 + slot) % len(_SOYADLAR)]
+            # slot+1 ile çakışmasın diye mevcut+1 kullan (isimli doktorlar 01 olabilir)
+            n = mevcut + (slot - mevcut) + 1
+            email = f"doktor.{slug}.{n:02d}@hastane.example.com"
+            diploma = f"DIP-{slug.upper().replace('-', '')[:10]}-{n:02d}"
+            _ensure_doktor(
+                session,
+                dep=dep,
                 ad=ad,
                 soyad=soyad,
                 email=email,
-                sifre_hash=sifre,
-                rol=Rol.DOKTOR,
-                aktif_mi=True,
-            )
-            session.add(kullanici)
-            session.flush()
-        else:
-            kullanici.email = email
-            session.add(kullanici)
-            session.flush()
-        personel = session.exec(
-            select(Personel).where(Personel.kullanici_id == kullanici.id)
-        ).first()
-        if not personel:
-            personel = Personel(
-                kullanici_id=kullanici.id,
-                sicil_no=f"SIC-{diploma}",
-                departman_id=deps[dep_ad].id,
-                unvan="Uzman Doktor",
-            )
-            session.add(personel)
-            session.flush()
-        else:
-            personel.departman_id = deps[dep_ad].id
-            session.add(personel)
-            session.flush()
-        doktor = session.exec(
-            select(Doktor).where(Doktor.personel_id == personel.id)
-        ).first()
-        if not doktor:
-            session.add(
-                Doktor(
-                    personel_id=personel.id,
-                    uzmanlik_alani=dep_ad,
-                    diploma_no=diploma,
-                    online_randevu_acik_mi=True,
-                )
+                diploma=diploma,
+                tc=f"21{seq:09d}",
+                sifre=sifre,
             )
     session.commit()

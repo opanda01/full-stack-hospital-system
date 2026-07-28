@@ -4,9 +4,12 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "dev": "node ./scripts/start-expo.cjs",
+    "dev:clear": "node ./scripts/start-expo.cjs --clear",
+    "dev:free": "node ./scripts/free-metro-ports.cjs",
+    "lan-ip": "node ./scripts/print-lan-url.cjs",
+    "android": "node ./scripts/start-expo.cjs --android",
+    "ios": "node ./scripts/start-expo.cjs --ios",
     "web": "expo start --web",
     "lint": "echo \"TODO: lint\"",
     "typecheck": "tsc --noEmit"
