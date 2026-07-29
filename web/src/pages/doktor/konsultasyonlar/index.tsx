@@ -9,6 +9,10 @@ import {
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaSecim,
+} from "@/features/doktor-hasta-secim";
 
 type Konsultasyon = {
   id: number;
@@ -24,13 +28,16 @@ type Doktor = {
   ad?: string | null;
   soyad?: string | null;
   uzmanlik_alani: string;
+  departman_id?: number | null;
 };
-type Hasta = { id: string; ad?: string | null; soyad?: string | null };
+type Departman = { id: number; ad: string };
 
 export function DoktorKonsultasyonlarPage() {
   const qc = useQueryClient();
+  const [hedefDepartmanId, setHedefDepartmanId] = useState("");
   const [hedefId, setHedefId] = useState("");
-  const [hastaId, setHastaId] = useState("");
+  const hastaSecim = useDoktorHastaSecim();
+  const { hastaId, setHastaId, hastaLabel } = hastaSecim;
   const [notlar, setNotlar] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -38,23 +45,16 @@ export function DoktorKonsultasyonlarPage() {
     queryKey: ["doktor-ben"],
     queryFn: async () => (await api.get<Doktor>("/doktorlar/ben")).data,
   });
+  const { data: departmanlar = [] } = useQuery({
+    queryKey: ["departmanlar"],
+    queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
+  });
   const { data: doktorlar = [] } = useQuery({
     queryKey: ["doktorlar"],
     queryFn: async () =>
       unwrapPage(
         (
           await api.get<PageResponse<Doktor>>("/doktorlar/", {
-            params: { page_size: LOOKUP_PAGE_SIZE },
-          })
-        ).data,
-      ),
-  });
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar-benim"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Hasta>>("/hastalar/benim", {
             params: { page_size: LOOKUP_PAGE_SIZE },
           })
         ).data,
@@ -83,14 +83,6 @@ export function DoktorKonsultasyonlarPage() {
     return m;
   }, [doktorlar]);
 
-  const hastaLabel = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const h of hastalar) {
-      m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
-    }
-    return m;
-  }, [hastalar]);
-
   const createMut = useMutation({
     mutationFn: async () =>
       api.post("/konsultasyonlar/", {
@@ -116,7 +108,17 @@ export function DoktorKonsultasyonlarPage() {
     },
   });
 
-  const digerDoktorlar = doktorlar.filter((d) => d.id !== ben?.id);
+  const digerDoktorlar = useMemo(
+    () => doktorlar.filter((d) => d.id !== ben?.id),
+    [doktorlar, ben?.id],
+  );
+
+  const hedefDoktorSecenekleri = useMemo(() => {
+    if (!hedefDepartmanId) return [];
+    return digerDoktorlar.filter(
+      (d) => String(d.departman_id ?? "") === hedefDepartmanId,
+    );
+  }, [digerDoktorlar, hedefDepartmanId]);
 
   return (
     <div className="space-y-4">
@@ -134,15 +136,27 @@ export function DoktorKonsultasyonlarPage() {
             {err}
           </p>
         )}
+        <DoktorHastaSecimField
+          hastaModu={hastaSecim.hastaModu}
+          onModuChange={hastaSecim.switchModu}
+          hastaTarih={hastaSecim.hastaTarih}
+          onTarihChange={hastaSecim.changeTarih}
+          options={hastaSecim.hastaSecenekleri}
+          value={hastaId}
+          onChange={setHastaId}
+        />
         <select
           className="w-full rounded-md border border-border px-3 py-2"
-          value={hastaId}
-          onChange={(e) => setHastaId(e.target.value)}
+          value={hedefDepartmanId}
+          onChange={(e) => {
+            setHedefDepartmanId(e.target.value);
+            setHedefId("");
+          }}
         >
-          <option value="">Hasta</option>
-          {hastalar.map((h) => (
-            <option key={h.id} value={h.id}>
-              {hastaLabel.get(h.id)}
+          <option value="">Hedef departman</option>
+          {departmanlar.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.ad}
             </option>
           ))}
         </select>
@@ -150,9 +164,12 @@ export function DoktorKonsultasyonlarPage() {
           className="w-full rounded-md border border-border px-3 py-2"
           value={hedefId}
           onChange={(e) => setHedefId(e.target.value)}
+          disabled={!hedefDepartmanId}
         >
-          <option value="">Hedef doktor</option>
-          {digerDoktorlar.map((d) => (
+          <option value="">
+            {hedefDepartmanId ? "Hedef doktor" : "Önce departman seçin"}
+          </option>
+          {hedefDoktorSecenekleri.map((d) => (
             <option key={d.id} value={d.id}>
               {doktorLabel.get(d.id)}
             </option>
@@ -166,7 +183,9 @@ export function DoktorKonsultasyonlarPage() {
         />
         <Button
           type="button"
-          disabled={!hastaId || !hedefId || createMut.isPending}
+          disabled={
+            !hastaId || !hedefDepartmanId || !hedefId || createMut.isPending
+          }
           onClick={() => createMut.mutate()}
         >
           İstek gönder

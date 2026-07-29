@@ -13,8 +13,6 @@ const STATUS_ACIK = {
   "--status-iptal-bg": "#eeefec",
   "--status-pasif-fg": "#5c5c58",
   "--status-pasif-bg": "#eeefec",
-  "--brand-navy": "#12233f",
-  "--brand-navy-foreground": "#f4f6fa",
 } as const;
 
 const STATUS_KOYU = {
@@ -32,8 +30,6 @@ const STATUS_KOYU = {
   "--status-iptal-bg": "#2a2a28",
   "--status-pasif-fg": "#a8a8a4",
   "--status-pasif-bg": "#2a2a28",
-  "--brand-navy": "#0d1a2e",
-  "--brand-navy-foreground": "#e8ecf4",
 } as const;
 
 export const THEMES = {

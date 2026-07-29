@@ -30,11 +30,9 @@ function DashboardActivityPlaceholder() {
       style={{ background: "var(--panel-inset-bg)" }}
     >
       <div
-        className="flex items-center gap-2 border-b px-4 py-3"
+        className="flex items-center gap-2 border-b px-4 py-3 brand-header-panel"
         style={{
           borderColor: "color-mix(in srgb, var(--text-secondary) 15%, transparent)",
-          background: "var(--brand-navy)",
-          color: "var(--brand-navy-foreground)",
         }}
       >
         <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />

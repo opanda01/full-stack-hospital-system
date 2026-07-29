@@ -27,7 +27,7 @@ const RENK_BG: Record<MetricCardRenk, string> = {
 
 const RENK_ACCENT: Record<MetricCardRenk, string> = {
   success: "var(--status-tamamlandi-fg)",
-  accent: "var(--brand-navy)",
+  accent: "var(--nav-active-bg)",
   warning: "var(--status-beklemede-fg)",
   notr: "var(--status-iptal-fg)",
 };

@@ -14,11 +14,10 @@ import {
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
 import type { Randevu } from "@/entities/randevu";
+import { randevuHastaAdi } from "@/entities/randevu";
 import type { Doktor } from "@/entities/doktor";
 import { AdminRandevuOlusturForm } from "./AdminRandevuOlusturForm";
 
-type Hasta = { id: string; tc_kimlik_no: string; kullanici_id: number };
-type Kullanici = { id: number; ad: string; soyad: string };
 type Departman = { id: number; ad: string };
 
 const DURUMLAR = ["BEKLEMEDE", "TAMAMLANDI", "IPTAL"] as const;
@@ -154,16 +153,6 @@ export function AdminRandevularPage() {
     queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
   });
 
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
-
-  const { data: kullanicilar = [] } = useQuery({
-    queryKey: ["kullanicilar"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
-
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
     queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
@@ -176,19 +165,6 @@ export function AdminRandevularPage() {
     for (const d of doktorlar) map.set(d.id, d);
     return map;
   }, [doktorlar]);
-
-  const hastaLabelById = useMemo(() => {
-    const kullaniciById = new Map(kullanicilar.map((k) => [k.id, k]));
-    const map = new Map<string, string>();
-    for (const h of hastalar) {
-      const k = kullaniciById.get(h.kullanici_id);
-      map.set(
-        h.id,
-        k ? `${k.ad} ${k.soyad}` : `Hasta #${h.id} (${h.tc_kimlik_no})`,
-      );
-    }
-    return map;
-  }, [hastalar, kullanicilar]);
 
   const departmanById = useMemo(() => {
     const map = new Map<number, string>();
@@ -226,7 +202,7 @@ export function AdminRandevularPage() {
       const haystack = normalize(
         [
           String(r.id),
-          hastaLabelById.get(r.hasta_id) ?? "",
+          randevuHastaAdi(r),
           doktorAd,
           departmanById.get(r.departman_id) ?? "",
           r.durum,
@@ -245,7 +221,6 @@ export function AdminRandevularPage() {
     departmanFiltre,
     doktorFiltre,
     doktorById,
-    hastaLabelById,
     departmanById,
   ]);
 
@@ -310,12 +285,18 @@ export function AdminRandevularPage() {
         <td className="py-2">
           {formatIstanbulDateTime(r.tarih_saat)}
         </td>
-        <td>{hastaLabelById.get(r.hasta_id) ?? `#${r.hasta_id}`}</td>
+        <td>{randevuHastaAdi(r)}</td>
         <td>{doktorAd}</td>
         <td>{departmanById.get(r.departman_id) ?? `#${r.departman_id}`}</td>
         <td>{r.durum}</td>
         <td>
-          {r.durum !== "IPTAL" && <RandevuIptalEtButton randevuId={r.id} />}
+          {r.durum !== "IPTAL" && (
+            <RandevuIptalEtButton
+              randevuId={r.id}
+              tarihSaat={r.tarih_saat}
+              durum={r.durum}
+            />
+          )}
         </td>
       </tr>
     );

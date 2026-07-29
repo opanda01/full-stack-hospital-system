@@ -177,7 +177,9 @@ def _hasta_to_read(session: Session, h: Hasta) -> HastaRead:
         kilo_kg=h.kilo_kg,
         ad=k.ad if k else None,
         soyad=k.soyad if k else None,
+        email=k.email if k else None,
         telefon=k.telefon if k else None,
+        aktif_mi=k.aktif_mi if k else None,
     )
 
 

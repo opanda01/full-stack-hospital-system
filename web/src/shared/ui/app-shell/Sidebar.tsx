@@ -25,13 +25,7 @@ export function Sidebar({
       className="sidebar-panel flex h-[calc(100vh-32px)] w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl text-[color:var(--text-primary)] corporate-panel"
       style={{ background: "var(--panel-bg)" }}
     >
-      <div
-        className="shrink-0 px-4 pb-4 pt-4"
-        style={{
-          background: "var(--brand-navy)",
-          color: "var(--brand-navy-foreground)",
-        }}
-      >
+      <div className="brand-header-panel-subtle shrink-0 px-4 pb-4 pt-4">
         <div className="flex gap-3">
           <div
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20"

@@ -31,8 +31,6 @@
     --status-iptal-bg: #eeefec;
     --status-pasif-fg: #5c5c58;
     --status-pasif-bg: #eeefec;
-    --brand-navy: #12233f;
-    --brand-navy-foreground: #f4f6fa;
 
     --background: 210 12% 96%;
     --foreground: 216 55% 16%;
@@ -148,6 +146,17 @@
   .corporate-panel {
     border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
     box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+  }
+
+  /** Koyu marka şeridi — yeşil-teal tonları (lacivert yok). */
+  .brand-header-panel {
+    background: color-mix(in srgb, var(--nav-active-bg) 85%, black);
+    color: var(--nav-active-text);
+  }
+
+  .brand-header-panel-subtle {
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
   }
 
   .data-table thead th {

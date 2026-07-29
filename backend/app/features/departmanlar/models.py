@@ -33,3 +33,6 @@ class Departman(BaseModel, table=True):
     personeller: list["Personel"] = Relationship(back_populates="departman")  # noqa: F821
     randevular: list["Randevu"] = Relationship(back_populates="departman")  # noqa: F821
     nobetler: list["NobetCizelgesi"] = Relationship(back_populates="departman")  # noqa: F821
+    nobet_cizelgeleri: list["NobetDepartmanCizelgesi"] = Relationship(  # noqa: F821
+        back_populates="departman"
+    )

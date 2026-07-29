@@ -1,22 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { AppShell, ListPager } from "@/shared/ui";
+import { AppShell, Badge, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
 import {
+  formatIstanbulDateTime,
   getApiErrorMessage,
   pageTotal,
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+import { durumToBadgeVariant } from "@/shared/lib/status-badge";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 
 type Tetkik = {
   id: string;
-  tetkik_turu?: string;
+  tetkik_turu: string;
   durum: string;
-  hasta_id?: string;
-  doktor_id?: number;
+  hasta_id: string;
+  hasta_ad_soyad?: string | null;
+  istek_yapan_doktor_id: number;
+  istek_yapan_doktor_ad_soyad?: string | null;
+  created_at?: string | null;
 };
 
 const PAGE_SIZE = 50;
@@ -51,24 +56,41 @@ export function AdminTetkiklerPage() {
         <p className="text-sm text-muted-foreground">Tetkik kaydı yok.</p>
       ) : (
         <>
-          <table className="w-full border-collapse text-sm">
+          <table className="data-table w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b text-left">
-                <th className="py-2">ID</th>
-                <th>Tür</th>
+              <tr>
+                <th>Tarih</th>
+                <th>Tetkik türü</th>
                 <th>Durum</th>
                 <th>Hasta</th>
-                <th>Doktor</th>
+                <th>İsteyen doktor</th>
               </tr>
             </thead>
             <tbody>
               {items.map((t) => (
-                <tr key={t.id} className="border-b">
-                  <td className="py-2">{t.id}</td>
-                  <td>{t.tetkik_turu ?? "—"}</td>
-                  <td>{t.durum}</td>
-                  <td>{t.hasta_id ?? "—"}</td>
-                  <td>{t.doktor_id ?? "—"}</td>
+                <tr key={t.id}>
+                  <td className="whitespace-nowrap text-muted-foreground">
+                    {t.created_at
+                      ? formatIstanbulDateTime(t.created_at)
+                      : "—"}
+                  </td>
+                  <td className="font-medium">{t.tetkik_turu}</td>
+                  <td>
+                    <Badge variant={durumToBadgeVariant(t.durum)}>
+                      {t.durum}
+                    </Badge>
+                  </td>
+                  <td>
+                    <span className="font-medium">
+                      {t.hasta_ad_soyad ?? "—"}
+                    </span>
+                  </td>
+                  <td>
+                    {t.istek_yapan_doktor_ad_soyad ??
+                      (t.istek_yapan_doktor_id
+                        ? `#${t.istek_yapan_doktor_id}`
+                        : "—")}
+                  </td>
                 </tr>
               ))}
             </tbody>

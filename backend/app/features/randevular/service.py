@@ -12,10 +12,14 @@ from app.core.public_id import get_by_public_id, hasta_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.core.timezone import ISTANBUL, as_utc, to_istanbul
 from app.features.kullanicilar.models import Kullanici
+from app.features.randevular.clinic_slots import (
+    klinik_saatleri_icinde_mi,
+    oglen_arasi_mi,
+    iter_klinik_slotlari,
+    SLOT_MINUTES,
+)
 from app.features.randevular.models import Randevu
 from app.features.randevular.schemas import RandevuCreate
-
-SLOT_MINUTES = 15
 
 
 def _cakisma_var_mi(session: Session, doktor_id: int, tarih_saat: datetime) -> bool:
@@ -132,6 +136,16 @@ def olustur(
             )
 
     tarih_saat = as_utc(veri.tarih_saat)
+    if not klinik_saatleri_icinde_mi(tarih_saat):
+        if oglen_arasi_mi(tarih_saat):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Öğle arası (12:00–13:00) randevu alılamaz",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Randevu yalnızca 09:00–17:00 arasında alınabilir (öğle arası hariç)",
+        )
     if _cakisma_var_mi(session, veri.doktor_id, tarih_saat):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -165,6 +179,13 @@ def olustur(
 def iptal_et(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu:
     randevu = get_by_public_id(session, Randevu, public_id)
     randevu_erisim_kontrolu(session, randevu, current_user)
+    if randevu.durum == "IPTAL":
+        raise HTTPException(status_code=400, detail="Randevu zaten iptal edilmiş")
+    if randevu.tarih_saat <= datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=400,
+            detail="Geçmiş randevu iptal edilemez",
+        )
     randevu.durum = "IPTAL"
     randevu.updated_at = datetime.now(timezone.utc)
     session.add(randevu)
@@ -180,27 +201,30 @@ def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu
 
 
 def musait_slotlar(session: Session, doktor_id: int, gun: date) -> list[datetime]:
-    """09:00–17:00 İstanbul slotları; dönüş değeri İstanbul tz-aware."""
-    baslangic = datetime(gun.year, gun.month, gun.day, 9, 0, 0, tzinfo=ISTANBUL)
-    bitis = datetime(gun.year, gun.month, gun.day, 17, 0, 0, tzinfo=ISTANBUL)
-    bas_utc = baslangic.astimezone(timezone.utc)
-    bit_utc = bitis.astimezone(timezone.utc)
-    dolu = {
-        as_utc(r.tarih_saat)
-        for r in session.exec(
-            select(Randevu).where(
-                Randevu.doktor_id == doktor_id,
-                Randevu.durum != "IPTAL",
-                Randevu.tarih_saat >= bas_utc,
-                Randevu.tarih_saat < bit_utc,
-            )
-        ).all()
-    }
+    """09:00–17:00 İstanbul; 12:00–13:00 öğle arası kapalı."""
+    slotlar_ist = iter_klinik_slotlari(gun)
+    bas_utc = slotlar_ist[0].astimezone(timezone.utc) if slotlar_ist else None
+    bit_utc = (
+        datetime(gun.year, gun.month, gun.day, 17, 0, 0, tzinfo=ISTANBUL).astimezone(
+            timezone.utc
+        )
+    )
+    dolu = set()
+    if bas_utc is not None:
+        dolu = {
+            as_utc(r.tarih_saat)
+            for r in session.exec(
+                select(Randevu).where(
+                    Randevu.doktor_id == doktor_id,
+                    Randevu.durum != "IPTAL",
+                    Randevu.tarih_saat >= bas_utc,
+                    Randevu.tarih_saat < bit_utc,
+                )
+            ).all()
+        }
     slotlar: list[datetime] = []
-    cur = baslangic
-    while cur < bitis:
+    for cur in slotlar_ist:
         cur_utc = cur.astimezone(timezone.utc)
         if cur_utc not in dolu and not _cakisma_var_mi(session, doktor_id, cur_utc):
             slotlar.append(to_istanbul(cur_utc))
-        cur += timedelta(minutes=SLOT_MINUTES)
     return slotlar

@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import {
   LOOKUP_PAGE_SIZE,
@@ -9,6 +8,10 @@ import {
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaListeFiltresi,
+} from "@/features/doktor-hasta-secim";
 
 type Hasta = {
   id: string;
@@ -24,7 +27,7 @@ function maskTc(tc: string) {
 }
 
 export function DoktorHastalarimPage() {
-  const [arama, setArama] = useState("");
+  const filtre = useDoktorHastaListeFiltresi();
   const {
     data: hastalar = [],
     isLoading,
@@ -42,16 +45,10 @@ export function DoktorHastalarimPage() {
       ),
   });
 
-  const filtered = useMemo(() => {
-    const q = arama.trim().toLocaleLowerCase("tr-TR");
-    if (!q) return hastalar;
-    return hastalar.filter((h) => {
-      const hay = `${h.ad ?? ""} ${h.soyad ?? ""} ${h.tc_kimlik_no}`.toLocaleLowerCase(
-        "tr-TR",
-      );
-      return hay.includes(q);
-    });
-  }, [hastalar, arama]);
+  const filtered = useMemo(
+    () => hastalar.filter((h) => filtre.matchHastaId(h.id)),
+    [hastalar, filtre.matchHastaId],
+  );
 
   return (
     <div className="space-y-4">
@@ -62,12 +59,20 @@ export function DoktorHastalarimPage() {
           hastalar
         </p>
       </div>
-      <Input
-        className="max-w-sm"
-        placeholder="Ad veya TC ara…"
-        value={arama}
-        onChange={(e) => setArama(e.target.value)}
-      />
+
+      <div className="max-w-xl rounded-xl border border-border bg-card p-4">
+        <DoktorHastaSecimField
+          mode="filtre"
+          hastaModu={filtre.hastaModu}
+          onModuChange={filtre.switchModu}
+          hastaTarih={filtre.hastaTarih}
+          onTarihChange={filtre.changeTarih}
+          options={filtre.hastaSecenekleri}
+          value={filtre.hastaId}
+          onChange={filtre.setHastaId}
+        />
+      </div>
+
       {isLoading ? (
         <p>Yükleniyor…</p>
       ) : isError ? (
@@ -93,10 +98,7 @@ export function DoktorHastalarimPage() {
                 <td>{maskTc(h.tc_kimlik_no)}</td>
                 <td>{h.kan_grubu ?? "—"}</td>
                 <td>
-                  <Link
-                    className="underline"
-                    to={`/doktor/muayene`}
-                  >
+                  <Link className="underline" to={`/doktor/muayene`}>
                     Muayene
                   </Link>
                 </td>

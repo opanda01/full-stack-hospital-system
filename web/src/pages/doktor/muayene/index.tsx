@@ -4,12 +4,18 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { formatIstanbulDateTime, getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
+import { randevuHastaAdi } from "@/entities/randevu";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaListeFiltresi,
+} from "@/features/doktor-hasta-secim";
 
 type Randevu = {
   id: string;
   durum: string;
   tarih_saat: string;
   hasta_id: string;
+  hasta_ad_soyad?: string | null;
 };
 type Doktor = { id: number };
 type ReceteKalem = {
@@ -26,7 +32,6 @@ type Muayene = {
   tedavi_plani: string | null;
   recete_kalemleri?: ReceteKalem[];
 };
-type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 type Alerji = {
   id: number;
   allerjen_adi: string;
@@ -77,11 +82,6 @@ export function DoktorMuayeneEkraniPage() {
         ).data,
       ),
   });
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar-benim"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/benim", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
-
   const [randevuId, setRandevuId] = useState(initialRandevu);
   const [tani, setTani] = useState("");
   const [tedavi, setTedavi] = useState("");
@@ -96,6 +96,15 @@ export function DoktorMuayeneEkraniPage() {
     { kod: string; mesaj: string }[] | null
   >(null);
   const [gerekce, setGerekce] = useState("");
+  const hastaFiltre = useDoktorHastaListeFiltresi();
+
+  const randevuSecenekleri = useMemo(
+    () =>
+      randevular.filter(
+        (r) => r.durum !== "IPTAL" && hastaFiltre.matchHastaId(r.hasta_id),
+      ),
+    [randevular, hastaFiltre.matchHastaId],
+  );
 
   const selected = randevular.find((r) => r.id === randevuId);
   const existing = muayeneler.find((m) => m.randevu_id === Number(randevuId));
@@ -106,14 +115,6 @@ export function DoktorMuayeneEkraniPage() {
     queryFn: async () =>
       (await api.get<Alerji[]>(`/hastalar/${selected!.hasta_id}/alerjiler`)).data,
   });
-
-  const hastaLabel = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const h of hastalar) {
-      m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
-    }
-    return m;
-  }, [hastalar]);
 
   const payloadBase = () => ({
     tani,
@@ -227,17 +228,25 @@ export function DoktorMuayeneEkraniPage() {
             {alerjiler.map((a) => `${a.allerjen_adi} (${a.siddet})`).join(", ")}
           </div>
         )}
+        <DoktorHastaSecimField
+          mode="filtre"
+          hastaModu={hastaFiltre.hastaModu}
+          onModuChange={hastaFiltre.switchModu}
+          hastaTarih={hastaFiltre.hastaTarih}
+          onTarihChange={hastaFiltre.changeTarih}
+          options={hastaFiltre.hastaSecenekleri}
+          value={hastaFiltre.hastaId}
+          onChange={hastaFiltre.setHastaId}
+        />
         <select
           className="w-full rounded-md border border-border px-3 py-2"
           value={randevuId}
           onChange={(e) => loadExisting(e.target.value)}
         >
           <option value="">Randevu seç</option>
-          {randevular
-            .filter((r) => r.durum !== "IPTAL")
-            .map((r) => (
+          {randevuSecenekleri.map((r) => (
               <option key={r.id} value={r.id}>
-                #{r.id} · {hastaLabel.get(r.hasta_id) ?? r.hasta_id} ·{" "}
+                {randevuHastaAdi(r)} ·{" "}
                 {formatIstanbulDateTime(r.tarih_saat)} · {r.durum}
               </option>
             ))}

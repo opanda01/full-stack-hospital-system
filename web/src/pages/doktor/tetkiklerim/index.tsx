@@ -3,6 +3,10 @@ import { useMemo, useState } from "react";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaListeFiltresi,
+} from "@/features/doktor-hasta-secim";
 
 type Tetkik = {
   id: string;
@@ -12,12 +16,11 @@ type Tetkik = {
   durum: string;
 };
 type Doktor = { id: number };
-type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 export function DoktorTetkiklerimPage() {
   const qc = useQueryClient();
   const [durumFiltre, setDurumFiltre] = useState("");
-  const [hastaId, setHastaId] = useState("");
+  const hastaFiltre = useDoktorHastaListeFiltresi();
   const [tur, setTur] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -36,27 +39,19 @@ export function DoktorTetkiklerimPage() {
     queryKey: ["doktor-ben"],
     queryFn: async () => (await api.get<Doktor>("/doktorlar/ben")).data,
   });
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar-benim"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/benim", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
-
-  const hastaLabel = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const h of hastalar) {
-      m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
-    }
-    return m;
-  }, [hastalar]);
 
   const filtered = useMemo(() => {
-    return tetkikler.filter((t) => !durumFiltre || t.durum === durumFiltre);
-  }, [tetkikler, durumFiltre]);
+    return tetkikler.filter(
+      (t) =>
+        (!durumFiltre || t.durum === durumFiltre) &&
+        hastaFiltre.matchHastaId(t.hasta_id),
+    );
+  }, [tetkikler, durumFiltre, hastaFiltre.matchHastaId]);
 
   const createMut = useMutation({
     mutationFn: async () =>
       api.post("/tetkikler/", {
-        hasta_id: hastaId,
+        hasta_id: hastaFiltre.hastaId,
         istek_yapan_doktor_id: doktor!.id,
         tetkik_turu: tur,
       }),
@@ -78,36 +73,39 @@ export function DoktorTetkiklerimPage() {
       </div>
 
       <div className="max-w-xl space-y-3 rounded-xl border border-border bg-card p-4">
-        <h3 className="text-sm font-semibold">Yeni tetkik isteği</h3>
-        {err && (
-          <p className="text-sm text-red-600" role="alert">
-            {err}
-          </p>
-        )}
-        <select
-          className="w-full rounded-md border border-border px-3 py-2"
-          value={hastaId}
-          onChange={(e) => setHastaId(e.target.value)}
-        >
-          <option value="">Hasta seç</option>
-          {hastalar.map((h) => (
-            <option key={h.id} value={h.id}>
-              {hastaLabel.get(h.id)}
-            </option>
-          ))}
-        </select>
-        <Input
-          placeholder="Tetkik türü"
-          value={tur}
-          onChange={(e) => setTur(e.target.value)}
+        <DoktorHastaSecimField
+          mode="filtre"
+          hastaModu={hastaFiltre.hastaModu}
+          onModuChange={hastaFiltre.switchModu}
+          hastaTarih={hastaFiltre.hastaTarih}
+          onTarihChange={hastaFiltre.changeTarih}
+          options={hastaFiltre.hastaSecenekleri}
+          value={hastaFiltre.hastaId}
+          onChange={hastaFiltre.setHastaId}
         />
-        <Button
-          type="button"
-          disabled={!hastaId || !tur || !doktor || createMut.isPending}
-          onClick={() => createMut.mutate()}
-        >
-          İstek oluştur
-        </Button>
+
+        <div className="border-t border-border pt-3 space-y-3">
+          <h3 className="text-sm font-semibold">Yeni tetkik isteği</h3>
+          {err && (
+            <p className="text-sm text-red-600" role="alert">
+              {err}
+            </p>
+          )}
+          <Input
+            placeholder="Tetkik türü"
+            value={tur}
+            onChange={(e) => setTur(e.target.value)}
+          />
+          <Button
+            type="button"
+            disabled={
+              !hastaFiltre.hastaId || !tur || !doktor || createMut.isPending
+            }
+            onClick={() => createMut.mutate()}
+          >
+            İstek oluştur
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -154,7 +152,7 @@ export function DoktorTetkiklerimPage() {
             {filtered.map((t) => (
               <tr key={t.id} className="border-b">
                 <td className="py-2">
-                  {hastaLabel.get(t.hasta_id) ?? `#${t.hasta_id}`}
+                  {hastaFiltre.hastaLabel.get(t.hasta_id) ?? `#${t.hasta_id}`}
                 </td>
                 <td>{t.tetkik_turu}</td>
                 <td>{t.durum}</td>

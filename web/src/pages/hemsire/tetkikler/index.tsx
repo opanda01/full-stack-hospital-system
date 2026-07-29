@@ -9,6 +9,7 @@ import { getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } f
 type Tetkik = {
   id: string;
   hasta_id: string;
+  hasta_ad_soyad?: string | null;
   tetkik_turu: string;
   sonuc_dosyasi: string | null;
   durum: string;
@@ -108,7 +109,9 @@ export function HemsireTetkiklerPage() {
                       className="underline"
                       to={`${base}/hasta-arama?q=${t.hasta_id}`}
                     >
-                      {hastaLabel.get(t.hasta_id) ?? `#${t.hasta_id}`}
+                      {t.hasta_ad_soyad ??
+                        hastaLabel.get(t.hasta_id) ??
+                        "—"}
                     </Link>
                   </td>
                   <td className="px-3 py-2">{t.tetkik_turu}</td>

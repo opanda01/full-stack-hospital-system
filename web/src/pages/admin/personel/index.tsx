@@ -3,7 +3,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AppShell, Button, Input, ListPager, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage, pageTotal, unwrapPage, type PageResponse } from "@/shared/lib";
+import { getApiErrorMessage, fetchAllPages } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { PersonelEkleForm } from "@/features/personel-ekle";
 import { PersonelImportPanel } from "@/features/personel-import";
@@ -52,17 +52,10 @@ export function PersonelYonetimiPage() {
   const [page, setPage] = useState(1);
   const titleId = useId();
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["personel", page],
-    queryFn: async () =>
-      (
-        await api.get<PageResponse<Personel>>("/personel/", {
-          params: { page, page_size: PAGE_SIZE },
-        })
-      ).data,
+  const { data: personeller = [], isLoading, isError, error } = useQuery({
+    queryKey: ["personel"],
+    queryFn: () => fetchAllPages<Personel>("/personel/"),
   });
-  const personeller = unwrapPage(data ?? []);
-  const total = pageTotal(data ?? []);
 
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
@@ -111,6 +104,15 @@ export function PersonelYonetimiPage() {
       return haystack.includes(q);
     });
   }, [personeller, arama, rolFiltre, durumFiltre, departmanFiltre]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [arama, rolFiltre, durumFiltre, departmanFiltre]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
   const filtreAktif =
     Boolean(arama.trim()) ||
@@ -269,7 +271,7 @@ export function PersonelYonetimiPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => (
+                {paged.map((p) => (
                   <tr key={p.id} className="border-b">
                     <td className="py-2">{p.sicil_no}</td>
                     <td>
@@ -299,7 +301,7 @@ export function PersonelYonetimiPage() {
           <ListPager
             page={page}
             pageSize={PAGE_SIZE}
-            total={total}
+            total={filtered.length}
             onPageChange={setPage}
           />
         </>

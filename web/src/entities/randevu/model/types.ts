@@ -6,4 +6,5 @@
   tarih_saat: string;
   durum: string;
   notlar: string | null;
+  hasta_ad_soyad?: string | null;
 };

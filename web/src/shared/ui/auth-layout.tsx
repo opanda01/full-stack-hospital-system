@@ -28,7 +28,7 @@ export function AuthLayout({
         className="relative flex flex-col justify-between overflow-hidden px-8 py-10 text-white lg:px-12 lg:py-14"
         style={{
           background:
-            "linear-gradient(165deg, var(--brand-navy) 0%, var(--nav-active-bg) 48%, #083d30 100%)",
+            "linear-gradient(165deg, color-mix(in srgb, var(--nav-active-bg) 65%, #000) 0%, var(--nav-active-bg) 48%, #083d30 100%)",
         }}
       >
         <div
@@ -69,11 +69,8 @@ export function AuthLayout({
 
       <main className="flex flex-col justify-center bg-[var(--panel-bg)] px-6 py-10 sm:px-10 lg:px-16">
         <div className="mx-auto w-full max-w-md overflow-hidden rounded-lg border corporate-panel">
-          <div
-            className="flex items-center gap-3 border-b px-6 py-3"
+          <div className="brand-header-panel flex items-center gap-3 border-b px-6 py-3"
             style={{
-              background: "var(--brand-navy)",
-              color: "var(--brand-navy-foreground)",
               borderColor: "color-mix(in srgb, #000 20%, transparent)",
             }}
           >

@@ -7,14 +7,7 @@ import {
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
-
-type Randevu = {
-  id: string;
-  hasta_id: string;
-  tarih_saat: string;
-  durum: string;
-  departman_id: number;
-};
+import { randevuHastaAdi, type Randevu } from "@/entities/randevu";
 
 export function HemsirePanelPage() {
   const { data = [], isLoading } = useQuery({
@@ -46,7 +39,9 @@ export function HemsirePanelPage() {
         <ul className="space-y-2">
           {data.map((r) => (
             <li key={r.id} className="rounded border bg-card p-3 text-sm">
-              #{r.id} — {formatIstanbulDateTime(r.tarih_saat)} — {r.durum}
+              <span className="font-medium">{randevuHastaAdi(r)}</span>
+              {" — "}
+              {formatIstanbulDateTime(r.tarih_saat)} — {r.durum}
             </li>
           ))}
           {!data.length && <p className="text-muted-foreground">Kayıt yok.</p>}

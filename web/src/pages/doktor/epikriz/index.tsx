@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
 import {
@@ -8,6 +8,10 @@ import {
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaListeFiltresi,
+} from "@/features/doktor-hasta-secim";
 
 type Epikriz = {
   id: number;
@@ -22,6 +26,7 @@ type Epikriz = {
 export function DoktorEpikrizPage() {
   const qc = useQueryClient();
   const [err, setErr] = useState<string | null>(null);
+  const hastaFiltre = useDoktorHastaListeFiltresi();
 
   const { data: liste = [], isLoading, isError, error } = useQuery({
     queryKey: ["doktor-epikriz"],
@@ -44,8 +49,13 @@ export function DoktorEpikrizPage() {
     onError: (e) => setErr(getApiErrorMessage(e)),
   });
 
-  const taslaklar = liste.filter((e) => e.durum === "TASLAK");
-  const onaylilar = liste.filter((e) => e.durum === "ONAYLANDI");
+  const filtered = useMemo(
+    () => liste.filter((e) => hastaFiltre.matchHastaId(e.hasta_id)),
+    [liste, hastaFiltre.matchHastaId],
+  );
+
+  const taslaklar = filtered.filter((e) => e.durum === "TASLAK");
+  const onaylilar = filtered.filter((e) => e.durum === "ONAYLANDI");
 
   return (
     <div className="space-y-6">
@@ -55,6 +65,20 @@ export function DoktorEpikrizPage() {
           Hemşire taslaklarını inceleyip onaylayın.
         </p>
       </div>
+
+      <div className="max-w-xl rounded-xl border border-border bg-card p-4">
+        <DoktorHastaSecimField
+          mode="filtre"
+          hastaModu={hastaFiltre.hastaModu}
+          onModuChange={hastaFiltre.switchModu}
+          hastaTarih={hastaFiltre.hastaTarih}
+          onTarihChange={hastaFiltre.changeTarih}
+          options={hastaFiltre.hastaSecenekleri}
+          value={hastaFiltre.hastaId}
+          onChange={hastaFiltre.setHastaId}
+        />
+      </div>
+
       {err && <p className="text-sm text-red-600">{err}</p>}
       {isLoading ? (
         <p>Yükleniyor…</p>
@@ -71,7 +95,9 @@ export function DoktorEpikrizPage() {
               >
                 <div>
                   <p className="font-medium">
-                    #{e.id} — Yatış {e.yatis_id} / Hasta {e.hasta_id}
+                    #{e.id} —{" "}
+                    {hastaFiltre.hastaLabel.get(e.hasta_id) ?? `Hasta ${e.hasta_id}`}{" "}
+                    · Yatış {e.yatis_id}
                   </p>
                   {e.tani && <p className="text-muted-foreground">Tanı: {e.tani}</p>}
                   {e.sikayet_oyku && (
@@ -95,7 +121,8 @@ export function DoktorEpikrizPage() {
             <h3 className="font-medium">Onaylı ({onaylilar.length})</h3>
             {onaylilar.slice(0, 10).map((e) => (
               <div key={e.id} className="rounded border px-3 py-2 text-sm text-muted-foreground">
-                #{e.id} — Yatış {e.yatis_id} — {e.tani ?? "—"}
+                #{e.id} — {hastaFiltre.hastaLabel.get(e.hasta_id) ?? e.hasta_id} — Yatış{" "}
+                {e.yatis_id} — {e.tani ?? "—"}
               </div>
             ))}
           </section>

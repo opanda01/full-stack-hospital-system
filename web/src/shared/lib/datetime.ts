@@ -1,4 +1,4 @@
-/** Klinik randevu saatleri — her zaman Europe/Istanbul. */
+/** Klinik randevu saatleri — Europe/Istanbul; 09:00–17:00, öğle 12:00–13:00 kapalı. */
 
 const IST = "Europe/Istanbul";
 

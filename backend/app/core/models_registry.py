@@ -23,7 +23,7 @@ from app.features.klinik_kodlar.models import (  # noqa: F401
     MuayeneTaniKodu,
     TetkikSonucKalemi,
 )
-from app.features.nobet_cizelgesi.models import NobetCizelgesi  # noqa: F401
+from app.features.nobet_cizelgesi.models import NobetCizelgesi, NobetDepartmanCizelgesi  # noqa: F401
 from app.features.temizlik_gorevleri.models import TemizlikGorevi  # noqa: F401
 from app.features.sikayet_oneri.models import SikayetOneri  # noqa: F401
 from app.features.mhrs.models import MhrsKapasite  # noqa: F401
