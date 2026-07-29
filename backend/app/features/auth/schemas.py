@@ -52,10 +52,18 @@ class MeResponse(BaseModel):
     rol: Rol
     aktif_mi: bool
     kullanici_adi: Optional[str] = None
+    telefon: Optional[str] = None
     sifre_degistirmeli_mi: bool = False
     kvkk_onaylandi_mi: bool = True
 
     model_config = {"from_attributes": True}
+
+
+class MeUpdate(BaseModel):
+    ad: str | None = Field(default=None, min_length=1, max_length=100)
+    soyad: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    telefon: str | None = Field(default=None, max_length=20)
 
 
 class LogoutRequest(BaseModel):

@@ -9,6 +9,7 @@
   ad?: string | null;
   soyad?: string | null;
   email?: string | null;
+  telefon?: string | null;
   rol?: string | null;
   departman_ad?: string | null;
   aktif_mi?: boolean | null;

@@ -146,6 +146,29 @@ def test_me_ok(client, session):
     assert body["aktif_mi"] is True
 
 
+def test_me_patch_ok(client, session):
+    user = _make_user(
+        session, email="patch@example.com", tc="90000000004", rol=Rol.ADMIN
+    )
+    headers = _auth(user)
+    r = client.patch(
+        "/auth/me",
+        headers=headers,
+        json={
+            "ad": "Yeni",
+            "soyad": "Isim",
+            "telefon": "05551234567",
+            "email": "yeni@example.com",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ad"] == "Yeni"
+    assert body["soyad"] == "Isim"
+    assert body["telefon"] == "05551234567"
+    assert body["email"] == "yeni@example.com"
+
+
 def test_sifre_degistir_revokes_refresh(client, session):
     user = _make_user(
         session, email="sifre@example.com", tc="90000000010", rol=Rol.ADMIN

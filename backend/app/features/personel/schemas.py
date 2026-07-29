@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.core.enums import (
     ErisimDurumu,
@@ -31,6 +31,7 @@ class PersonelRead(BaseModel):
     ad: str | None = None
     soyad: str | None = None
     email: str | None = None
+    telefon: str | None = None
     rol: str | None = None
     departman_ad: str | None = None
     aktif_mi: bool | None = None
@@ -102,6 +103,10 @@ class PersonelUpdate(BaseModel):
     unvan: str | None = None
     amir_id: int | None = None
     yonetim_gorevi: YonetimGorevi | None = None
+    ad: str | None = Field(default=None, min_length=1, max_length=100)
+    soyad: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    telefon: str | None = Field(default=None, max_length=20)
 
 
 class PersonelImportBaslatResponse(BaseModel):

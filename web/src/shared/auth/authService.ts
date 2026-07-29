@@ -119,6 +119,7 @@ export async function me(): Promise<CurrentUser> {
     rol: data.rol,
     aktif_mi: data.aktif_mi,
     kullanici_adi: data.kullanici_adi ?? null,
+    telefon: data.telefon ?? null,
     sifre_degistirmeli_mi: Boolean(data.sifre_degistirmeli_mi),
     kvkk_onaylandi_mi: data.kvkk_onaylandi_mi !== false,
   };
@@ -210,6 +211,7 @@ export async function kvkkOnay(onay = true): Promise<CurrentUser> {
     rol: data.rol,
     aktif_mi: data.aktif_mi,
     kullanici_adi: data.kullanici_adi ?? null,
+    telefon: data.telefon ?? null,
     sifre_degistirmeli_mi: Boolean(data.sifre_degistirmeli_mi),
     kvkk_onaylandi_mi: data.kvkk_onaylandi_mi !== false,
   };
