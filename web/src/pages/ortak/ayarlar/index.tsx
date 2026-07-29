@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { KeyRound, ScrollText, Server, Megaphone } from "lucide-react";
+import { KeyRound, ScrollText, Server, Megaphone, UserCircle } from "lucide-react";
 import { TemaSecici } from "./TemaSecici";
 import { api } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
@@ -58,6 +58,22 @@ export function AyarlarPage() {
         </p>
       </div>
       <TemaSecici />
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h3 className="mb-3 text-base font-semibold">Hesap</h3>
+        <Link
+          to="/profil"
+          className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-muted"
+        >
+          <UserCircle className="h-4 w-4 shrink-0" />
+          <span>
+            <span className="block font-medium">Profil bilgileri</span>
+            <span className="text-muted-foreground">
+              Ad, soyad, e-posta ve telefon
+            </span>
+          </span>
+        </Link>
+      </section>
 
       {isAdmin && (
         <section className="rounded-xl border border-border bg-card p-5">

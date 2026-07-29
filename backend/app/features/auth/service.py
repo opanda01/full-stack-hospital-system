@@ -24,6 +24,7 @@ from app.core.security import (
 )
 from app.features.auth.models import OtpKodu, RefreshToken
 from app.features.auth.schemas import (
+    MeUpdate,
     OtpGonderResponse,
     SifreSifirlaIstekResponse,
     TokenResponse,
@@ -249,6 +250,52 @@ def sifre_degistir(
         commit=False,
     )
     session.commit()
+
+
+def profil_guncelle(
+    session: Session,
+    kullanici: Kullanici,
+    data: MeUpdate,
+    *,
+    ip_adresi: str | None = None,
+) -> Kullanici:
+    payload = data.model_dump(exclude_unset=True)
+    if not payload:
+        return kullanici
+
+    new_email = payload.get("email")
+    if new_email is not None:
+        email_str = str(new_email)
+        existing = session.exec(
+            select(Kullanici).where(
+                Kullanici.email == email_str,
+                Kullanici.id != kullanici.id,
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bu e-posta adresi başka bir hesapta kayıtlı",
+            )
+
+    for key, value in payload.items():
+        if key == "email" and value is not None:
+            setattr(kullanici, key, str(value))
+        else:
+            setattr(kullanici, key, value)
+
+    session.add(kullanici)
+    denetim_kaydi_yaz(
+        session,
+        aksiyon="PROFIL_GUNCELLE",
+        actor_id=kullanici.id,
+        kaynak="auth",
+        ip_adresi=ip_adresi,
+        commit=False,
+    )
+    session.commit()
+    session.refresh(kullanici)
+    return kullanici
 
 
 def kvkk_onayla(

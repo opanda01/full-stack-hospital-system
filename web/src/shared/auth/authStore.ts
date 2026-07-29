@@ -10,6 +10,7 @@ export type CurrentUser = {
   rol: string;
   aktif_mi: boolean;
   kullanici_adi?: string | null;
+  telefon?: string | null;
   sifre_degistirmeli_mi: boolean;
   kvkk_onaylandi_mi: boolean;
 };

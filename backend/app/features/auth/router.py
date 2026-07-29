@@ -12,6 +12,7 @@ from app.features.auth.schemas import (
     LoginRequest,
     LogoutRequest,
     MeResponse,
+    MeUpdate,
     OtpDogrulaRequest,
     OtpGonderRequest,
     OtpGonderResponse,
@@ -174,3 +175,18 @@ def register_hasta(
 @router.get("/me", response_model=MeResponse)
 def me(current_user: Kullanici = Depends(get_current_user)) -> Kullanici:
     return current_user
+
+
+@router.patch("/me", response_model=MeResponse)
+def me_guncelle(
+    body: MeUpdate,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(get_current_user),
+) -> Kullanici:
+    return auth_service.profil_guncelle(
+        session,
+        current_user,
+        body,
+        ip_adresi=istemci_ip_al(request),
+    )

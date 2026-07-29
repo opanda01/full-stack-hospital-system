@@ -40,6 +40,10 @@ export function PersonelYonetimiPage() {
   const [editing, setEditing] = useState<Personel | null>(null);
   const [editDepartmanId, setEditDepartmanId] = useState("");
   const [editUnvan, setEditUnvan] = useState("");
+  const [editAd, setEditAd] = useState("");
+  const [editSoyad, setEditSoyad] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTelefon, setEditTelefon] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [arama, setArama] = useState("");
   const [rolFiltre, setRolFiltre] = useState("");
@@ -98,6 +102,7 @@ export function PersonelYonetimiPage() {
           p.ad ?? "",
           p.soyad ?? "",
           p.email ?? "",
+          p.telefon ?? "",
           p.rol ?? "",
           p.unvan ?? "",
           p.departman_ad ?? "",
@@ -119,6 +124,10 @@ export function PersonelYonetimiPage() {
       return api.patch(`/personel/${editing.id}`, {
         departman_id: editDepartmanId ? Number(editDepartmanId) : null,
         unvan: editUnvan || null,
+        ad: editAd.trim(),
+        soyad: editSoyad.trim(),
+        email: editEmail.trim() || null,
+        telefon: editTelefon.trim() || null,
       });
     },
     onSuccess: () => {
@@ -142,14 +151,12 @@ export function PersonelYonetimiPage() {
     setEditing(p);
     setEditDepartmanId(p.departman_id != null ? String(p.departman_id) : "");
     setEditUnvan(p.unvan ?? "");
+    setEditAd(p.ad ?? "");
+    setEditSoyad(p.soyad ?? "");
+    setEditEmail(p.email ?? "");
+    setEditTelefon(p.telefon ?? "");
     setActionError(null);
   };
-
-  const adSoyad = editing
-    ? editing.ad || editing.soyad
-      ? `${editing.ad ?? ""} ${editing.soyad ?? ""}`.trim()
-      : `Sicil ${editing.sicil_no}`
-    : "";
 
   const links = [{ to: roleRoot, label: "Ana" }];
   if (isAdmin) {
@@ -323,13 +330,13 @@ export function PersonelYonetimiPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="relative z-10 w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-lg"
           >
             <h2 id={titleId} className="text-lg font-semibold">
               Personel düzenle
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {adSoyad} · {editing.sicil_no}
+              Sicil {editing.sicil_no}
               {editing.rol ? ` · ${editing.rol}` : ""}
             </p>
 
@@ -337,9 +344,55 @@ export function PersonelYonetimiPage() {
               className="mt-4 space-y-3"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (!editAd.trim() || !editSoyad.trim()) {
+                  setActionError("Ad ve soyad zorunludur");
+                  return;
+                }
                 updateMut.mutate();
               }}
             >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1 text-sm">
+                  <span className="text-muted-foreground">Ad</span>
+                  <Input
+                    value={editAd}
+                    onChange={(e) => setEditAd(e.target.value)}
+                    autoComplete="given-name"
+                    required
+                  />
+                </label>
+                <label className="block space-y-1 text-sm">
+                  <span className="text-muted-foreground">Soyad</span>
+                  <Input
+                    value={editSoyad}
+                    onChange={(e) => setEditSoyad(e.target.value)}
+                    autoComplete="family-name"
+                    required
+                  />
+                </label>
+              </div>
+
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">E-posta</span>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </label>
+
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Telefon</span>
+                <Input
+                  type="tel"
+                  value={editTelefon}
+                  onChange={(e) => setEditTelefon(e.target.value)}
+                  autoComplete="tel"
+                  placeholder="05XX XXX XX XX"
+                />
+              </label>
+
               <label className="block space-y-1 text-sm">
                 <span className="text-muted-foreground">Departman</span>
                 <SearchableCombobox
@@ -353,8 +406,7 @@ export function PersonelYonetimiPage() {
 
               <label className="block space-y-1 text-sm">
                 <span className="text-muted-foreground">Unvan</span>
-                <input
-                  className="w-full rounded-md border border-border px-3 py-2"
+                <Input
                   value={editUnvan}
                   onChange={(e) => setEditUnvan(e.target.value)}
                   placeholder="Örn. Uzman Hemşire"

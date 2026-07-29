@@ -33,6 +33,7 @@ def _to_read(session: Session, p: Personel) -> PersonelRead:
         ad=kullanici.ad if kullanici else None,
         soyad=kullanici.soyad if kullanici else None,
         email=kullanici.email if kullanici else None,
+        telefon=kullanici.telefon if kullanici else None,
         rol=kullanici.rol.value if kullanici and isinstance(kullanici.rol, Rol) else (
             str(kullanici.rol) if kullanici else None
         ),
@@ -182,13 +183,49 @@ def create_personel_with_user(
     return _to_read(session, personel)
 
 
+_KULLANICI_PROFIL_ALANLARI = frozenset({"ad", "soyad", "email", "telefon"})
+
+
 def update_personel(
     session: Session, personel_id: int, data: PersonelUpdate
 ) -> PersonelRead:
     p = get_personel(session, personel_id)
-    for k, v in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    kullanici_updates = {
+        k: payload.pop(k) for k in list(payload) if k in _KULLANICI_PROFIL_ALANLARI
+    }
+    for k, v in payload.items():
         setattr(p, k, v)
     session.add(p)
+
+    if kullanici_updates:
+        kullanici = session.get(Kullanici, p.kullanici_id)
+        if kullanici is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Kullanıcı bulunamadı",
+            )
+        new_email = kullanici_updates.get("email")
+        if new_email is not None:
+            email_str = str(new_email)
+            existing = session.exec(
+                select(Kullanici).where(
+                    Kullanici.email == email_str,
+                    Kullanici.id != kullanici.id,
+                )
+            ).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Bu e-posta adresi başka bir hesapta kayıtlı",
+                )
+        for key, value in kullanici_updates.items():
+            if key == "email" and value is not None:
+                setattr(kullanici, key, str(value))
+            else:
+                setattr(kullanici, key, value)
+        session.add(kullanici)
+
     session.commit()
     session.refresh(p)
     return _to_read(session, p)

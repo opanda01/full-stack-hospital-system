@@ -27,8 +27,16 @@ export type MeResponse = {
   rol: string;
   aktif_mi: boolean;
   kullanici_adi?: string | null;
+  telefon?: string | null;
   sifre_degistirmeli_mi?: boolean;
   kvkk_onaylandi_mi?: boolean;
+};
+
+export type MeUpdateBody = {
+  ad?: string;
+  soyad?: string;
+  email?: string | null;
+  telefon?: string | null;
 };
 
 export async function login(kimlik: string, sifre: string): Promise<TokenResponse> {
@@ -60,6 +68,15 @@ export async function me(): Promise<MeResponse> {
   const { useAuthStore } = await import("./authStore");
   const access = useAuthStore.getState().accessToken ?? useAuthStore.getState().token;
   const { data } = await authClient.get<MeResponse>("/auth/me", {
+    headers: access ? { Authorization: `Bearer ${access}` } : {},
+  });
+  return data;
+}
+
+export async function profilGuncelle(body: MeUpdateBody): Promise<MeResponse> {
+  const { useAuthStore } = await import("./authStore");
+  const access = useAuthStore.getState().accessToken ?? useAuthStore.getState().token;
+  const { data } = await authClient.patch<MeResponse>("/auth/me", body, {
     headers: access ? { Authorization: `Bearer ${access}` } : {},
   });
   return data;
