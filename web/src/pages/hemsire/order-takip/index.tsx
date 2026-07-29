@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button } from "@/shared/ui";
+import { durumToBadgeVariant } from "@/shared/lib/status-badge";
+import { Badge } from "@/shared/ui/badge";
 import { api } from "@/shared/api";
 import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 
@@ -159,15 +161,15 @@ export function HemsireOrderTakipPage() {
         ))}
       </div>
       {err && <p className="text-sm text-red-600">{err}</p>}
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-muted/40">
+      <div className="overflow-x-auto rounded-md border corporate-panel">
+        <table className="data-table w-full text-left text-sm">
+          <thead>
             <tr>
-              <th className="px-3 py-2">Tip</th>
-              <th className="px-3 py-2">Hasta</th>
-              <th className="px-3 py-2">Açıklama</th>
-              <th className="px-3 py-2">Durum</th>
-              <th className="px-3 py-2">İşlem</th>
+              <th>Tip</th>
+              <th>Hasta</th>
+              <th>Açıklama</th>
+              <th>Durum</th>
+              <th>İşlem</th>
             </tr>
           </thead>
           <tbody>
@@ -181,7 +183,9 @@ export function HemsireOrderTakipPage() {
                     <span className="block text-xs text-muted-foreground">{r.meta}</span>
                   )}
                 </td>
-                <td className="px-3 py-2">{r.durum}</td>
+                <td className="px-3 py-2">
+                  <Badge variant={durumToBadgeVariant(r.durum)}>{r.durum}</Badge>
+                </td>
                 <td className="px-3 py-2">
                   {r.tip === "MAR" && r.durum === "BEKLIYOR" ? (
                     <div className="flex gap-1">

@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "@/shared/api";
 import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { Badge, Button, Input } from "@/shared/ui";
+import { durumToBadgeVariant } from "@/shared/lib/status-badge";
 
 type YatisListeItem = {
   id: number;
@@ -243,7 +244,7 @@ export function HemsireIlacTalepPage() {
                 <td className="px-2 py-2">
                   {s.urun_adi}
                   {s.acil_mi && (
-                    <Badge className="ml-1" variant="destructive">
+                    <Badge className="ml-1" variant="acil">
                       Acil
                     </Badge>
                   )}
@@ -251,7 +252,7 @@ export function HemsireIlacTalepPage() {
                 <td className="px-2 py-2">{s.istenen_miktar}</td>
                 <td className="px-2 py-2">{s.verilen_miktar}</td>
                 <td className="px-2 py-2">
-                  <Badge variant="outline">{s.durum}</Badge>
+                  <Badge variant={durumToBadgeVariant(s.durum)}>{s.durum}</Badge>
                 </td>
                 <td className="px-2 py-2 space-x-1">
                   {s.durum === "ONAY_BEKLIYOR" && (
