@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, KeyRound, LogOut, Settings, User } from "lucide-react";
+import { Bell, ChevronRight, KeyRound, LogOut, Settings, User } from "lucide-react";
 import type { CurrentUser } from "@/shared/auth";
 import { useAuthStore } from "@/shared/auth";
 import type { NavItem, Rol } from "@/shared/config/nav-items";
@@ -37,11 +37,31 @@ function initials(ad: string, soyad: string) {
   return `${ad.charAt(0)}${soyad.charAt(0)}`.toUpperCase();
 }
 
+function formatKurumsalTarih(d: Date) {
+  return d.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function vardiyaEtiketi(d: Date) {
+  const h = d.getHours();
+  if (h >= 7 && h < 19) return "Gündüz Vardiyası";
+  return "Gece Vardiyası";
+}
+
 export function Topbar({ navItems, currentUser }: TopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const qc = useQueryClient();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const pageTitle = useMemo(() => {
     const match = [...navItems]
@@ -52,6 +72,21 @@ export function Topbar({ navItems, currentUser }: TopbarProps) {
           location.pathname.startsWith(`${item.path}/`),
       );
     return match?.label ?? "Panel";
+  }, [location.pathname, navItems]);
+
+  const breadcrumbs = useMemo(() => {
+    const segments = location.pathname.split("/").filter(Boolean);
+    const crumbs: { label: string; path: string }[] = [];
+    let acc = "";
+    for (const seg of segments) {
+      acc += `/${seg}`;
+      const item = navItems.find((n) => n.path === acc);
+      crumbs.push({
+        label: item?.label ?? seg.replace(/-/g, " "),
+        path: acc,
+      });
+    }
+    return crumbs;
   }, [location.pathname, navItems]);
 
   const rolEtiket =
@@ -84,15 +119,51 @@ export function Topbar({ navItems, currentUser }: TopbarProps) {
   });
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between">
-      <h1
-        className="text-lg font-semibold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        {pageTitle}
-      </h1>
+    <header className="flex shrink-0 flex-col gap-2 border-b pb-3 sm:flex-row sm:items-center sm:justify-between"
+      style={{ borderColor: "color-mix(in srgb, var(--text-secondary) 15%, transparent)" }}
+    >
+      <div className="min-w-0">
+        {breadcrumbs.length > 1 ? (
+          <nav
+            className="mb-1 flex flex-wrap items-center gap-1 text-[11px] uppercase tracking-wide"
+            style={{ color: "var(--text-secondary)" }}
+            aria-label="Konum"
+          >
+            {breadcrumbs.map((c, i) => (
+              <span key={c.path} className="flex items-center gap-1">
+                {i > 0 ? (
+                  <ChevronRight className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                ) : null}
+                {i < breadcrumbs.length - 1 ? (
+                  <Link
+                    to={c.path}
+                    className="hover:text-[color:var(--text-primary)]"
+                  >
+                    {c.label}
+                  </Link>
+                ) : (
+                  <span className="text-[color:var(--text-primary)]">{c.label}</span>
+                )}
+              </span>
+            ))}
+          </nav>
+        ) : (
+          <p className="page-eyebrow mb-0.5">Bilgi Yönetim Sistemi</p>
+        )}
+        <h1 className="page-title truncate">{pageTitle}</h1>
+      </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div
+          className="hidden text-right text-[11px] leading-tight lg:block"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <p className="font-medium text-[color:var(--text-primary)]">
+            {formatKurumsalTarih(now)}
+          </p>
+          <p>{vardiyaEtiketi(now)}</p>
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -141,7 +212,7 @@ export function Topbar({ navItems, currentUser }: TopbarProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--panel-inset-bg)] focus-visible:outline-none"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--panel-inset-bg)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback
