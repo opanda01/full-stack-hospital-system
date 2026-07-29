@@ -34,6 +34,7 @@ import {
   UserRound,
   Package,
   Footprints,
+  BedDouble,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -147,29 +148,47 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ADMIN: asSingleGroup(ADMIN_ITEMS),
   BASHEKIM: bashekimGroups(),
   MUDUR: asSingleGroup(mudurItems("/mudur")),
-  DOKTOR: asSingleGroup([
-    { label: "Dashboard", path: "/doktor", icon: LayoutDashboard },
-    { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
-    { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
-    { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
-    { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
-    { label: "Epikriz onay", path: "/doktor/epikriz", icon: ScrollText },
-    { label: "Reçeteler", path: "/doktor/receteler", icon: Pill },
-    { label: "Sevkler", path: "/doktor/sevler", icon: Send },
-    { label: "Tıbbi raporlar", path: "/doktor/tibbi-raporlar", icon: FileText },
+  DOKTOR: [
     {
-      label: "Konsültasyonlar",
-      path: "/doktor/konsultasyonlar",
-      icon: UsersRound,
+      items: [{ label: "Dashboard", path: "/doktor", icon: LayoutDashboard }],
     },
     {
-      label: "Sağlık kurulu",
-      path: "/doktor/saglik-kurulu",
-      icon: ClipboardList,
+      label: "Günlük iş",
+      items: [
+        { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
+        { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
+        { label: "Servisim", path: "/doktor/servisim", icon: BedDouble },
+        { label: "Nöbetlerim", path: "/doktor/nobetlerim", icon: CalendarDays },
+        { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
+        { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
+      ],
     },
-    { label: "Profilim", path: "/doktor/profilim", icon: UserCircle },
-    { label: "Ayarlar", path: "/doktor/ayarlar", icon: Settings },
-  ]),
+    {
+      label: "Klinik belgeler",
+      items: [
+        { label: "Epikriz onay", path: "/doktor/epikriz", icon: ScrollText },
+        { label: "Reçeteler", path: "/doktor/receteler", icon: Pill },
+        { label: "Sevkler", path: "/doktor/sevkler", icon: Send },
+        { label: "Tıbbi raporlar", path: "/doktor/tibbi-raporlar", icon: FileText },
+        {
+          label: "Konsültasyonlar",
+          path: "/doktor/konsultasyonlar",
+          icon: UsersRound,
+        },
+        {
+          label: "Sağlık kurulu",
+          path: "/doktor/saglik-kurulu",
+          icon: ClipboardList,
+        },
+      ],
+    },
+    {
+      items: [
+        { label: "Profilim", path: "/doktor/profilim", icon: UserCircle },
+        { label: "Ayarlar", path: "/doktor/ayarlar", icon: Settings },
+      ],
+    },
+  ],
   HEMSIRE: asSingleGroup([
     { label: "Dashboard", path: "/hemsire", icon: LayoutDashboard },
     {

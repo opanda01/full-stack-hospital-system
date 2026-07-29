@@ -116,6 +116,10 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "epikriz:olustur": Kapsam.KENDI_KAYDIM,
         "epikriz:guncelle": Kapsam.KENDI_KAYDIM,
         "epikriz:onayla": Kapsam.KENDI_KAYDIM,
+        "yatis:goruntule": Kapsam.GLOBAL,
+        "yatis:islem": Kapsam.KENDI_KAYDIM,
+        "vital:goruntule": Kapsam.GLOBAL,
+        "ilac_uygulama:goruntule": Kapsam.GLOBAL,
     },
     Rol.HEMSIRE: {
         "departman:goruntule": Kapsam.GLOBAL,
