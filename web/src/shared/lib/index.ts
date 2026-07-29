@@ -5,6 +5,7 @@ export {
   formatIstanbulDateTime,
   formatIstanbulTime,
 } from "./datetime";
+export { fetchAllPages } from "./fetch-all-pages";
 export {
   LOOKUP_PAGE_SIZE,
   pageTotal,

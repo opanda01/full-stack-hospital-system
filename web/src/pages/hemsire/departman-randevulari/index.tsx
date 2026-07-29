@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Button, Input } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
+import { randevuHastaAdi } from "@/entities/randevu";
 
 type Randevu = {
   id: string;
@@ -96,7 +97,7 @@ export function HemsireDepartmanRandevulariPage() {
     return randevular.filter((r) => {
       if (!matches(new Date(r.tarih_saat), zaman)) return false;
       if (!q) return true;
-      const ad = (r.hasta_ad_soyad ?? "").toLowerCase();
+      const ad = randevuHastaAdi(r).toLowerCase();
       return ad.includes(q) || String(r.hasta_id).includes(q);
     });
   }, [randevular, zaman, arama]);
@@ -216,7 +217,7 @@ export function HemsireDepartmanRandevulariPage() {
           {filtered.map((r) => (
             <li key={r.id} className="rounded border bg-card px-3 py-2 text-sm">
               <span className="font-medium">
-                {r.hasta_ad_soyad ?? `Hasta #${r.hasta_id}`}
+                {randevuHastaAdi(r)}
               </span>
               {" — "}
               {formatIstanbulDateTime(r.tarih_saat)}

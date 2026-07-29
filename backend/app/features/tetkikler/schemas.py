@@ -39,7 +39,9 @@ class TetkikSonucKalemCreate(BaseModel):
 class TetkikRead(BaseModel):
     id: UUID
     hasta_id: UUID
+    hasta_ad_soyad: str | None = None
     istek_yapan_doktor_id: int
+    istek_yapan_doktor_ad_soyad: str | None = None
     tetkik_turu: str
     sonuc_dosyasi: str | None = None
     durum: str

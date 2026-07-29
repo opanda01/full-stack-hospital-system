@@ -19,7 +19,7 @@ from app.features.personel.schemas import (
     PersonelUpdate,
     PersonelWithUserCreate,
 )
-from app.core.enums import ErisimDurumu
+from app.core.enums import ErisimDurumu, Rol
 
 router = APIRouter()
 
@@ -27,11 +27,15 @@ router = APIRouter()
 @router.get("/", response_model=Page[PersonelRead])
 def list_personel(
     pagination: PaginationParams = Depends(get_pagination),
+    rol: Rol | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_permission("personel:listele")),
 ):
     return personel_service.list_personel(
-        session, page=pagination.page, page_size=pagination.page_size
+        session,
+        rol=rol,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

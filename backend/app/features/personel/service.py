@@ -56,10 +56,16 @@ def _to_read(session: Session, p: Personel) -> PersonelRead:
 def list_personel(
     session: Session,
     *,
+    rol: Rol | None = None,
     page: int = 1,
     page_size: int = 50,
 ) -> Page[PersonelRead]:
-    q = select(Personel).order_by(Personel.id.desc())
+    q = select(Personel)
+    if rol is not None:
+        q = q.join(Kullanici, Kullanici.id == Personel.kullanici_id).where(
+            Kullanici.rol == rol
+        )
+    q = q.order_by(Personel.id.desc())
     rows, total = paginate(session, q, page=page, page_size=page_size)
     return make_page(
         [_to_read(session, p) for p in rows],

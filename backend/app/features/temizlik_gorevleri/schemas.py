@@ -12,6 +12,7 @@ class TemizlikGoreviCreate(BaseModel):
 class TemizlikGoreviRead(BaseModel):
     id: int
     personel_id: int
+    personel_ad_soyad: str | None = None
     oda_bolum: str
     gorev_tarihi: date
     durum: str
@@ -21,4 +22,7 @@ class TemizlikGoreviRead(BaseModel):
 
 
 class TemizlikGoreviUpdate(BaseModel):
-    durum: str
+    durum: str | None = None
+    personel_id: int | None = None
+    oda_bolum: str | None = None
+    gorev_tarihi: date | None = None

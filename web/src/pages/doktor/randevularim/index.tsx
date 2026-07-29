@@ -1,27 +1,18 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { Button, Input } from "@/shared/ui";
-import { api } from "@/shared/api";
-import { formatIstanbulDateTime, getApiErrorMessage, unwrapPage, type PageResponse, LOOKUP_PAGE_SIZE } from "@/shared/lib";
-import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
-
-type Randevu = {
-  id: string;
-  hasta_id: string;
-  durum: string;
-  tarih_saat: string;
-  notlar: string | null;
-};
-type Hasta = { id: string; ad?: string | null; soyad?: string | null; tc_kimlik_no: string };
-
-type ZamanDilimi =
-  | "hepsi"
-  | "bugun"
-  | "yarin"
-  | "gelecek_hafta"
-  | "onumuzdeki_ay"
-  | "gecmis";
+import { getApiErrorMessage, fetchAllPages } from "@/shared/lib";
+import type { Randevu } from "@/entities/randevu";
+import {
+  DoktorRandevuCizelgeTablosu,
+  buildDayRanges,
+  cizelgePanelleri,
+  matchesZaman,
+  type ZamanDilimi,
+} from "@/features/doktor-randevu-cizelgesi";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaListeFiltresi,
+} from "@/features/doktor-hasta-secim";
 
 const ZAMAN: { value: ZamanDilimi; label: string }[] = [
   { value: "bugun", label: "Bugün" },
@@ -32,47 +23,14 @@ const ZAMAN: { value: ZamanDilimi; label: string }[] = [
   { value: "hepsi", label: "Tümü" },
 ];
 
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-function addDays(d: Date, n: number) {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-}
-function addMonths(d: Date, n: number) {
-  return new Date(d.getFullYear(), d.getMonth() + n, d.getDate());
-}
-function inRange(t: number, a: Date, b: Date) {
-  return t >= a.getTime() && t < b.getTime();
-}
-function matches(tarih: Date, dilim: ZamanDilimi) {
-  const bugun = startOfDay(new Date());
-  const yarin = addDays(bugun, 1);
-  const otegun = addDays(bugun, 2);
-  const haftaSonu = addDays(bugun, 7);
-  const aySonu = addMonths(bugun, 1);
-  const t = tarih.getTime();
-  switch (dilim) {
-    case "hepsi":
-      return true;
-    case "bugun":
-      return inRange(t, bugun, yarin);
-    case "yarin":
-      return inRange(t, yarin, otegun);
-    case "gelecek_hafta":
-      return inRange(t, bugun, haftaSonu);
-    case "onumuzdeki_ay":
-      return inRange(t, bugun, aySonu);
-    case "gecmis":
-      return t < bugun.getTime();
-  }
-}
-
 export function DoktorRandevularimPage() {
-  const [zaman, setZaman] = useState<ZamanDilimi>("bugun");
-  const [arama, setArama] = useState("");
+  const [zaman, setZaman] = useState<ZamanDilimi>("gelecek_hafta");
+  const hastaFiltre = useDoktorHastaListeFiltresi("", {
+    gunModuDaraltListe: false,
+  });
   const [durumFiltre, setDurumFiltre] = useState("");
+
+  const ranges = useMemo(() => buildDayRanges(), []);
 
   const {
     data: randevular = [],
@@ -81,87 +39,116 @@ export function DoktorRandevularimPage() {
     error,
   } = useQuery({
     queryKey: ["randevular"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Randevu>>("/randevular/", {
-            params: { page_size: LOOKUP_PAGE_SIZE },
-          })
-        ).data,
-      ),
-  });
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar-benim"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Hasta>>("/hastalar/benim", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
+    queryFn: async () => fetchAllPages<Randevu>("/randevular/"),
   });
 
-  const hastaLabel = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const h of hastalar) {
-      const ad = `${h.ad ?? ""} ${h.soyad ?? ""}`.trim();
-      m.set(h.id, ad || `Hasta #${h.id}`);
+  const baseFiltered = useMemo(() => {
+    return randevular.filter((r) => {
+      if (durumFiltre && r.durum !== durumFiltre) return false;
+      return hastaFiltre.matchHastaId(r.hasta_id);
+    });
+  }, [randevular, durumFiltre, hastaFiltre.matchHastaId]);
+
+  const zamanSayilari = useMemo(() => {
+    const counts: Record<ZamanDilimi, number> = {
+      hepsi: baseFiltered.length,
+      bugun: 0,
+      yarin: 0,
+      gelecek_hafta: 0,
+      onumuzdeki_ay: 0,
+      gecmis: 0,
+    };
+    for (const r of baseFiltered) {
+      for (const key of Object.keys(counts) as ZamanDilimi[]) {
+        if (key === "hepsi") continue;
+        if (matchesZaman(r.tarih_saat, key, ranges)) counts[key] += 1;
+      }
     }
-    return m;
-  }, [hastalar]);
+    return counts;
+  }, [baseFiltered, ranges]);
 
   const filtered = useMemo(() => {
-    const q = arama.trim().toLocaleLowerCase("tr-TR");
-    return randevular
-      .filter((r) => matches(new Date(r.tarih_saat), zaman))
-      .filter((r) => !durumFiltre || r.durum === durumFiltre)
-      .filter((r) => {
-        if (!q) return true;
-        const hay = `${hastaLabel.get(r.hasta_id) ?? ""} ${r.durum} ${r.id}`.toLocaleLowerCase(
-          "tr-TR",
-        );
-        return hay.includes(q);
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.tarih_saat).getTime() - new Date(b.tarih_saat).getTime(),
-      );
-  }, [randevular, zaman, durumFiltre, arama, hastaLabel]);
+    return baseFiltered.filter((r) => matchesZaman(r.tarih_saat, zaman, ranges));
+  }, [baseFiltered, zaman, ranges]);
+
+  const paneller = useMemo(
+    () =>
+      cizelgePanelleri(filtered, zaman, ranges).filter(
+        (p) => p.randevular.length > 0,
+      ),
+    [filtered, zaman, ranges],
+  );
+
+  const aktifZamanLabel =
+    ZAMAN.find((z) => z.value === zaman)?.label ?? "Tümü";
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Randevularım</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Yalnızca size ait randevular
+          Nöbet çizelgesi gibi gün ve saat ızgarasında randevularınız
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {ZAMAN.map((z) => (
-          <Button
-            key={z.value}
-            type="button"
-            size="sm"
-            variant={zaman === z.value ? "default" : "outline"}
-            onClick={() => setZaman(z.value)}
-          >
-            {z.label}
-          </Button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Input
-          className="max-w-xs"
-          placeholder="Hasta ara…"
-          value={arama}
-          onChange={(e) => setArama(e.target.value)}
-        />
-        <select
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-          value={durumFiltre}
-          onChange={(e) => setDurumFiltre(e.target.value)}
+      <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Zaman dilimi"
         >
-          <option value="">Tüm durumlar</option>
-          <option value="BEKLEMEDE">BEKLEMEDE</option>
-          <option value="TAMAMLANDI">TAMAMLANDI</option>
-          <option value="IPTAL">IPTAL</option>
-        </select>
+          {ZAMAN.map((z) => {
+            const active = zaman === z.value;
+            const count = zamanSayilari[z.value];
+            return (
+              <button
+                key={z.value}
+                type="button"
+                onClick={() => setZaman(z.value)}
+                className={
+                  active
+                    ? "rounded-md border border-primary bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+                    : "rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted"
+                }
+              >
+                {z.label}
+                <span
+                  className={
+                    active ? "ml-1.5 opacity-80" : "ml-1.5 text-muted-foreground"
+                  }
+                >
+                  ({count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3">
+          <DoktorHastaSecimField
+            mode="filtre"
+            hastaModu={hastaFiltre.hastaModu}
+            onModuChange={hastaFiltre.switchModu}
+            hastaTarih={hastaFiltre.hastaTarih}
+            onTarihChange={hastaFiltre.changeTarih}
+            options={hastaFiltre.hastaSecenekleri}
+            value={hastaFiltre.hastaId}
+            onChange={hastaFiltre.setHastaId}
+          />
+          <label className="block space-y-1 text-sm">
+            <span className="text-muted-foreground">Durum</span>
+            <select
+              className="block w-full max-w-[200px] rounded-md border border-border bg-background px-3 py-2"
+              value={durumFiltre}
+              onChange={(e) => setDurumFiltre(e.target.value)}
+            >
+              <option value="">Tümü</option>
+              <option value="BEKLEMEDE">BEKLEMEDE</option>
+              <option value="TAMAMLANDI">TAMAMLANDI</option>
+              <option value="IPTAL">IPTAL</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {isLoading ? (
@@ -169,35 +156,20 @@ export function DoktorRandevularimPage() {
       ) : isError ? (
         <p className="text-sm text-red-600">{getApiErrorMessage(error)}</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Filtreye uyan randevu yok.</p>
+        <p className="text-sm text-muted-foreground">
+          {aktifZamanLabel} için filtreye uyan randevu yok.
+        </p>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-          {filtered.map((r) => (
-            <li
-              key={r.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-            >
-              <div>
-                <p className="font-medium">
-                  {hastaLabel.get(r.hasta_id) ?? `Hasta #${r.hasta_id}`}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {formatIstanbulDateTime(r.tarih_saat)} · {r.durum}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {r.durum === "BEKLEMEDE" && (
-                  <Button asChild size="sm" variant="outline">
-                    <Link to={`/doktor/muayene?randevu=${r.id}`}>Muayene</Link>
-                  </Button>
-                )}
-                {r.durum !== "IPTAL" && (
-                  <RandevuIptalEtButton randevuId={r.id} />
-                )}
-              </div>
-            </li>
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{aktifZamanLabel}</span>
+            {" · "}
+            {filtered.length} randevu
+          </p>
+          {paneller.map((panel) => (
+            <DoktorRandevuCizelgeTablosu key={panel.baslik} panel={panel} />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

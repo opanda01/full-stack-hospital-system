@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Request, status
+from datetime import date
+
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
@@ -19,6 +21,7 @@ router = APIRouter()
 def list_gorevler(
     request: Request,
     pagination: PaginationParams = Depends(get_pagination),
+    hafta_baslangic: date | None = Query(default=None),
     current_user: Kullanici = Depends(require_permission("temizlik_gorevi:goruntule")),
     session: Session = Depends(get_session),
 ):
@@ -26,6 +29,7 @@ def list_gorevler(
         session,
         current_user,
         request.state.kapsam,
+        hafta_baslangic=hafta_baslangic,
         page=pagination.page,
         page_size=pagination.page_size,
     )
@@ -48,3 +52,12 @@ def update_gorev(
     session: Session = Depends(get_session),
 ):
     return temizlik_service.guncelle(session, current_user, gorev_id, body)
+
+
+@router.delete("/{gorev_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_gorev(
+    gorev_id: int,
+    current_user: Kullanici = Depends(require_permission("temizlik_gorevi:ata")),
+    session: Session = Depends(get_session),
+):
+    temizlik_service.sil(session, current_user, gorev_id)

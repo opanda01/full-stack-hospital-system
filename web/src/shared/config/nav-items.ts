@@ -147,49 +147,29 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ADMIN: asSingleGroup(ADMIN_ITEMS),
   BASHEKIM: bashekimGroups(),
   MUDUR: asSingleGroup(mudurItems("/mudur")),
-  DOKTOR: [
+  DOKTOR: asSingleGroup([
+    { label: "Dashboard", path: "/doktor", icon: LayoutDashboard },
+    { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
+    { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
+    { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
+    { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
+    { label: "Epikriz onay", path: "/doktor/epikriz", icon: ScrollText },
+    { label: "Reçeteler", path: "/doktor/receteler", icon: Pill },
+    { label: "Sevkler", path: "/doktor/sevler", icon: Send },
+    { label: "Tıbbi raporlar", path: "/doktor/tibbi-raporlar", icon: FileText },
     {
-      label: "Günlük iş",
-      items: [
-        { label: "Dashboard", path: "/doktor", icon: LayoutDashboard },
-        { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
-        { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
-      ],
+      label: "Konsültasyonlar",
+      path: "/doktor/konsultasyonlar",
+      icon: UsersRound,
     },
     {
-      label: "Klinik",
-      items: [
-        { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
-        { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
-        { label: "Epikriz onay", path: "/doktor/epikriz", icon: ScrollText },
-        { label: "Reçeteler", path: "/doktor/receteler", icon: Pill },
-        { label: "Sevkler", path: "/doktor/sevler", icon: Send },
-        { label: "Tıbbi raporlar", path: "/doktor/tibbi-raporlar", icon: FileText },
-      ],
+      label: "Sağlık kurulu",
+      path: "/doktor/saglik-kurulu",
+      icon: ClipboardList,
     },
-    {
-      label: "Kurul / konsültasyon",
-      items: [
-        {
-          label: "Konsültasyonlar",
-          path: "/doktor/konsultasyonlar",
-          icon: UsersRound,
-        },
-        {
-          label: "Sağlık kurulu",
-          path: "/doktor/saglik-kurulu",
-          icon: ClipboardList,
-        },
-      ],
-    },
-    {
-      label: "Hesap",
-      items: [
-        { label: "Profilim", path: "/doktor/profilim", icon: UserCircle },
-        { label: "Ayarlar", path: "/doktor/ayarlar", icon: Settings },
-      ],
-    },
-  ],
+    { label: "Profilim", path: "/doktor/profilim", icon: UserCircle },
+    { label: "Ayarlar", path: "/doktor/ayarlar", icon: Settings },
+  ]),
   HEMSIRE: asSingleGroup([
     { label: "Dashboard", path: "/hemsire", icon: LayoutDashboard },
     {

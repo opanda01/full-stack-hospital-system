@@ -57,7 +57,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-lg"
+        className="relative z-10 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-md"
       >
         <h2 id={titleId} className="text-lg font-semibold tracking-tight">
           {title}

@@ -11,10 +11,12 @@ from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import get_by_public_id, hasta_from_public_id, hasta_pk_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.features.doktorlar.models import Doktor
 from app.features.hastalar import service as hasta_service
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.klinik_kodlar.models import TetkikSonucKalemi
+from app.features.personel.models import Personel
 from app.features.tetkikler.models import Tetkik
 from app.features.tetkikler.schemas import (
     TetkikCreate,
@@ -23,6 +25,60 @@ from app.features.tetkikler.schemas import (
     TetkikSonucKalemRead,
     TetkikTrendNokta,
 )
+
+
+def _kullanici_ad_soyad(k: Kullanici | None, *, fallback: str) -> str:
+    if k is None:
+        return fallback
+    ad = f"{k.ad} {k.soyad}".strip()
+    return ad or fallback
+
+
+def _hasta_ad_soyad(
+    hasta: Hasta | None, kullanicilar: dict[int, Kullanici]
+) -> str | None:
+    if hasta is None:
+        return None
+    return _kullanici_ad_soyad(
+        kullanicilar.get(hasta.kullanici_id), fallback=f"Hasta #{hasta.id}"
+    )
+
+
+def _doktor_ad_soyad(
+    doktor_id: int,
+    *,
+    doktorlar: dict[int, Doktor],
+    personeller: dict[int, Personel],
+    kullanicilar: dict[int, Kullanici],
+) -> str | None:
+    doktor = doktorlar.get(doktor_id)
+    if doktor is None:
+        return f"Doktor #{doktor_id}"
+    personel = personeller.get(doktor.personel_id)
+    if personel is None:
+        return f"Doktor #{doktor_id}"
+    return _kullanici_ad_soyad(
+        kullanicilar.get(personel.kullanici_id), fallback=f"Doktor #{doktor_id}"
+    )
+
+
+def _lookup_labels(
+    session: Session, rows: list[Tetkik]
+) -> tuple[dict[int, Kullanici], dict[int, Doktor], dict[int, Personel]]:
+    hastalar = batch_by_ids(session, Hasta, (t.hasta_id for t in rows))
+    doktorlar = batch_by_ids(
+        session, Doktor, (t.istek_yapan_doktor_id for t in rows)
+    )
+    personeller = batch_by_ids(
+        session, Personel, (d.personel_id for d in doktorlar.values())
+    )
+    kullanici_ids: set[int] = set()
+    for h in hastalar.values():
+        kullanici_ids.add(h.kullanici_id)
+    for p in personeller.values():
+        kullanici_ids.add(p.kullanici_id)
+    kullanicilar = batch_by_ids(session, Kullanici, kullanici_ids)
+    return kullanicilar, doktorlar, personeller
 
 
 def _kalemler(session: Session, tetkik_id: int) -> list[TetkikSonucKalemRead]:
@@ -36,10 +92,18 @@ def _to_read(session: Session, t: Tetkik) -> TetkikRead:
     hasta = session.get(Hasta, t.hasta_id)
     if hasta is None:
         raise HTTPException(status_code=404, detail="Hasta bulunamadı")
+    kullanicilar, doktorlar, personeller = _lookup_labels(session, [t])
     return TetkikRead(
         id=t.public_id,
         hasta_id=hasta.public_id,
+        hasta_ad_soyad=_hasta_ad_soyad(hasta, kullanicilar),
         istek_yapan_doktor_id=t.istek_yapan_doktor_id,
+        istek_yapan_doktor_ad_soyad=_doktor_ad_soyad(
+            t.istek_yapan_doktor_id,
+            doktorlar=doktorlar,
+            personeller=personeller,
+            kullanicilar=kullanicilar,
+        ),
         tetkik_turu=t.tetkik_turu,
         sonuc_dosyasi=t.sonuc_dosyasi,
         durum=t.durum,
@@ -105,6 +169,7 @@ def listele(
     )
     rows, total = paginate(session, query, page=page, page_size=page_size)
     hastalar = batch_by_ids(session, Hasta, (t.hasta_id for t in rows))
+    kullanicilar, doktorlar, personeller = _lookup_labels(session, rows)
     tetkik_ids = [t.id for t in rows if t.id is not None]
     kalem_map: dict[int, list[TetkikSonucKalemRead]] = defaultdict(list)
     if tetkik_ids:
@@ -122,7 +187,14 @@ def listele(
             TetkikRead(
                 id=t.public_id,
                 hasta_id=hasta.public_id,
+                hasta_ad_soyad=_hasta_ad_soyad(hasta, kullanicilar),
                 istek_yapan_doktor_id=t.istek_yapan_doktor_id,
+                istek_yapan_doktor_ad_soyad=_doktor_ad_soyad(
+                    t.istek_yapan_doktor_id,
+                    doktorlar=doktorlar,
+                    personeller=personeller,
+                    kullanicilar=kullanicilar,
+                ),
                 tetkik_turu=t.tetkik_turu,
                 sonuc_dosyasi=t.sonuc_dosyasi,
                 durum=t.durum,

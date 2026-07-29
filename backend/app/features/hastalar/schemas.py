@@ -44,7 +44,9 @@ class HastaRead(BaseModel):
     kilo_kg: float | None = None
     ad: str | None = None
     soyad: str | None = None
+    email: str | None = None
     telefon: str | None = None
+    aktif_mi: bool | None = None
 
     model_config = {"from_attributes": True}
 

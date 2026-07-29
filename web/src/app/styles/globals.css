@@ -4,41 +4,54 @@
 
 @layer base {
   :root {
-    /* AppShell tema tokenları (varsayılan: açık) — ThemeProvider override eder */
-    --app-bg: #f4f5f3;
+    --app-bg: #eef0f2;
     --panel-bg: #ffffff;
-    --panel-inset-bg: #f7f8f6;
-    --nav-hover-bg: #eceee9;
-    --text-primary: #1a1a1a;
-    --text-secondary: #6b6b68;
+    --panel-inset-bg: #f4f6f8;
+    --nav-hover-bg: #e8ebef;
+    --text-primary: #12233f;
+    --text-secondary: #5a6472;
     --nav-active-bg: #0f6e56;
     --nav-active-text: #ffffff;
     --card-success-bg: #e1f5ee;
-    --card-accent-bg: #e6f1fb;
-    --card-warning-bg: #faeeda;
+    --card-accent-bg: #e8eef6;
+    --card-warning-bg: #faf6e4;
     --border-accent: #0f6e56;
 
-    /* shadcn uyumluluk */
-    --background: 90 8% 96%;
-    --foreground: 0 0% 10%;
+    --status-kritik-fg: #b71c1c;
+    --status-kritik-bg: #fdecea;
+    --status-acil-fg: #c45c00;
+    --status-acil-bg: #fff3e6;
+    --status-beklemede-fg: #8a6d00;
+    --status-beklemede-bg: #faf6e4;
+    --status-tamamlandi-fg: #0f6e56;
+    --status-tamamlandi-bg: #e1f5ee;
+    --status-aktif-fg: #0f6e56;
+    --status-aktif-bg: #e1f5ee;
+    --status-iptal-fg: #5c5c58;
+    --status-iptal-bg: #eeefec;
+    --status-pasif-fg: #5c5c58;
+    --status-pasif-bg: #eeefec;
+
+    --background: 210 12% 96%;
+    --foreground: 216 55% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 216 55% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 216 55% 16%;
     --primary: 166 76% 25%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 90 10% 94%;
-    --secondary-foreground: 0 0% 20%;
-    --muted: 90 8% 93%;
-    --muted-foreground: 60 2% 42%;
-    --accent: 90 8% 93%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 84% 60%;
+    --secondary: 210 14% 93%;
+    --secondary-foreground: 216 40% 22%;
+    --muted: 210 12% 94%;
+    --muted-foreground: 215 10% 42%;
+    --accent: 210 14% 93%;
+    --accent-foreground: 216 55% 16%;
+    --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 90 6% 88%;
-    --input: 90 6% 88%;
+    --border: 210 12% 86%;
+    --input: 210 12% 86%;
     --ring: 166 76% 25%;
-    --radius: 0.5rem;
+    --radius: 0.375rem;
   }
 
   * {
@@ -48,12 +61,21 @@
   body {
     margin: 0;
     min-height: 100vh;
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     background: var(--app-bg);
     color: var(--text-primary);
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 
-  /* Koyu / OLED: form kontrolleri + scrollbar */
+  h1,
+  h2,
+  h3 {
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
   :root[data-theme="koyu"],
   :root[data-theme="oled"] {
     color-scheme: dark;
@@ -63,7 +85,6 @@
     color-scheme: light;
   }
 
-  /* Form kontrolleri tema rengine uysun (koyu/OLED’de beyaz kalmasın) */
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   select,
   textarea {
@@ -85,6 +106,12 @@
 
   table {
     color: hsl(var(--foreground));
+    border-collapse: collapse;
+  }
+
+  thead th {
+    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+    border-bottom: 1px solid hsl(var(--border));
   }
 }
 
@@ -104,5 +131,42 @@
   .sidebar-panel nav::-webkit-scrollbar-thumb {
     border-radius: 999px;
     background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  }
+
+  .page-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-widest;
+    color: var(--text-secondary);
+  }
+
+  .page-title {
+    @apply text-xl font-semibold tracking-tight sm:text-2xl;
+    color: var(--text-primary);
+  }
+
+  .corporate-panel {
+    border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+  }
+
+  /** Koyu marka şeridi — yeşil-teal tonları (lacivert yok). */
+  .brand-header-panel {
+    background: color-mix(in srgb, var(--nav-active-bg) 85%, black);
+    color: var(--nav-active-text);
+  }
+
+  .brand-header-panel-subtle {
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+  }
+
+  .data-table thead th {
+    background: var(--panel-inset-bg);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  .data-table tbody td {
+    border-bottom: 1px solid hsl(var(--border));
+    padding: 0.5rem 0.75rem;
   }
 }

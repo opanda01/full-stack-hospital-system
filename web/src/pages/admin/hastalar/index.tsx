@@ -1,28 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { AppShell, ListPager } from "@/shared/ui";
-import { api } from "@/shared/api";
 import {
-  LOOKUP_PAGE_SIZE,
+  fetchAllPages,
   getApiErrorMessage,
-  pageTotal,
-  unwrapPage,
-  type PageResponse,
 } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import type { Hasta } from "@/entities/hasta";
 
-type Kullanici = {
-  id: number;
-  ad: string;
-  soyad: string;
-  email: string;
-  telefon?: string | null;
-  aktif_mi?: boolean;
-};
-
 const PAGE_SIZE = 50;
+
+function displayName(h: Hasta): string {
+  const ad = `${h.ad ?? ""} ${h.soyad ?? ""}`.trim();
+  return ad || "—";
+}
 
 export function AdminHastalarPage() {
   const roleRoot = roleRootFromPath(useLocation().pathname);
@@ -30,64 +22,40 @@ export function AdminHastalarPage() {
   const [page, setPage] = useState(1);
 
   const {
-    data,
+    data: hastalar = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["hastalar", page],
-    queryFn: async () =>
-      (
-        await api.get<PageResponse<Hasta>>("/hastalar/", {
-          params: { page, page_size: PAGE_SIZE },
-        })
-      ).data,
-  });
-  const hastalar = unwrapPage(data ?? []);
-  const total = pageTotal(data ?? []);
-
-  const { data: kullanicilar = [] } = useQuery({
-    queryKey: ["kullanicilar", "lookup"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Kullanici>>("/kullanicilar/", {
-            params: { page_size: LOOKUP_PAGE_SIZE },
-          })
-        ).data,
-      ),
+    queryKey: ["hastalar"],
+    queryFn: () => fetchAllPages<Hasta>("/hastalar/"),
   });
 
-  const kullaniciById = useMemo(() => {
-    const map = new Map<number, Kullanici>();
-    for (const k of kullanicilar) map.set(k.id, k);
-    return map;
-  }, [kullanicilar]);
-
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return hastalar
-      .map((h) => {
-        const k = kullaniciById.get(h.kullanici_id);
-        return {
-          ...h,
-          ad: k?.ad ?? "—",
-          soyad: k?.soyad ?? "—",
-          email: k?.email ?? "—",
-          telefon: k?.telefon ?? "—",
-          aktif_mi: k?.aktif_mi,
-        };
-      })
-      .filter((r) => {
-        if (!needle) return true;
-        return (
-          r.tc_kimlik_no.includes(needle) ||
-          r.ad.toLowerCase().includes(needle) ||
-          r.soyad.toLowerCase().includes(needle) ||
-          r.email.toLowerCase().includes(needle)
-        );
-      });
-  }, [hastalar, kullaniciById, q]);
+    if (!needle) return hastalar;
+    return hastalar.filter((h) => {
+      const haystack = [
+        h.tc_kimlik_no,
+        h.ad ?? "",
+        h.soyad ?? "",
+        h.email ?? "",
+        h.telefon ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [hastalar, q]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [q]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
   return (
     <AppShell title="Hastalar" links={[{ to: roleRoot, label: "Ana" }]}>
@@ -108,10 +76,13 @@ export function AdminHastalarPage() {
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
-      ) : rows.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">Hasta kaydı yok.</p>
       ) : (
         <>
+          <p className="mb-2 text-sm text-muted-foreground">
+            {filtered.length} hasta
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -127,14 +98,14 @@ export function AdminHastalarPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {paged.map((r) => (
                   <tr key={r.id} className="border-b">
-                    <td className="py-2 pr-3 font-mono text-xs">{r.tc_kimlik_no}</td>
-                    <td className="pr-3">
-                      {r.ad} {r.soyad}
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {r.tc_kimlik_no}
                     </td>
-                    <td className="pr-3">{r.email}</td>
-                    <td className="pr-3">{r.telefon ?? "—"}</td>
+                    <td className="pr-3">{displayName(r)}</td>
+                    <td className="pr-3">{r.email?.trim() || "—"}</td>
+                    <td className="pr-3">{r.telefon?.trim() || "—"}</td>
                     <td className="pr-3">
                       {r.dogum_tarihi
                         ? new Date(r.dogum_tarihi).toLocaleDateString("tr-TR")
@@ -157,7 +128,7 @@ export function AdminHastalarPage() {
           <ListPager
             page={page}
             pageSize={PAGE_SIZE}
-            total={total}
+            total={filtered.length}
             onPageChange={setPage}
           />
         </>

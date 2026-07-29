@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/ui";
 import { api } from "@/shared/api";
@@ -9,6 +9,10 @@ import {
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+import {
+  DoktorHastaSecimField,
+  useDoktorHastaSecim,
+} from "@/features/doktor-hasta-secim";
 
 type Tur = "RECETE" | "SEVK" | "TIBBI_RAPOR";
 
@@ -19,7 +23,6 @@ type Kayit = {
   icerik: string;
   onay_durumu: string;
 };
-type Hasta = { id: string; ad?: string | null; soyad?: string | null };
 
 const TITLES: Record<Tur, string> = {
   RECETE: "Reçeteler",
@@ -33,10 +36,13 @@ const PLACEHOLDERS: Record<Tur, string> = {
   TIBBI_RAPOR: "Rapor metni…",
 };
 
+const HASTA_ZORUNLU: Tur[] = ["RECETE", "SEVK"];
+
 export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
   const qc = useQueryClient();
   const [params] = useSearchParams();
-  const [hastaId, setHastaId] = useState(params.get("hasta") ?? "");
+  const hastaSecim = useDoktorHastaSecim(params.get("hasta") ?? "");
+  const { hastaId, setHastaId, hastaLabel } = hastaSecim;
   const [icerik, setIcerik] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -51,25 +57,6 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
         ).data,
       ),
   });
-  const { data: hastalar = [] } = useQuery({
-    queryKey: ["hastalar-benim"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Hasta>>("/hastalar/benim", {
-            params: { page_size: LOOKUP_PAGE_SIZE },
-          })
-        ).data,
-      ),
-  });
-
-  const hastaLabel = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const h of hastalar) {
-      m.set(h.id, `${h.ad ?? ""} ${h.soyad ?? ""}`.trim() || `Hasta #${h.id}`);
-    }
-    return m;
-  }, [hastalar]);
 
   const createMut = useMutation({
     mutationFn: async () =>
@@ -81,10 +68,13 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
     onSuccess: () => {
       setErr(null);
       setIcerik("");
+      hastaSecim.setHastaId("");
       qc.invalidateQueries({ queryKey: ["klinik-onay"] });
     },
     onError: (e) => setErr(getApiErrorMessage(e)),
   });
+
+  const hastaZorunlu = HASTA_ZORUNLU.includes(tur);
 
   return (
     <div className="space-y-4">
@@ -101,18 +91,15 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
             {err}
           </p>
         )}
-        <select
-          className="w-full rounded-md border border-border px-3 py-2"
+        <DoktorHastaSecimField
+          hastaModu={hastaSecim.hastaModu}
+          onModuChange={hastaSecim.switchModu}
+          hastaTarih={hastaSecim.hastaTarih}
+          onTarihChange={hastaSecim.changeTarih}
+          options={hastaSecim.hastaSecenekleri}
           value={hastaId}
-          onChange={(e) => setHastaId(e.target.value)}
-        >
-          <option value="">Hasta seç</option>
-          {hastalar.map((h) => (
-            <option key={h.id} value={h.id}>
-              {hastaLabel.get(h.id)}
-            </option>
-          ))}
-        </select>
+          onChange={setHastaId}
+        />
         <textarea
           className="min-h-[100px] w-full rounded-md border border-border px-3 py-2"
           placeholder={PLACEHOLDERS[tur]}
@@ -121,7 +108,11 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
         />
         <Button
           type="button"
-          disabled={!icerik.trim() || createMut.isPending}
+          disabled={
+            !icerik.trim() ||
+            (hastaZorunlu && !hastaId) ||
+            createMut.isPending
+          }
           onClick={() => createMut.mutate()}
         >
           Gönder
