@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { ClipboardList } from "lucide-react";
 import { useAuthStore } from "@/shared/auth";
 import { MetricCard, type MetricCardRenk } from "@/shared/ui/app-shell/MetricCard";
 
@@ -9,16 +11,62 @@ export type DashboardMetric = {
   renk?: MetricCardRenk;
   /** Tıklanınca gidilecek rota */
   to?: string;
+  trend?: { direction?: "up" | "down"; label: string };
+  statusBadge?: { label: string; variant?: "kritik" | "acil" | "beklemede" | "tamamlandi" | "iptal" };
 };
 
 const RENK_SIRASI: MetricCardRenk[] = ["success", "accent", "warning", "notr"];
 
 type RoleDashboardProps = {
   metrics: DashboardMetric[];
+  /** Özel alt panel; verilmezse kurumsal placeholder gösterilir */
+  altPanel?: ReactNode;
 };
 
+function DashboardActivityPlaceholder() {
+  return (
+    <section
+      className="rounded-lg corporate-panel"
+      style={{ background: "var(--panel-inset-bg)" }}
+    >
+      <div
+        className="flex items-center gap-2 border-b px-4 py-3"
+        style={{
+          borderColor: "color-mix(in srgb, var(--text-secondary) 15%, transparent)",
+          background: "var(--brand-navy)",
+          color: "var(--brand-navy-foreground)",
+        }}
+      >
+        <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />
+        <h3 className="text-xs font-semibold uppercase tracking-widest">
+          Son Aktiviteler / Bekleyen İşlemler
+        </h3>
+      </div>
+      <div className="divide-y divide-border px-4 py-2 text-sm">
+        {[
+          "Onay bekleyen tetkik sonuçları listelenecek",
+          "Vardiya devir notları ve acil bildirimler",
+          "Randevu ve yatış durum güncellemeleri",
+        ].map((line) => (
+          <p
+            key={line}
+            className="py-2.5 text-[color:var(--text-secondary)]"
+          >
+            {line}
+          </p>
+        ))}
+      </div>
+      <p className="border-t px-4 py-2 text-[10px] uppercase tracking-wide text-muted-foreground"
+        style={{ borderColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)" }}
+      >
+        Canlı veri bağlantısı sonraki entegrasyon aşamasında etkinleştirilecektir.
+      </p>
+    </section>
+  );
+}
+
 /** Ortak rol dashboard iskeleti — AppShell route tarafından sağlanır. */
-export function RoleDashboard({ metrics }: RoleDashboardProps) {
+export function RoleDashboard({ metrics, altPanel }: RoleDashboardProps) {
   const currentUser = useAuthStore((s) => s.currentUser);
   const ad = currentUser?.ad ?? "Demo";
   const soyad = currentUser?.soyad ?? "Kullanıcı";
@@ -26,10 +74,8 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-2xl font-semibold tracking-tight"
-          style={{ color: "var(--text-primary)" }}
-        >
+        <p className="page-eyebrow">Gösterge Paneli</p>
+        <h2 className="page-title mt-1">
           Hoş geldiniz, {ad} {soyad}
         </h2>
         <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -37,7 +83,7 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         {metrics.map((m, i) => (
           <MetricCard
             key={m.label}
@@ -46,9 +92,13 @@ export function RoleDashboard({ metrics }: RoleDashboardProps) {
             icon={m.icon}
             renk={m.renk ?? RENK_SIRASI[i % RENK_SIRASI.length]}
             to={m.to}
+            trend={m.trend}
+            statusBadge={m.statusBadge}
           />
         ))}
       </div>
+
+      {altPanel ?? <DashboardActivityPlaceholder />}
     </div>
   );
 }
