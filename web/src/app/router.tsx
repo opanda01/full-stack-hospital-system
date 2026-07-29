@@ -43,6 +43,8 @@ import {
 } from "@/pages/doktor/klinik-belgeler";
 import { DoktorKonsultasyonlarPage } from "@/pages/doktor/konsultasyonlar";
 import { DoktorSaglikKuruluPage } from "@/pages/doktor/saglik-kurulu";
+import { DoktorServisimPage } from "@/pages/doktor/servisim";
+import { DoktorNobetlerimPage } from "@/pages/doktor/nobetlerim";
 
 import { HemsireDashboardPage } from "@/pages/hemsire/dashboard";
 import { HemsireDepartmanRandevulariPage } from "@/pages/hemsire/departman-randevulari";
@@ -220,8 +222,11 @@ export function AppRouter() {
           <Route path="tetkik-iste" element={<Navigate to="/doktor/tetkiklerim" replace />} />
           <Route path="epikriz" element={<DoktorEpikrizPage />} />
           <Route path="hastalarim" element={<DoktorHastalarimPage />} />
+          <Route path="servisim" element={<DoktorServisimPage />} />
+          <Route path="nobetlerim" element={<DoktorNobetlerimPage />} />
           <Route path="receteler" element={<DoktorRecetelerPage />} />
-          <Route path="sevler" element={<DoktorSevlerPage />} />
+          <Route path="sevkler" element={<DoktorSevlerPage />} />
+          <Route path="sevler" element={<Navigate to="/doktor/sevkler" replace />} />
           <Route path="tibbi-raporlar" element={<DoktorTibbiRaporlarPage />} />
           <Route path="konsultasyonlar" element={<DoktorKonsultasyonlarPage />} />
           <Route path="saglik-kurulu" element={<DoktorSaglikKuruluPage />} />

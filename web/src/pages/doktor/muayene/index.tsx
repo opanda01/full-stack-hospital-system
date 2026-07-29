@@ -9,6 +9,7 @@ import {
   DoktorHastaSecimField,
   useDoktorHastaListeFiltresi,
 } from "@/features/doktor-hasta-secim";
+import { Icd10TaniField } from "@/features/icd10-tani/ui/Icd10TaniField";
 
 type Randevu = {
   id: string;
@@ -251,12 +252,7 @@ export function DoktorMuayeneEkraniPage() {
               </option>
             ))}
         </select>
-        <textarea
-          className="w-full rounded-md border border-border px-3 py-2"
-          placeholder="Tanı"
-          value={tani}
-          onChange={(e) => setTani(e.target.value)}
-        />
+        <Icd10TaniField value={tani} onChange={setTani} />
         <textarea
           className="w-full rounded-md border border-border px-3 py-2"
           placeholder="Tedavi planı"
@@ -367,7 +363,7 @@ export function DoktorMuayeneEkraniPage() {
             </Link>
             <Link
               className="underline"
-              to={`/doktor/sevler?hasta=${selected.hasta_id}`}
+              to={`/doktor/sevkler?hasta=${selected.hasta_id}`}
             >
               Sevk oluştur
             </Link>
