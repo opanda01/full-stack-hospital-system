@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Pill, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/shared/api";
@@ -42,18 +41,6 @@ const TITLES: Record<Tur, string> = {
   RECETE: "Reçeteler",
   SEVK: "Sevkler",
   TIBBI_RAPOR: "Tıbbi raporlar",
-};
-
-const TUR_ICON: Record<Tur, typeof Pill> = {
-  RECETE: Pill,
-  SEVK: Send,
-  TIBBI_RAPOR: FileText,
-};
-
-const TUR_ACCENT: Record<Tur, string> = {
-  RECETE: "border-l-emerald-500",
-  SEVK: "border-l-sky-500",
-  TIBBI_RAPOR: "border-l-violet-500",
 };
 
 const RAPOR_TIP_LABEL: Record<TibbiRaporTipi, string> = {
@@ -161,27 +148,17 @@ export function DoktorKlinikBelgePage({ tur }: { tur: Tur }) {
   });
 
   const hastaZorunlu = HASTA_ZORUNLU.includes(tur);
-  const Icon = TUR_ICON[tur];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3">
-        <div
-          className={`rounded-lg border border-border bg-card p-2 ${TUR_ACCENT[tur]} border-l-4`}
-        >
-          <Icon className="h-6 w-6 text-muted-foreground" aria-hidden />
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">{TITLES[tur]}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Oluşturduğunuz kayıtlar başhekim onay kuyruğuna düşer
-          </p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight">{TITLES[tur]}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Oluşturduğunuz kayıtlar başhekim onay kuyruğuna düşer
+        </p>
       </div>
 
-      <div
-        className={`max-w-xl space-y-3 rounded-xl border border-border bg-card p-4 border-l-4 ${TUR_ACCENT[tur]}`}
-      >
+      <div className="max-w-xl space-y-3 rounded-xl border border-border bg-card p-4">
         {err && (
           <p className="text-sm text-red-600" role="alert">
             {err}
