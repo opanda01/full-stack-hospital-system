@@ -8,15 +8,15 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { fetchEpikrizler } from "@/shared/api/hastaApi";
-import type { EpikrizDto } from "@/shared/api/types";
+import { fetchBelgeler } from "@/shared/api/hastaApi";
+import type { HastaBelgeDto } from "@/shared/api/types";
 import { go } from "@/shared/nav";
 import { Card, EmptyText, ErrorText, Loading, Screen, colors } from "@/shared/ui";
 
 const PAGE_SIZE = 20;
 
 export default function BelgelerimScreen() {
-  const [items, setItems] = useState<EpikrizDto[]>([]);
+  const [items, setItems] = useState<HastaBelgeDto[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ export default function BelgelerimScreen() {
   const loadingMoreRef = useRef(false);
 
   const loadPage = useCallback(async (pageNum: number, append: boolean) => {
-    const body = await fetchEpikrizler(pageNum, PAGE_SIZE);
+    const body = await fetchBelgeler(pageNum, PAGE_SIZE);
     setTotal(body.total);
     setPage(pageNum);
     setItems((prev) => (append ? [...prev, ...body.items] : body.items));
@@ -70,7 +70,7 @@ export default function BelgelerimScreen() {
       <ErrorText>{hata}</ErrorText>
       <FlatList
         data={items}
-        keyExtractor={(i) => String(i.id)}
+        keyExtractor={(i) => `${i.kaynak}-${i.id}`}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
         }
@@ -82,14 +82,27 @@ export default function BelgelerimScreen() {
           ) : null
         }
         ListEmptyComponent={
-          <EmptyText>Onaylı epikriz / belge yok</EmptyText>
+          <EmptyText>Onaylı belge yok (epikriz, reçete, sevk, rapor)</EmptyText>
         }
         renderItem={({ item }) => (
-          <Pressable onPress={() => go(`/(hasta)/belgelerim/${item.id}`)}>
+          <Pressable
+            onPress={() =>
+              go(
+                `/(hasta)/belgelerim/${item.id}?kaynak=${encodeURIComponent(item.kaynak)}`,
+              )
+            }
+          >
             <Card>
-              <Text style={styles.title}>Epikriz #{item.id}</Text>
-              <Text style={styles.meta}>Durum: {item.durum}</Text>
-              <Text numberOfLines={2}>{item.tani ?? "Tanı yok"}</Text>
+              <Text style={styles.title}>{item.baslik}</Text>
+              <Text style={styles.meta}>
+                {item.kaynak === "EPIKRIZ" ? "Epikriz" : item.tur ?? "Belge"} ·{" "}
+                {item.durum}
+              </Text>
+              {item.ozet ? (
+                <Text numberOfLines={2} style={styles.ozet}>
+                  {item.ozet}
+                </Text>
+              ) : null}
             </Card>
           </Pressable>
         )}
@@ -101,4 +114,5 @@ export default function BelgelerimScreen() {
 const styles = StyleSheet.create({
   title: { fontWeight: "700", color: colors.text },
   meta: { color: colors.muted, fontSize: 13 },
+  ozet: { color: colors.text, marginTop: 4, fontSize: 14 },
 });

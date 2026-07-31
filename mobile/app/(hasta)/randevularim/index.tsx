@@ -27,6 +27,8 @@ type Randevu = {
   doktor_id: number;
   departman_id: number;
   hasta_ad_soyad: string | null;
+  doktor_ad_soyad?: string | null;
+  departman_ad?: string | null;
 };
 
 type Page<T> = { items: T[]; total: number; page: number; page_size: number };
@@ -447,6 +449,12 @@ export default function RandevularimScreen() {
             <Card style={past ? styles.cardPast : undefined}>
               <Text style={styles.gun}>{gun}</Text>
               <Text style={styles.saat}>{saat || "—"}</Text>
+              {item.departman_ad ? (
+                <Text style={styles.meta}>{item.departman_ad}</Text>
+              ) : null}
+              {item.doktor_ad_soyad ? (
+                <Text style={styles.meta}>{item.doktor_ad_soyad}</Text>
+              ) : null}
               <Text style={styles.durum}>{durumEtiket(item.durum)}</Text>
               {iptalEdilebilir && !past ? (
                 <Pressable
@@ -667,6 +675,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   durum: { color: colors.muted, fontSize: 13, marginTop: 4 },
+  meta: { color: colors.text, fontSize: 14, fontWeight: "500", marginTop: 2 },
   btn: {
     marginTop: 12,
     backgroundColor: "#fee2e2",

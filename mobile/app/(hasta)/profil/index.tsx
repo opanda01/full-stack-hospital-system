@@ -14,8 +14,9 @@ import {
   fetchAlerjilerim,
   fetchHastaBen,
   updateHastaProfil,
+  fetchHastaOzet,
 } from "@/shared/api/hastaApi";
-import type { AlerjiDto, HastaDto } from "@/shared/api/types";
+import type { AlerjiDto, HastaDto, HastaYatisOzetDto } from "@/shared/api/types";
 import { go, goReplace } from "@/shared/nav";
 import {
   Card,
@@ -68,6 +69,7 @@ export default function ProfilScreen() {
   const [kilo, setKilo] = useState("");
   const [telefon, setTelefon] = useState("");
   const [adres, setAdres] = useState("");
+  const [yatis, setYatis] = useState<HastaYatisOzetDto | null>(null);
 
   const applyHasta = useCallback((h: HastaDto | null) => {
     setHasta(h);
@@ -83,14 +85,16 @@ export default function ProfilScreen() {
   const refresh = useCallback(async () => {
     setHata(null);
     try {
-      const [m, h, a] = await Promise.all([
+      const [m, h, a, oz] = await Promise.all([
         fetchMe(),
         fetchHastaBen().catch(() => null),
         fetchAlerjilerim().catch(() => [] as AlerjiDto[]),
+        fetchHastaOzet().catch(() => null),
       ]);
       setMe(m);
       applyHasta(h);
       setAlerjiler(a);
+      setYatis(oz?.yatis ?? null);
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Profil yüklenemedi");
     } finally {
@@ -322,6 +326,31 @@ export default function ProfilScreen() {
             </Text>
           </Card>
         )}
+
+        {yatis?.aktif_mi ? (
+          <>
+            <SectionTitle>Yatış özeti</SectionTitle>
+            <Card>
+              <Text style={styles.value}>
+                {yatis.servis_adi ?? "Servis"} · Protokol {yatis.protokol_no ?? "—"}
+              </Text>
+              <Text style={styles.meta}>
+                {[yatis.oda_no && `Oda ${yatis.oda_no}`, yatis.yatak_no && `Yatak ${yatis.yatak_no}`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Text>
+            </Card>
+          </>
+        ) : null}
+
+        <SectionTitle>Bildirimler</SectionTitle>
+        <Card>
+          <Text style={styles.meta}>
+            Randevu hatırlatma ve tetkik sonucu bildirimleri SMS (Faz C) ile
+            gönderilecektir. Sonuç hazır olduğunda kayıtlı telefonunuza mesaj
+            gidebilir.
+          </Text>
+        </Card>
 
         <SectionTitle>İşlemler</SectionTitle>
         <MenuRow

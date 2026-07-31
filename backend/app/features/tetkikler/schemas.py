@@ -46,6 +46,7 @@ class TetkikRead(BaseModel):
     sonuc_dosyasi: str | None = None
     durum: str
     created_at: datetime | None = None
+    hasta_goruldu_at: datetime | None = None
     sonuc_kalemleri: list[TetkikSonucKalemRead] = []
 
     model_config = {"from_attributes": True}

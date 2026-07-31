@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from app.core.audit import denetim_kaydi_yaz
 from app.core.db import get_session
 from app.core.enums import KlinikOnayDurumu, Rol
+from app.core.lookups import hasta_getir
 from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import (
@@ -61,6 +62,12 @@ def _to_read(session: Session, row: KlinikOnayKaydi) -> KlinikOnayRead:
     )
 
 
+def _hasta_pk_for_user(session: Session, current_user: Kullanici) -> int:
+    hasta = hasta_getir(session, current_user.id)
+    assert hasta.id is not None
+    return hasta.id
+
+
 def _assert_erisim(
     session: Session,
     current_user: Kullanici,
@@ -70,6 +77,13 @@ def _assert_erisim(
     if kapsam == Kapsam.GLOBAL:
         return
     if kapsam == Kapsam.KENDI_KAYDIM:
+        if current_user.rol == Rol.HASTA:
+            kendi_pk = _hasta_pk_for_user(session, current_user)
+            if row.hasta_id != kendi_pk:
+                raise HTTPException(status_code=403, detail="Bu kayda erişim yetkiniz yok")
+            if row.onay_durumu != KlinikOnayDurumu.ONAYLANDI:
+                raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
+            return
         if row.olusturan_id != current_user.id:
             raise HTTPException(status_code=403, detail="Bu kayda erişim yetkiniz yok")
         return
@@ -92,7 +106,14 @@ def list_klinik_onay(
         q = q.where(KlinikOnayKaydi.tur == tur)
     kapsam = request.state.kapsam
     if kapsam == Kapsam.KENDI_KAYDIM:
-        q = q.where(KlinikOnayKaydi.olusturan_id == current_user.id)
+        if current_user.rol == Rol.HASTA:
+            kendi_pk = _hasta_pk_for_user(session, current_user)
+            q = q.where(
+                KlinikOnayKaydi.hasta_id == kendi_pk,
+                KlinikOnayKaydi.onay_durumu == KlinikOnayDurumu.ONAYLANDI,
+            )
+        else:
+            q = q.where(KlinikOnayKaydi.olusturan_id == current_user.id)
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Klinik onay listesi için yetkiniz yok")
     rows, total = paginate(

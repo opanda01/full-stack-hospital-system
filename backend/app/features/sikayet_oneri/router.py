@@ -50,3 +50,17 @@ def create_sikayet_oneri(
     session: Session = Depends(get_session),
 ):
     return sikayet_service.create_sikayet(session, current_user, body)
+
+
+@router.get("/benim", response_model=Page[SikayetOneriRead])
+def list_benim_sikayetler(
+    pagination: PaginationParams = Depends(get_pagination),
+    current_user: Kullanici = Depends(require_permission("sikayet_oneri:benim")),
+    session: Session = Depends(get_session),
+):
+    return sikayet_service.list_benim_sikayetler(
+        session,
+        current_user,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )

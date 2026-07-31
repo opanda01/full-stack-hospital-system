@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -108,6 +109,7 @@ def _to_read(session: Session, t: Tetkik) -> TetkikRead:
         sonuc_dosyasi=t.sonuc_dosyasi,
         durum=t.durum,
         created_at=t.created_at,
+        hasta_goruldu_at=t.hasta_goruldu_at,
         sonuc_kalemleri=_kalemler(session, t.id) if t.id else [],
     )
 
@@ -199,6 +201,7 @@ def listele(
                 sonuc_dosyasi=t.sonuc_dosyasi,
                 durum=t.durum,
                 created_at=t.created_at,
+                hasta_goruldu_at=t.hasta_goruldu_at,
                 sonuc_kalemleri=kalem_map.get(t.id, []) if t.id else [],
             )
         )
@@ -236,6 +239,32 @@ def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Tetkik:
     tetkik = get_by_public_id(session, Tetkik, public_id)
     tetkik_erisim_kontrolu(session, tetkik, current_user)
     return tetkik
+
+
+def hasta_goruldu_isaretle(
+    session: Session, current_user: Kullanici, tetkik: Tetkik
+) -> None:
+    if current_user.rol != Rol.HASTA:
+        return
+    if tetkik.durum != "SONUCLANDI":
+        return
+    if tetkik.hasta_goruldu_at is not None:
+        return
+    tetkik.hasta_goruldu_at = datetime.now(timezone.utc)
+    session.add(tetkik)
+    session.commit()
+    session.refresh(tetkik)
+
+
+def okunmamis_sonuclanmis_sayisi(session: Session, hasta_pk: int) -> int:
+    rows = session.exec(
+        select(Tetkik).where(
+            Tetkik.hasta_id == hasta_pk,
+            Tetkik.durum == "SONUCLANDI",
+            Tetkik.hasta_goruldu_at == None,  # noqa: E711
+        )
+    ).all()
+    return len(rows)
 
 
 def olustur(
@@ -323,7 +352,27 @@ def sonuc_gir(
 
     session.commit()
     session.refresh(tetkik)
+    if durum == "SONUCLANDI":
+        _bildir_hasta_sonuc_hazir(session, tetkik)
     return _to_read(session, tetkik)
+
+
+def _bildir_hasta_sonuc_hazir(session: Session, tetkik: Tetkik) -> None:
+    from app.core.notifications import get_bildirim
+
+    hasta = session.get(Hasta, tetkik.hasta_id)
+    if hasta is None:
+        return
+    k = session.get(Kullanici, hasta.kullanici_id)
+    if k is None:
+        return
+    tel = k.telefon
+    if not tel:
+        return
+    get_bildirim().sms_gonder(
+        tel,
+        f"{tetkik.tetkik_turu} sonucunuz hazır. Mobil uygulamadan görüntüleyebilirsiniz.",
+    )
 
 
 def trend(

@@ -29,7 +29,7 @@
 - OTP gönder / doğrula ekranları (GIRIS + KAYIT + KVKK); e-posta/şifre ve `/auth/register` mobil istemciden kaldırıldı
 - `oturum_tipi=hasta` token: SecureStore + Zustand hydrate; 401’de refresh; logout
 - Özet ana sayfa + kısayollar; randevu liste/iptal/al; tetkik liste+detay+trend; muayene; reçete; onaylı epikriz; profil (`/hastalar/ben` + alerji); şikayet/öneri
-- HASTA: `epikriz:goruntule` (KENDI_KAYDIM, yalnızca ONAYLANDI)
+- HASTA: `epikriz:goruntule` (KENDI_KAYDIM, yalnızca ONAYLANDI); `klinik_onay:goruntule` (onaylı belgeler); `GET /hastalar/ben/ozet`, `/ben/belgeler`, `/ben/yatis-ozet`; tetkik `hasta_goruldu_at` okunmamış sayacı
 - Demo: TC `10000000006` / telefon `05551234567` (OTP kodu SMS stub / konsol)
 - `/auth/register` backend’de deprecated (`X-Deprecated`, `Sunset`); mobil artık OTP kullanır
 

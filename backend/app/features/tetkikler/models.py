@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship
 
 from app.core.base_model import BaseModel
@@ -15,6 +17,10 @@ class Tetkik(BaseModel, table=True):
     tetkik_turu: str = Field(max_length=150)
     sonuc_dosyasi: Optional[str] = Field(default=None, max_length=500)
     durum: str = Field(default="ISTEK_ALINDI", max_length=50, index=True)
+    hasta_goruldu_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
 
     hasta: Optional["Hasta"] = Relationship(back_populates="tetkikler")  # noqa: F821
     istek_yapan_doktor: Optional["Doktor"] = Relationship(back_populates="tetkikler")  # noqa: F821

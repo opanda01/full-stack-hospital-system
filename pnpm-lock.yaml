@@ -24,6 +24,9 @@ importers:
       '@hastane/shared-types':
         specifier: workspace:*
         version: link:../packages/shared-types
+      '@tanstack/react-query':
+        specifier: ^5.62.8
+        version: 5.101.2(react@19.1.0)
       babel-preset-expo:
         specifier: ~54.0.0
         version: 54.0.12(@babel/core@7.29.7)(@babel/runtime@7.29.7)(expo@54.0.36)(react-refresh@0.14.2)
@@ -6815,6 +6818,11 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.2
       react: 18.3.1
+
+  '@tanstack/react-query@5.101.2(react@19.1.0)':
+    dependencies:
+      '@tanstack/query-core': 5.101.2
+      react: 19.1.0
 
   '@turbo/darwin-64@2.10.5':
     optional: true

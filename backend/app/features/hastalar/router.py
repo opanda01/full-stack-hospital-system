@@ -10,6 +10,8 @@ from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import get_current_user, require_permission, require_role
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.hastalar import service as hasta_service
+from app.features.hastalar.phr_schemas import HastaBelgeRead, HastaOzetRead, HastaYatisOzetRead
+from app.features.hastalar import phr_service
 from app.features.hastalar import alerji_service
 from app.features.hastalar.schemas import (
     HastaCreateWithUser,
@@ -73,6 +75,36 @@ def benim_alerjilerim(
         )
         for r in rows
     ]
+
+
+@router.get("/ben/belgeler", response_model=Page[HastaBelgeRead])
+def benim_belgelerim(
+    pagination: PaginationParams = Depends(get_pagination),
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    return phr_service.list_benim_belgeler(
+        session,
+        current_user,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+
+
+@router.get("/ben/ozet", response_model=HastaOzetRead)
+def benim_ozet(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    return phr_service.hasta_ozet(session, current_user)
+
+
+@router.get("/ben/yatis-ozet", response_model=HastaYatisOzetRead)
+def benim_yatis_ozet(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    return phr_service.yatis_ozet(session, current_user)
 
 
 @router.get("/benim", response_model=Page[HastaRead])

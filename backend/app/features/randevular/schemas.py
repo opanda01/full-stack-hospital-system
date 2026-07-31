@@ -22,5 +22,7 @@ class RandevuRead(BaseModel):
     durum: str
     notlar: str | None = None
     hasta_ad_soyad: str | None = None
+    doktor_ad_soyad: str | None = None
+    departman_ad: str | None = None
 
     model_config = {"from_attributes": True}

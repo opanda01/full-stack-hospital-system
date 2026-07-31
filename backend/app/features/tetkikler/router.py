@@ -71,6 +71,7 @@ def get_tetkik(
         request=request,
         detay_extra={"tetkik_public_id": str(row.public_id)},
     )
+    tetkik_service.hasta_goruldu_isaretle(session, current_user, row)
     return tetkik_service._to_read(session, row)
 
 

@@ -9,8 +9,11 @@ from app.core.db import get_session
 from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.core.timezone import to_istanbul
+from app.features.departmanlar.models import Departman
+from app.features.doktorlar.models import Doktor
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
+from app.features.personel.models import Personel
 from app.features.randevular import service as randevu_service
 from app.features.randevular.models import Randevu
 from app.features.randevular.schemas import RandevuCreate, RandevuRead
@@ -23,12 +26,23 @@ def _to_read_maps(
     *,
     hastalar: dict[int, Hasta],
     kullanicilar: dict[int, Kullanici],
+    doktorlar: dict[int, Doktor],
+    personeller: dict[int, Personel],
+    departmanlar: dict[int, Departman],
 ) -> RandevuRead:
     hasta = hastalar.get(r.hasta_id)
     if hasta is None:
         raise ValueError("Randevu hasta kaydı bulunamadı")
     k = kullanicilar.get(hasta.kullanici_id)
     ad = f"{k.ad} {k.soyad}".strip() if k else None
+    doktor = doktorlar.get(r.doktor_id)
+    doktor_ad = None
+    if doktor:
+        personel = personeller.get(doktor.personel_id)
+        if personel:
+            dk = kullanicilar.get(personel.kullanici_id)
+            doktor_ad = f"{dk.ad} {dk.soyad}".strip() if dk else None
+    dep = departmanlar.get(r.departman_id)
     return RandevuRead(
         id=r.public_id,
         hasta_id=hasta.public_id,
@@ -38,23 +52,35 @@ def _to_read_maps(
         durum=r.durum,
         notlar=r.notlar,
         hasta_ad_soyad=ad,
+        doktor_ad_soyad=doktor_ad,
+        departman_ad=dep.ad if dep else None,
     )
 
 
 def _to_read(session: Session, r: Randevu) -> RandevuRead:
-    hastalar = batch_by_ids(session, Hasta, [r.hasta_id])
-    kullanici_ids = {h.kullanici_id for h in hastalar.values()}
-    kullanicilar = batch_by_ids(session, Kullanici, kullanici_ids)
-    return _to_read_maps(r, hastalar=hastalar, kullanicilar=kullanicilar)
+    return _rows_to_read(session, [r])[0]
 
 
 def _rows_to_read(session: Session, rows: list[Randevu]) -> list[RandevuRead]:
     hastalar = batch_by_ids(session, Hasta, (r.hasta_id for r in rows))
-    kullanicilar = batch_by_ids(
-        session, Kullanici, (h.kullanici_id for h in hastalar.values())
+    doktorlar = batch_by_ids(session, Doktor, (r.doktor_id for r in rows))
+    personeller = batch_by_ids(
+        session, Personel, (d.personel_id for d in doktorlar.values())
     )
+    departmanlar = batch_by_ids(session, Departman, (r.departman_id for r in rows))
+    kullanici_ids = {h.kullanici_id for h in hastalar.values()}
+    kullanici_ids.update(p.kullanici_id for p in personeller.values())
+    kullanicilar = batch_by_ids(session, Kullanici, kullanici_ids)
     return [
-        _to_read_maps(r, hastalar=hastalar, kullanicilar=kullanicilar) for r in rows
+        _to_read_maps(
+            r,
+            hastalar=hastalar,
+            kullanicilar=kullanicilar,
+            doktorlar=doktorlar,
+            personeller=personeller,
+            departmanlar=departmanlar,
+        )
+        for r in rows
     ]
 
 

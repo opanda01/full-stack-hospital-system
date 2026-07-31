@@ -7,14 +7,16 @@ import {
   StyleSheet,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { fetchMuayeneler } from "@/shared/api/hastaApi";
+import { fetchKlinikOnaylar, fetchMuayeneler } from "@/shared/api/hastaApi";
 import type { ReceteKalemDto } from "@/shared/api/types";
 import { go } from "@/shared/nav";
 import { Card, EmptyText, ErrorText, Loading, Screen, colors } from "@/shared/ui";
 
 type ReceteSatir = {
   key: string;
-  muayeneId: number;
+  muayeneId: number | null;
+  klinikId: number | null;
+  baslik: string;
   tani: string | null;
   kalem: ReceteKalemDto | null;
   receteMetin: string | null;
@@ -28,14 +30,30 @@ export default function RecetelerimScreen() {
   const refresh = useCallback(async () => {
     setHata(null);
     try {
-      const page = await fetchMuayeneler(1, 100);
+      const [muayenePage, klinikPage] = await Promise.all([
+        fetchMuayeneler(1, 100),
+        fetchKlinikOnaylar(1, 50),
+      ]);
       const rows: ReceteSatir[] = [];
-      for (const m of page.items) {
+      for (const k of klinikPage.items.filter((x) => x.tur === "RECETE")) {
+        rows.push({
+          key: `ko-${k.id}`,
+          muayeneId: k.muayene_id,
+          klinikId: k.id,
+          baslik: "Onaylı reçete",
+          tani: null,
+          kalem: null,
+          receteMetin: k.icerik,
+        });
+      }
+      for (const m of muayenePage.items) {
         if (m.recete_kalemleri?.length) {
           for (const k of m.recete_kalemleri) {
             rows.push({
               key: `k-${k.id}`,
               muayeneId: m.id,
+              klinikId: null,
+              baslik: k.urun_adi,
               tani: m.tani,
               kalem: k,
               receteMetin: null,
@@ -45,6 +63,8 @@ export default function RecetelerimScreen() {
           rows.push({
             key: `m-${m.id}`,
             muayeneId: m.id,
+            klinikId: null,
+            baslik: "Reçete (muayene)",
             tani: m.tani,
             kalem: null,
             receteMetin: m.receteler,
@@ -80,11 +100,19 @@ export default function RecetelerimScreen() {
         ListEmptyComponent={<EmptyText>Reçete kaydı yok</EmptyText>}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => go(`/(hasta)/muayenelerim/${item.muayeneId}`)}
+            onPress={() => {
+              if (item.klinikId != null) {
+                go(
+                  `/(hasta)/belgelerim/${item.klinikId}?kaynak=${encodeURIComponent("KLINIK_ONAY")}`,
+                );
+              } else if (item.muayeneId != null) {
+                go(`/(hasta)/muayenelerim/${item.muayeneId}`);
+              }
+            }}
           >
             <Card>
               <Text style={styles.title}>
-                {item.kalem?.urun_adi ?? "Reçete (metin)"}
+                {item.kalem?.urun_adi ?? item.baslik}
               </Text>
               <Text style={styles.meta}>
                 Muayene #{item.muayeneId}

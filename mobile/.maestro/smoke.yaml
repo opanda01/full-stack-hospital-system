@@ -1,0 +1,7 @@
+appId: host.exp.Exponent
+---
+# Manuel / CI smoke: Expo Go veya development build ile çalıştırın.
+# Önkoşul: backend ayakta, seed hasta TC 10000000006 / tel 05551234567
+- launchApp
+- assertVisible: "Giriş"
+# OTP akışı ortamda stub kod gerektirir; tam otomasyon için test harness gerekir.
