@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 from app.core.enums import EpikrizDurumu, KlinikOnayDurumu
 from app.core.lookups import hasta_getir
 from app.core.pagination import Page, make_page
+from app.core.timezone import as_utc
 from app.features.kullanicilar.models import Kullanici
 from app.features.epikriz.models import Epikriz
 from app.features.hastalar.phr_schemas import (
@@ -134,7 +135,7 @@ def hasta_ozet(session: Session, current_user: Kullanici) -> HastaOzetRead:
     now = datetime.now(timezone.utc)
     aktif = [r for r in randevular if r.durum != "IPTAL"]
     yaklasanlar = sorted(
-        [r for r in aktif if r.tarih_saat >= now],
+        [r for r in aktif if as_utc(r.tarih_saat) >= now],
         key=lambda r: r.tarih_saat,
     )
     yaklasan_read = None
