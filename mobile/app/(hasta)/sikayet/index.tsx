@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -8,8 +8,10 @@ import {
   Switch,
 } from "react-native";
 import { router } from "expo-router";
-import { postSikayetOneri } from "@/shared/api/hastaApi";
+import { postSikayetOneri, fetchSikayetBenim } from "@/shared/api/hastaApi";
+import type { SikayetOneriDto } from "@/shared/api/types";
 import {
+  Card,
   ErrorText,
   PrimaryButton,
   Screen,
@@ -23,6 +25,13 @@ export default function SikayetScreen() {
   const [hata, setHata] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [gecmis, setGecmis] = useState<SikayetOneriDto[]>([]);
+
+  useEffect(() => {
+    void fetchSikayetBenim(1, 20)
+      .then((p) => setGecmis(p.items))
+      .catch(() => setGecmis([]));
+  }, [ok]);
 
   const gonder = async () => {
     setHata(null);
@@ -72,6 +81,20 @@ export default function SikayetScreen() {
       <Pressable onPress={() => router.back()} style={{ marginTop: 12 }}>
         <Text style={styles.link}>Geri</Text>
       </Pressable>
+
+      <SectionTitle>Taleplerim</SectionTitle>
+      {gecmis.length ? (
+        gecmis.map((g) => (
+          <Card key={g.id}>
+            <Text style={styles.label}>
+              {g.tur} · {g.durum}
+            </Text>
+            <Text style={styles.gecmisIcerik}>{g.icerik}</Text>
+          </Card>
+        ))
+      ) : (
+        <Text style={styles.meta}>Henüz kayıt yok</Text>
+      )}
     </Screen>
   );
 }
@@ -96,4 +119,6 @@ const styles = StyleSheet.create({
   },
   ok: { color: colors.success, marginBottom: 8 },
   link: { color: colors.accent, textAlign: "center" },
+  meta: { color: colors.muted, fontSize: 13 },
+  gecmisIcerik: { color: colors.text, marginTop: 4 },
 });

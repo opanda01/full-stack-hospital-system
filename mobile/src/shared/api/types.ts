@@ -17,6 +17,8 @@ export type RandevuDto = {
   doktor_id: number;
   departman_id: number;
   hasta_ad_soyad: string | null;
+  doktor_ad_soyad?: string | null;
+  departman_ad?: string | null;
 };
 
 export type ReceteKalemDto = {
@@ -61,6 +63,7 @@ export type TetkikDto = {
   sonuc_dosyasi: string | null;
   durum: string;
   created_at?: string | null;
+  hasta_goruldu_at?: string | null;
   sonuc_kalemleri?: TetkikSonucKalemDto[];
 };
 
@@ -132,3 +135,15 @@ export type SikayetOneriDto = {
   tarih: string;
   durum: string;
 };
+
+export type KlinikOnayDto = {
+  id: number;
+  tur: string;
+  muayene_id: number | null;
+  hasta_id: string | null;
+  icerik: string;
+  onay_durumu: string;
+  onay_tarihi: string | null;
+};
+
+export type { HastaBelgeDto, HastaOzetDto, HastaYatisOzetDto } from "@hastane/shared-types";

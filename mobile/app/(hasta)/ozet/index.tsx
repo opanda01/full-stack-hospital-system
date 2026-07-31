@@ -1,8 +1,8 @@
-import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { RefreshControl, ScrollView, Text, View, StyleSheet } from "react-native";
-import { useFocusEffect } from "expo-router";
 import { fetchOzetSnapshot } from "@/shared/api/hastaApi";
 import { go } from "@/shared/nav";
+import { queryKeys } from "@/shared/query/client";
 import {
   Card,
   ErrorText,
@@ -39,60 +39,50 @@ function durumEtiket(durum: string): string {
 }
 
 export default function OzetScreen() {
-  const [loading, setLoading] = useState(true);
-  const [hata, setHata] = useState<string | null>(null);
-  const [adSoyad, setAdSoyad] = useState("");
-  const [yaklasan, setYaklasan] = useState<string | null>(null);
-  const [sonTetkik, setSonTetkik] = useState<string | null>(null);
-  const [badgeTetkik, setBadgeTetkik] = useState(0);
-  const [badgeRandevu, setBadgeRandevu] = useState(0);
+  const { data, error, isLoading, isRefetching, refetch } = useQuery({
+    queryKey: queryKeys.ozet,
+    queryFn: fetchOzetSnapshot,
+  });
 
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      const snap = await fetchOzetSnapshot();
-      setAdSoyad(`${snap.me.ad} ${snap.me.soyad}`.trim());
-      setYaklasan(
-        snap.yaklasanRandevu
-          ? `${formatTarihSaat(snap.yaklasanRandevu.tarih_saat)} · ${durumEtiket(snap.yaklasanRandevu.durum)}`
-          : null,
-      );
-      setSonTetkik(
-        snap.sonTetkik
-          ? [
-              snap.sonTetkik.tetkik_turu,
-              durumEtiket(snap.sonTetkik.durum),
-              snap.sonTetkik.created_at
-                ? formatTarihSaat(snap.sonTetkik.created_at)
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")
-          : null,
-      );
-      setBadgeTetkik(snap.yeniSonucSayisi);
-      setBadgeRandevu(snap.yaklasanRandevuSayisi);
-    } catch (e) {
-      setHata(e instanceof Error ? e.message : "Özet yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  if (isLoading && !data) return <Loading />;
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
-
-  if (loading) return <Loading />;
+  const ozet = data?.ozet;
+  const adSoyad =
+    ozet?.ad_soyad ?? `${data?.me.ad ?? ""} ${data?.me.soyad ?? ""}`.trim();
+  const r = ozet?.yaklasan_randevu;
+  const yaklasan = r
+    ? [
+        formatTarihSaat(r.tarih_saat),
+        r.departman_ad,
+        r.doktor_ad_soyad,
+        durumEtiket(r.durum),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+  const sonTetkik =
+    ozet?.son_tetkik_turu != null
+      ? [
+          ozet.son_tetkik_turu,
+          ozet.son_tetkik_durum ? durumEtiket(ozet.son_tetkik_durum) : null,
+          ozet.son_tetkik_tarih ? formatTarihSaat(ozet.son_tetkik_tarih) : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
+  const badgeTetkik = ozet?.okunmamis_sonuc_sayisi ?? 0;
+  const badgeRandevu = ozet?.yaklasan_randevu_sayisi ?? 0;
+  const hata = error instanceof Error ? error.message : null;
+  const yatis = ozet?.yatis;
 
   return (
     <Screen style={{ paddingBottom: 24 }}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => void refetch()}
+          />
         }
       >
         <View style={styles.hero}>
@@ -114,6 +104,16 @@ export default function OzetScreen() {
           <Text style={styles.cardLabel}>Son tetkik</Text>
           <Text style={styles.cardValue}>{sonTetkik ?? "Tetkik kaydı yok"}</Text>
         </Card>
+        {yatis?.aktif_mi ? (
+          <Card>
+            <Text style={styles.cardLabel}>Yatış</Text>
+            <Text style={styles.cardValue}>
+              {[yatis.servis_adi, yatis.yatak_no && `Yatak ${yatis.yatak_no}`]
+                .filter(Boolean)
+                .join(" · ") || "Aktif yatış kaydı"}
+            </Text>
+          </Card>
+        ) : null}
 
         <SectionTitle>Sağlık kayıtları</SectionTitle>
         <MenuRow
@@ -145,7 +145,7 @@ export default function OzetScreen() {
         />
         <MenuRow
           title="Belgelerim"
-          subtitle="Onaylı epikriz"
+          subtitle="Onaylı epikriz, reçete, sevk, rapor"
           onPress={() => go("/(hasta)/belgelerim")}
         />
         <MenuRow

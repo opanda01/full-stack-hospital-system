@@ -2,8 +2,11 @@ import { apiFetch, fetchMe, type MeResponse } from "@/shared/api/http";
 import type {
   AlerjiDto,
   EpikrizDto,
+  HastaBelgeDto,
   HastaDto,
+  HastaOzetDto,
   HastaProfilUpdate,
+  KlinikOnayDto,
   MuayeneDto,
   Page,
   RandevuDto,
@@ -57,10 +60,9 @@ export async function fetchMuayeneler(page = 1, pageSize = 50) {
 }
 
 export async function fetchMuayeneById(id: number): Promise<MuayeneDto> {
-  const page = await fetchMuayeneler(1, 100);
-  const found = page.items.find((m) => m.id === id);
-  if (!found) throw new Error("Muayene bulunamadı");
-  return found;
+  const res = await apiFetch(`/muayeneler/${id}`);
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
 }
 
 export async function fetchTetkikler(page = 1, pageSize = 20) {
@@ -133,37 +135,30 @@ export async function postSikayetOneri(input: {
   return res.json();
 }
 
+export async function fetchKlinikOnaylar(page = 1, pageSize = 50) {
+  return fetchPage<KlinikOnayDto>("/klinik-onay/", page, pageSize);
+}
+
+export async function fetchBelgeler(page = 1, pageSize = 20) {
+  return fetchPage<HastaBelgeDto>("/hastalar/ben/belgeler", page, pageSize);
+}
+
+export async function fetchHastaOzet(): Promise<HastaOzetDto> {
+  const res = await apiFetch("/hastalar/ben/ozet");
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
+export async function fetchSikayetBenim(page = 1, pageSize = 20) {
+  return fetchPage<SikayetOneriDto>("/sikayet-oneri/benim", page, pageSize);
+}
+
 export async function fetchOzetSnapshot(): Promise<{
   me: MeResponse;
-  yaklasanRandevu: RandevuDto | null;
-  sonTetkik: TetkikDto | null;
-  yeniSonucSayisi: number;
-  yaklasanRandevuSayisi: number;
+  ozet: HastaOzetDto;
 }> {
-  const [me, randevular, tetkikler] = await Promise.all([
-    fetchMe(),
-    fetchRandevular(1, 20),
-    fetchTetkikler(1, 20),
-  ]);
-  const now = Date.now();
-  const aktif = unwrapPage(randevular).filter((r) => r.durum !== "IPTAL");
-  const yaklasanlar = aktif
-    .filter((r) => new Date(r.tarih_saat).getTime() >= now - 60_000)
-    .sort(
-      (a, b) =>
-        new Date(a.tarih_saat).getTime() - new Date(b.tarih_saat).getTime(),
-    );
-  const tetkikItems = unwrapPage(tetkikler);
-  const yeniSonucSayisi = tetkikItems.filter(
-    (t) => t.durum === "SONUCLANDI",
-  ).length;
-  return {
-    me,
-    yaklasanRandevu: yaklasanlar[0] ?? null,
-    sonTetkik: tetkikItems[0] ?? null,
-    yeniSonucSayisi,
-    yaklasanRandevuSayisi: yaklasanlar.length,
-  };
+  const [me, ozet] = await Promise.all([fetchMe(), fetchHastaOzet()]);
+  return { me, ozet };
 }
 
 export { unwrapPage };

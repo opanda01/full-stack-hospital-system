@@ -317,3 +317,36 @@ def list_muayeneler(
             )
         )
     return make_page(items, total=total, page=page, page_size=page_size)
+
+
+def get_muayene(
+    session: Session,
+    current_user: Kullanici,
+    muayene_id: int,
+    kapsam: Kapsam,
+) -> MuayeneKaydi:
+    kayit = session.get(MuayeneKaydi, muayene_id)
+    if kayit is None:
+        raise HTTPException(status_code=404, detail="Muayene bulunamadı")
+    randevu = session.get(Randevu, kayit.randevu_id)
+    if randevu is None:
+        raise HTTPException(status_code=404, detail="Randevu bulunamadı")
+    if kapsam == Kapsam.KENDI_KAYDIM:
+        if current_user.rol == Rol.DOKTOR:
+            doktor = doktor_getir(session, current_user.id)
+            if randevu.doktor_id != doktor.id:
+                raise HTTPException(status_code=403, detail="Bu muayeneye erişim yetkiniz yok")
+        elif current_user.rol == Rol.HASTA:
+            hasta = hasta_getir(session, current_user.id)
+            if randevu.hasta_id != hasta.id:
+                raise HTTPException(status_code=403, detail="Bu muayeneye erişim yetkiniz yok")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Kendi kaydı kapsamı bu rol için tanımlı değil",
+            )
+    elif kapsam == Kapsam.DEPARTMANIM:
+        personel = personel_getir(session, current_user.id)
+        if personel.departman_id != randevu.departman_id:
+            raise HTTPException(status_code=403, detail="Bu muayeneye erişim yetkiniz yok")
+    return kayit

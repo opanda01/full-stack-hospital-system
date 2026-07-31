@@ -17,6 +17,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "@hastane/shared-types": "workspace:*",
+    "@tanstack/react-query": "^5.62.8",
     "babel-preset-expo": "~54.0.0",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.13",

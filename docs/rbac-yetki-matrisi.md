@@ -55,16 +55,17 @@ Semboller:
 | Tetkik iste | `tetkik:iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Tetkik sonucu gir | `tetkik:sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Tetkik görüntüle | `tetkik:goruntule` | ✅ | ✅ | *isteyen* | *departman* | ✅ | ❌ | *kendi* |
-| Epikriz görüntüle/oluştur/güncelle | `epikriz:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | *kendi* | ✅ | ❌ | ❌ | ❌ |
+| Epikriz görüntüle (hasta: yalnız onaylı) | `epikriz:goruntule` | ✅ | ✅ | *kendi* | ✅ | ❌ | ❌ | *kendi (onaylı)* |
+| Epikriz oluştur/güncelle | `epikriz:olustur` / `:guncelle` | ✅ | ✅ | *kendi* | ✅ | ❌ | ❌ | ❌ |
 | Epikriz onayla | `epikriz:onayla` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
-| Klinik onay görüntüle | `klinik_onay:goruntule` | ✅ | ✅ (başhekim) | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Klinik onay görüntüle (hasta: yalnız onaylı) | `klinik_onay:goruntule` | ✅ | ✅ (başhekim) | *kendi* | ❌ | ❌ | ❌ | *kendi (onaylı)* |
 | Klinik onay oluştur | `klinik_onay:olustur` | ✅ | ✅ (başhekim) | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Klinik onay onayla | `klinik_onay:onayla` | ✅ | ✅ (başhekim) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Konsültasyon | `konsultasyon:olustur/goruntule/yanitla` | ✅ | ❌ | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Sağlık kurulu görüntüle | `saglik_kurulu:goruntule` | ✅ | ✅ (başhekim) | *üye* | ❌ | ❌ | ❌ | ❌ |
 | Nöbet oluştur | `nobet:olustur` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
-| Yatış görüntüle | `yatis:goruntule` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Yatış görüntüle | `yatis:goruntule` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | *kendi özeti* |
 | Yatış işlem | `yatis:islem` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Vital görüntüle/oluştur | `vital:goruntule` / `:olustur` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | İlaç uygulama (MAR) | `ilac_uygulama:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
@@ -76,6 +77,7 @@ Semboller:
 | Temizlik ata | `temizlik_gorevi:ata` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Temizlik görüntüle/güncelle | `temizlik_gorevi:goruntule` / `temizlik_gorevi:guncelle` | ✅ | ✅ | ❌ | ❌ | ❌ | *kendi* | ❌ |
 | Şikayet gönder | `sikayet_oneri:gonder` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Şikayet kendi kayıtları | `sikayet_oneri:benim` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | *kendi* |
 | Şikayet tümünü gör | `sikayet_oneri:tumunu_goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Güvenlik olay görüntüle | `guvenlik_olay:goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Güvenlik olay oluştur/güncelle | `guvenlik_olay:olustur` / `:guncelle` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |

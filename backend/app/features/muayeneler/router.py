@@ -62,3 +62,19 @@ def list_muayeneler(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+
+
+@router.get("/{muayene_id}", response_model=MuayeneRead)
+def get_muayene(
+    muayene_id: int,
+    request: Request,
+    current_user: Kullanici = Depends(require_permission("muayene:goruntule")),
+    session: Session = Depends(get_session),
+):
+    kayit = muayene_service.get_muayene(
+        session,
+        current_user,
+        muayene_id,
+        request.state.kapsam,
+    )
+    return muayene_service.muayene_to_read(session, kayit)

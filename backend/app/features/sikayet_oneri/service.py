@@ -94,6 +94,24 @@ def list_sikayetler(
     return make_page(items, total=total, page=page, page_size=page_size)
 
 
+def list_benim_sikayetler(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[SikayetOneriRead]:
+    q = (
+        select(SikayetOneri)
+        .where(SikayetOneri.gonderen_kullanici_id == current_user.id)
+        .order_by(SikayetOneri.tarih.desc(), SikayetOneri.id.desc())
+    )
+    rows, total = paginate(session, q, page=page, page_size=page_size)
+    kullanicilar = batch_by_ids(session, Kullanici, {current_user.id})
+    items = [_to_read(r, kullanicilar) for r in rows]
+    return make_page(items, total=total, page=page, page_size=page_size)
+
+
 def create_sikayet(
     session: Session, current_user: Kullanici, data: SikayetOneriCreate
 ) -> SikayetOneriRead:
