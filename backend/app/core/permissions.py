@@ -145,6 +145,8 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "ameliyat:guncelle": Kapsam.KENDI_KAYDIM,
         "ameliyat:iptal_et": Kapsam.KENDI_KAYDIM,
         "anestezi:kaydet": Kapsam.KENDI_KAYDIM,
+        "radyoloji:iste": Kapsam.KENDI_KAYDIM,
+        "radyoloji:goruntule": Kapsam.KENDI_KAYDIM,
         "vital:goruntule": Kapsam.GLOBAL,
         "ilac_uygulama:goruntule": Kapsam.GLOBAL,
     },

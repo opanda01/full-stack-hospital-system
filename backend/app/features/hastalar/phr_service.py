@@ -14,7 +14,6 @@ from app.features.hastalar.phr_schemas import (
     HastaYatisOzetRead,
 )
 from app.features.klinik_onay.models import KlinikOnayKaydi
-from app.features.kullanicilar.models import Kullanici
 from app.features.randevular import service as randevu_service
 from app.features.randevular.models import Randevu
 from app.features.randevular.router import _to_read as randevu_to_read
