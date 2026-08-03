@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 5: Modern Hibrit DB, Yasal/Klinik Uyum ve Liste Pagination
 
 **Tarih:** 24 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Modern hibrit veritabanı (eşzamanlılık, denetim, İstanbul TZ); PHI `public_id` UUID; yasal/klinik uyum (alerji–reçete, KVKK/PHI şifreleme, entegrasyon mock, backup, ICD/lab); liste API pagination + yatış N+1 azaltma; alembic/web hotfix’leri
 
 ---

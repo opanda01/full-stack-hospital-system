@@ -1,14 +1,14 @@
 # Staj Defteri — Gün 1: İskelet Kurulumu ve Teknoloji Seçimi
 
 **Tarih:** 20 Temmuz 2026  
-**Proje:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS (Hastane Bilgi Yönetim Sistemi)  
+**Proje:** Devlet Hastanesi HBYS (Hastane Bilgi Yönetim Sistemi)  
 **Kapsam:** Monorepo iskeleti, tech stack kararları, mimari temeller, RBAC tasarımı, web panel iskeleti
 
 ---
 
 ### 1. Proje Tanımı
 
-Bu proje, Çanakkale Mehmet Akif Ersoy Devlet Hastanesi için geliştirilen bir **Hastane Bilgi Yönetim Sistemi (HBYS)**dir. Sistem; web paneli (personel/yönetim) ve mobil istemci (hasta odaklı) üzerinden çalışacak şekilde monorepo olarak kurgulanmıştır. Doktor, hemşire, laborant, temizlik personeli, başhekim/müdür, idari personel ve hasta gibi **çok rollü** bir erişim modeli hedeflenmektedir. İlk günde uçtan uca klinik iş kurallarının tamamı değil; güvenli ve ölçeklenebilir bir kod iskeleti, teknoloji seçimleri ve yetkilendirme çerçevesi oturtulmuştur.
+Bu proje, kamu devlet hastanesi senaryosu için geliştirilen bir **Hastane Bilgi Yönetim Sistemi (HBYS)**dir. Sistem; web paneli (personel/yönetim) ve mobil istemci (hasta odaklı) üzerinden çalışacak şekilde monorepo olarak kurgulanmıştır. Doktor, hemşire, laborant, temizlik personeli, başhekim/müdür, idari personel ve hasta gibi **çok rollü** bir erişim modeli hedeflenmektedir. İlk günde uçtan uca klinik iş kurallarının tamamı değil; güvenli ve ölçeklenebilir bir kod iskeleti, teknoloji seçimleri ve yetkilendirme çerçevesi oturtulmuştur.
 
 ---
 

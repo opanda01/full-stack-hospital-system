@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 3: Rol Panelleri, Klinik Derinlik ve Güvenlik
 
 **Tarih:** 22 Temmuz 2026  
-**Proje:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Admin operasyonel sertleştirme, başhekim erişim/gözetim paneli, doktor klinik masası, hemşire yatış + klinik görünürlük, EBE panel paritesi, güvenlik paneli (olay / ziyaretçi / kayıp eşya / devriye)
 
 ---

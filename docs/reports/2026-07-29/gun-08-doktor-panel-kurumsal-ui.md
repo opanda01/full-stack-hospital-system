@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 8: Web Kurumsal Kimlik ve Doktor Panel Eksikleri
 
 **Tarih:** 29 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Web tema/app shell ve kurumsal görünüm; profil–auth personel alanları; doktor randevu çizelgesi ve hasta seçimi; klinik slot kuralları; departman nöbet ve temizlik çizelgeleri; ortak şikâyet/temizlik/nöbet/profil ekranları; doktor Servisim, Nöbetlerim, yapılandırılmış klinik belgeler, ICD-10, kişiselleştirilmiş dashboard; toplu seed yardımcıları
 
 ---

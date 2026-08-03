@@ -50,7 +50,7 @@ _docs_url = "/docs" if settings.DOCS_ENABLED else None
 _redoc_url = "/redoc" if settings.DOCS_ENABLED else None
 
 app = FastAPI(
-    title="Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS",
+    title="Devlet Hastanesi HBYS",
     version="0.1.0",
     description="Hastane Bilgi Yönetim Sistemi API",
     docs_url=_docs_url,

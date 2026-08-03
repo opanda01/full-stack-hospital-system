@@ -5,7 +5,7 @@ import { InstitutionEmblem } from "@/shared/ui/InstitutionEmblem";
 import { cn } from "@/shared/lib/utils";
 
 const DEFAULT_HOSPITAL =
-  "Çanakkale Mehmet Akif Ersoy Devlet Hastanesi";
+  "Devlet Hastanesi";
 const DEFAULT_KURUM_ALT = "T.C. Sağlık Bakanlığı";
 const APP_VERSION = "1.0";
 

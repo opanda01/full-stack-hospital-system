@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 10: Hasta PHR Belgeler, Özet API, Mobil Parite ve CI Typecheck
 
 **Tarih:** 31 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Birleşik hasta belge listesi (epikriz + onaylı klinik kayıtlar); `GET /hastalar/ben/ozet` ve yatış özeti; tetkik okunma zamanı ve okunmamış sayaç; şikâyet “benim” listesi; mobil Özet/Belgelerim/Reçetelerim/Profil/Şikâyet paritesi; monorepo TypeScript ve GitHub Actions mobil job düzeltmeleri
 
 ---

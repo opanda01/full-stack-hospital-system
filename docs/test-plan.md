@@ -1,6 +1,6 @@
 # HBYS — Kapsamlı Test Planı
 
-**Ürün:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi Bilgi Yönetim Sistemi  
+**Ürün:** Hastane Bilgi Yönetim Sistemi (HBYS)  
 **Kapsam:** Backend API, personel web paneli, hasta mobil istemci  
 **İlgili:** [qa-checklist.md](qa-checklist.md) (manuel yürütme), [PRODUCTION.md](PRODUCTION.md), [bashekim-izin-envanteri.md](bashekim-izin-envanteri.md), [ROADMAP.md](ROADMAP.md)
 

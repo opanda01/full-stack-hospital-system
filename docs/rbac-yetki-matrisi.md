@@ -1,6 +1,6 @@
 # Kaynak Bazlı Yetki Matrisi
 
-Kaynak: Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS RBAC tasarımı.
+Kaynak: Devlet hastanesi HBYS RBAC tasarımı.
 
 Bu belge **tasarım özetidir**. Çalışan kod matrisi tek kaynak gerçeğidir:
 

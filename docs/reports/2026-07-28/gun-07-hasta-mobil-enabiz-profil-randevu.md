@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 7: Hasta Mobil e-Nabız Özeti, Profil ve Randevu Takvimi
 
 **Tarih:** 28 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Hasta mobil e-Nabız tarzı IA (özet, muayene, reçete, belge, şikayet); profil boy/kilo güncelleme; poliklinik başına doktor seed; randevu takvimi + Randevularım/Geçmiş sekmeleri; tahlil/özet UX cilası; Metro LAN API proxy
 
 ---

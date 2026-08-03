@@ -6,7 +6,7 @@ export default function GirisScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        Çanakkale Mehmet Akif Ersoy Devlet Hastanesi
+        Devlet Hastanesi
       </Text>
       <Text style={styles.subtitle}>Hasta Mobil Giriş (OTP)</Text>
       <GirisYapForm />
