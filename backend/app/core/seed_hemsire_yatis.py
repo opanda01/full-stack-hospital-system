@@ -10,6 +10,7 @@ from app.core.enums import (
     KlinikDurum,
     KullanimSekli,
     PanelBildirimTipi,
+    YatakDurumu,
 )
 from app.features.departmanlar.models import Departman
 from app.features.doktorlar.models import Doktor
@@ -18,6 +19,7 @@ from app.features.hastalar.models import Hasta
 from app.features.ilac_talep.models import IlacTalebi, IlacTalepKalemi
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
 from app.features.yatis.models import (
     AmeliyatBilgisi,
     HastaIslemLogu,
@@ -27,11 +29,9 @@ from app.features.yatis.models import (
     IzinHareketi,
     PanelBildirim,
     Refakatci,
-    Servis,
     ServisHareketi,
     VardiyaDevirNotu,
     VitalBulgu,
-    Yatak,
     YatakHareketi,
     YatisKaydi,
 )
@@ -70,14 +70,22 @@ def seed_hemsire_yatis(session: Session) -> None:
 
     yataklar: list[Yatak] = []
     for servis, odalar in (
-        (s1, [("301", "A"), ("301", "B"), ("302", "A"), ("302", "B")]),
-        (s2, [("201", "A"), ("201", "B"), ("202", "A")]),
-        (s3, [("YB-01", "1"), ("YB-01", "2")]),
+        (s1, [("301", ["A", "B"]), ("302", ["A", "B"])]),
+        (s2, [("201", ["A", "B"]), ("202", ["A"])]),
+        (s3, [("YB-01", ["1", "2"])]),
     ):
-        for oda, yatak_no in odalar:
-            y = Yatak(servis_id=servis.id, oda_no=oda, yatak_no=yatak_no, dolu_mu=False)
-            session.add(y)
-            yataklar.append(y)
+        for oda_no, yatak_nolar in odalar:
+            oda = Oda(servis_id=servis.id, oda_no=oda_no)
+            session.add(oda)
+            session.flush()
+            for yatak_no in yatak_nolar:
+                y = Yatak(
+                    oda_id=oda.id,
+                    yatak_no=yatak_no,
+                    durum=YatakDurumu.BOS,
+                )
+                session.add(y)
+                yataklar.append(y)
     session.flush()
 
     hastalar = list(session.exec(select(Hasta)).all())
@@ -109,10 +117,15 @@ def seed_hemsire_yatis(session: Session) -> None:
 
     for i, hasta in enumerate(hastalar[:6]):
         servis = servisler[i % len(servisler)]
-        uygun = [y for y in yataklar if y.servis_id == servis.id and not y.dolu_mu]
+        uygun = [
+            y
+            for y in yataklar
+            if session.get(Oda, y.oda_id).servis_id == servis.id
+            and y.durum == YatakDurumu.BOS
+        ]
         yatak = uygun[0] if uygun else None
         if yatak:
-            yatak.dolu_mu = True
+            yatak.durum = YatakDurumu.DOLU
             session.add(yatak)
         doktor = doktorlar[i % len(doktorlar)]
         yatis = YatisKaydi(

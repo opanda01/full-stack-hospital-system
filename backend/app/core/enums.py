@@ -9,6 +9,7 @@ class Rol(str, Enum):
     HEMSIRE = "HEMSIRE"
     EBE = "EBE"
     LABORANT = "LABORANT"
+    RADYOLOG = "RADYOLOG"
     TEMIZLIK_PERSONELI = "TEMIZLIK_PERSONELI"
     GUVENLIK = "GUVENLIK"
     IDARI_PERSONEL = "IDARI_PERSONEL"
@@ -210,3 +211,74 @@ class KayipEsyaDurumu(str, Enum):
     BEKLIYOR = "BEKLIYOR"
     TESLIM = "TESLIM"
     POLISE = "POLISE"
+
+
+class ServisTipi(str, Enum):
+    DAHILIYE = "DAHILIYE"
+    CERRAHI = "CERRAHI"
+    YBU = "YBU"
+    ACIL = "ACIL"
+    KADIN_DOGUM = "KADIN_DOGUM"
+    PEDIATRI = "PEDIATRI"
+    PSIKIYATRI = "PSIKIYATRI"
+    DIGER = "DIGER"
+
+
+class YatakDurumu(str, Enum):
+    BOS = "BOS"
+    DOLU = "DOLU"
+    TEMIZLIK_BEKLIYOR = "TEMIZLIK_BEKLIYOR"
+    ARIZALI = "ARIZALI"
+
+
+class AmeliyathaneDurumu(str, Enum):
+    MUSAIT = "MUSAIT"
+    KULLANIMDA = "KULLANIMDA"
+    TEMIZLIK = "TEMIZLIK"
+    ARIZALI = "ARIZALI"
+
+
+class AmeliyatPlaniDurumu(str, Enum):
+    PLANLANDI = "PLANLANDI"
+    HAZIRLIK = "HAZIRLIK"
+    DEVAM_EDIYOR = "DEVAM_EDIYOR"
+    TAMAMLANDI = "TAMAMLANDI"
+    IPTAL = "IPTAL"
+    ERTELENDI = "ERTELENDI"
+
+
+class AmeliyatEkipRolu(str, Enum):
+    CERRAH = "CERRAH"
+    ASISTAN = "ASISTAN"
+    ANESTEZIST = "ANESTEZIST"
+    SIRKULE_HEMSIRE = "SIRKULE_HEMSIRE"
+    INSTRUMANTATOR = "INSTRUMANTATOR"
+
+
+class AnesteziTipi(str, Enum):
+    GENEL = "GENEL"
+    LOKAL = "LOKAL"
+    SPINAL = "SPINAL"
+    EPIDURAL = "EPIDURAL"
+    SEDASYON = "SEDASYON"
+
+
+class RadyolojiTetkikTuru(str, Enum):
+    ROENTGEN = "ROENTGEN"
+    BT = "BT"
+    MR = "MR"
+    USG = "USG"
+    MAMOGRAFI = "MAMOGRAFI"
+
+
+class RadyolojiAciliyet(str, Enum):
+    RUTIN = "RUTIN"
+    ACIL = "ACIL"
+
+
+class RadyolojiIstemDurumu(str, Enum):
+    ISTENDI = "ISTENDI"
+    PLANLANDI = "PLANLANDI"
+    CEKILDI = "CEKILDI"
+    RAPORLANDI = "RAPORLANDI"
+    IPTAL = "IPTAL"

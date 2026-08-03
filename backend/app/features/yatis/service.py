@@ -2,12 +2,11 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException
-from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
 from app.core.batch_load import batch_by_ids
-from app.core.enums import YatisIslemTipi
+from app.core.enums import YatakDurumu, YatisIslemTipi
 from app.core.pagination import Page, make_page, paginate
 from app.features.doktorlar.models import Doktor
 from app.features.faturalandirma.models import Fatura
@@ -15,14 +14,18 @@ from app.features.hastalar.models import Hasta
 from app.features.konsultasyon.models import KonsultasyonIstegi
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
+from app.features.yatak_yonetimi.service import (
+    yatak_cikis_hazirligi,
+    yatak_dolu_yap_atomik,
+    yatak_oda_bilgi,
+)
 from app.features.yatis.models import (
     AmeliyatBilgisi,
     HastaIslemLogu,
     IzinHareketi,
     Refakatci,
-    Servis,
     ServisHareketi,
-    Yatak,
     YatakHareketi,
     YatisKaydi,
 )
@@ -127,39 +130,51 @@ def _bakiye(session: Session, hasta_id: int) -> Decimal:
     return total
 
 
-def _yatak_dolu_yap(session: Session, yatak_id: int) -> None:
-    """Atomik dolu işaretleme; yarışta 409."""
-    result = session.execute(
-        text(
-            "UPDATE yataklar SET dolu_mu = true, updated_at = :now "
-            "WHERE id = :id AND dolu_mu = false "
-            "RETURNING id"
-        ),
-        {"id": yatak_id, "now": utc_now()},
+def _yatak_read(session: Session, yatak: Yatak, oda: Oda | None = None) -> YatakRead:
+    if oda is None:
+        oda = session.get(Oda, yatak.oda_id)
+    durum = (
+        yatak.durum.value if hasattr(yatak.durum, "value") else str(yatak.durum)
     )
-    if result.first() is None:
-        raise HTTPException(status_code=409, detail="Hedef yatak dolu veya bulunamadı")
-
-
-def _yatak_bosalt(session: Session, yatak_id: int) -> None:
-    session.execute(
-        text(
-            "UPDATE yataklar SET dolu_mu = false, updated_at = :now WHERE id = :id"
-        ),
-        {"id": yatak_id, "now": utc_now()},
+    return YatakRead(
+        id=yatak.id,
+        oda_id=yatak.oda_id,
+        oda_no=oda.oda_no if oda else None,
+        servis_id=oda.servis_id if oda else None,
+        yatak_no=yatak.yatak_no,
+        durum=durum,
+        dolu_mu=durum == YatakDurumu.DOLU.value,
     )
 
 
 def list_servisler(session: Session) -> list[ServisRead]:
     rows = session.exec(select(Servis).order_by(Servis.ad)).all()
-    return [ServisRead.model_validate(r) for r in rows]
+    out: list[ServisRead] = []
+    for r in rows:
+        tip = r.tip.value if hasattr(r.tip, "value") else str(r.tip)
+        out.append(
+            ServisRead(
+                id=r.id,
+                ad=r.ad,
+                kod=r.kod,
+                tip=tip,
+                kat_no=r.kat_no,
+                departman_id=r.departman_id,
+            )
+        )
+    return out
 
 
 def list_yataklar(session: Session, servis_id: int | None = None) -> list[YatakRead]:
-    q = select(Yatak).order_by(Yatak.oda_no, Yatak.yatak_no)
+    q = (
+        select(Yatak, Oda)
+        .join(Oda, Yatak.oda_id == Oda.id)
+        .order_by(Oda.oda_no, Yatak.yatak_no)
+    )
     if servis_id is not None:
-        q = q.where(Yatak.servis_id == servis_id)
-    return [YatakRead.model_validate(r) for r in session.exec(q).all()]
+        q = q.where(Oda.servis_id == servis_id)
+    rows = session.exec(q).all()
+    return [_yatak_read(session, yatak, oda) for yatak, oda in rows]
 
 
 def list_kayitlar(
@@ -220,6 +235,9 @@ def list_kayitlar(
     rows, total = paginate(session, q, page=page, page_size=page_size)
     hastalar = batch_by_ids(session, Hasta, (y.hasta_id for y in rows))
     yataklar = batch_by_ids(session, Yatak, (y.yatak_id for y in rows))
+    odalar = batch_by_ids(
+        session, Oda, (yt.oda_id for yt in yataklar.values())
+    )
     servisler = batch_by_ids(session, Servis, (y.servis_id for y in rows))
     doktorlar = batch_by_ids(session, Doktor, (y.sorumlu_doktor_id for y in rows))
     hemsire_ids = {y.sorumlu_hemsire_id for y in rows}
@@ -235,6 +253,7 @@ def list_kayitlar(
         if hasta is None:
             continue
         yatak = yataklar.get(y.yatak_id) if y.yatak_id else None
+        oda = odalar.get(yatak.oda_id) if yatak else None
         servis = servisler.get(y.servis_id)
         durum = y.klinik_durum.value if hasattr(y.klinik_durum, "value") else str(y.klinik_durum)
         items.append(
@@ -249,7 +268,7 @@ def list_kayitlar(
                 yas=_yas(hasta.dogum_tarihi),
                 cinsiyet=hasta.cinsiyet,
                 yatak_no=yatak.yatak_no if yatak else None,
-                oda_no=yatak.oda_no if yatak else None,
+                oda_no=oda.oda_no if oda else None,
                 yatis_tarihi=y.yatis_tarihi,
                 gecen_gun=_gecen_gun(y.yatis_tarihi),
                 sorumlu_doktor_id=y.sorumlu_doktor_id,
@@ -282,6 +301,7 @@ def get_detay(session: Session, yatis_id: int) -> YatisDetay:
     if hasta is None:
         raise HTTPException(status_code=404, detail="Hasta bulunamadı")
     yatak = session.get(Yatak, y.yatak_id) if y.yatak_id else None
+    oda_no, yatak_no, _ = yatak_oda_bilgi(session, yatak)
     servis = session.get(Servis, y.servis_id)
     ref = session.exec(select(Refakatci).where(Refakatci.yatis_id == yatis_id)).first()
     durum = y.klinik_durum.value if hasattr(y.klinik_durum, "value") else str(y.klinik_durum)
@@ -301,8 +321,8 @@ def get_detay(session: Session, yatis_id: int) -> YatisDetay:
         servis_id=y.servis_id,
         servis_ad=servis.ad if servis else None,
         yatak_id=y.yatak_id,
-        yatak_no=yatak.yatak_no if yatak else None,
-        oda_no=yatak.oda_no if yatak else None,
+        yatak_no=yatak_no or (yatak.yatak_no if yatak else None),
+        oda_no=oda_no,
         sorumlu_doktor_id=y.sorumlu_doktor_id,
         sorumlu_doktor_ad=_doktor_ad(session, y.sorumlu_doktor_id),
         sorumlu_hemsire_id=y.sorumlu_hemsire_id,
@@ -423,7 +443,7 @@ def uygula_islem(
         y.aktif_mi = False
         y.cikis_tarihi = now
         if y.yatak_id:
-            _yatak_bosalt(session, y.yatak_id)
+            yatak_cikis_hazirligi(session, y.yatak_id)
         _log(session, yatis_id, yapan.id, tip.value, body.aciklama or "Taburcu edildi")
 
     elif tip == YatisIslemTipi.NAKIL:
@@ -451,12 +471,14 @@ def uygula_islem(
             yeni_y = session.get(Yatak, body.yeni_yatak_id)
             if yeni_y is None:
                 raise HTTPException(status_code=404, detail="Hedef yatak bulunamadı")
-            if body.yeni_servis_id is None and yeni_y.servis_id != y.servis_id:
-                y.servis_id = yeni_y.servis_id
+            yeni_oda = session.get(Oda, yeni_y.oda_id)
+            if body.yeni_servis_id is None and yeni_oda is not None:
+                if yeni_oda.servis_id != y.servis_id:
+                    y.servis_id = yeni_oda.servis_id
             if body.yeni_yatak_id != eski_yatak:
-                _yatak_dolu_yap(session, body.yeni_yatak_id)
+                yatak_dolu_yap_atomik(session, body.yeni_yatak_id)
                 if eski_yatak:
-                    _yatak_bosalt(session, eski_yatak)
+                    yatak_cikis_hazirligi(session, eski_yatak)
             session.add(
                 YatakHareketi(
                     yatis_id=yatis_id,

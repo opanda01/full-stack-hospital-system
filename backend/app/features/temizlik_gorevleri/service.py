@@ -103,6 +103,48 @@ def listele(
     return make_page(items, total=total, page=page, page_size=page_size)
 
 
+def otomatik_oda_temizlik_gorevi(
+    session: Session, servis_ad: str, oda_no: str
+) -> None:
+    """Yatak boşaltma sonrası temizlik görevi (personel atanmış ilk temizlik personeli)."""
+    from datetime import date
+
+    from sqlmodel import select
+
+    from app.core.enums import Rol
+    from app.features.kullanicilar.models import Kullanici
+    from app.features.temizlik_gorevleri.models import TemizlikGorevi
+
+    personel = session.exec(
+        select(Personel)
+        .join(Kullanici, Personel.kullanici_id == Kullanici.id)
+        .where(Kullanici.rol == Rol.TEMIZLIK_PERSONELI)
+        .order_by(Personel.id)
+    ).first()
+    if personel is None:
+        return
+
+    oda_bolum = f"{servis_ad} / Oda {oda_no}"
+    bugun = date.today()
+    clash = session.exec(
+        select(TemizlikGorevi).where(
+            TemizlikGorevi.oda_bolum == oda_bolum,
+            TemizlikGorevi.gorev_tarihi == bugun,
+        )
+    ).first()
+    if clash:
+        return
+
+    session.add(
+        TemizlikGorevi(
+            personel_id=personel.id,
+            oda_bolum=oda_bolum,
+            gorev_tarihi=bugun,
+            durum="ATANDI",
+        )
+    )
+
+
 def ata(
     session: Session, current_user: Kullanici, veri: TemizlikGoreviCreate
 ) -> TemizlikGoreviRead:

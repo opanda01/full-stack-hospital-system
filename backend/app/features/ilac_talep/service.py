@@ -21,7 +21,8 @@ from app.features.ilac_talep.schemas import (
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
 from app.features.yatis.klinik_service import panel_bildirim_olustur
-from app.features.yatis.models import Servis, YatisKaydi
+from app.features.yatak_yonetimi.models import Servis
+from app.features.yatis.models import YatisKaydi
 
 
 def _enum_val(v) -> str:

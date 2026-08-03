@@ -169,6 +169,7 @@ export const ROLE_HOME: Record<string, string> = {
   /** HASTA web paneline giremez — mobil uyarı sayfası */
   HASTA: "/hasta-mobil",
   LABORANT: "/laborant",
+  RADYOLOG: "/radyolog",
   GUVENLIK: "/guvenlik",
   IDARI_PERSONEL: "/idari",
 };

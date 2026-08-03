@@ -19,10 +19,11 @@ import {
 type Servis = { id: number; ad: string };
 type Yatak = {
   id: number;
-  servis_id: number;
-  oda_no: string;
+  servis_id?: number;
+  oda_no: string | null;
   yatak_no: string;
-  dolu_mu: boolean;
+  dolu_mu?: boolean;
+  durum?: string;
 };
 type Doktor = { id: number; uzmanlik_alani?: string };
 type YatisListeItem = {
@@ -327,7 +328,9 @@ export function HemsireServisTakipPage() {
     onError: (e) => setErr(getApiErrorMessage(e)),
   });
 
-  const bosYataklar = yataklar.filter((y) => !y.dolu_mu);
+  const bosYataklar = yataklar.filter(
+    (y) => y.durum === "BOS" || (y.durum == null && !y.dolu_mu),
+  );
 
   return (
     <div className="space-y-4">

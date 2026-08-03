@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     MOCK_ENTEGRASYON_FAIL: bool = False
     KPS_DOGRULAMA_ZORUNLU: bool = False
 
+    ORTHANC_URL: str = "http://localhost:8042"
+    ORTHANC_USER: str = "orthanc"
+    ORTHANC_PASSWORD: str = "orthanc"
+
     @property
     def trusted_proxy_ip_set(self) -> frozenset[str]:
         if not self.TRUSTED_PROXY_IPS.strip():

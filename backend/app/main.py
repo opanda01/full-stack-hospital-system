@@ -35,6 +35,9 @@ from app.features.tetkikler.router import router as tetkikler_router
 from app.features.yetki_devri.router import router as yetki_devri_router
 from app.features.konsultasyon.router import router as konsultasyon_router
 from app.features.saglik_kurulu.router import router as saglik_kurulu_router
+from app.features.yatak_yonetimi.router import router as yatak_yonetimi_router
+from app.features.ameliyathane.router import router as ameliyathane_router
+from app.features.radyoloji.router import router as radyoloji_router
 from app.features.yatis.router import router as yatis_router
 from app.features.ilac_talep.router import router as ilac_talep_router
 from app.features.epikriz.router import router as epikriz_router
@@ -118,6 +121,11 @@ app.include_router(yetki_devri_router, prefix="/yetki-devri", tags=["yetki_devri
 app.include_router(konsultasyon_router, prefix="/konsultasyonlar", tags=["konsultasyon"])
 app.include_router(saglik_kurulu_router, prefix="/saglik-kurulu", tags=["saglik_kurulu"])
 app.include_router(yatis_router, prefix="/yatis", tags=["yatis"])
+app.include_router(
+    yatak_yonetimi_router, prefix="/yatak-yonetimi", tags=["yatak_yonetimi"]
+)
+app.include_router(ameliyathane_router, prefix="/ameliyathane", tags=["ameliyathane"])
+app.include_router(radyoloji_router, prefix="/radyoloji", tags=["radyoloji"])
 app.include_router(ilac_talep_router, prefix="/ilac-talepleri", tags=["ilac_talep"])
 app.include_router(epikriz_router, prefix="/epikriz", tags=["epikriz"])
 app.include_router(guvenlik_router, prefix="/guvenlik", tags=["guvenlik"])

@@ -27,7 +27,9 @@ from app.features.guvenlik.schemas import (
 )
 from app.features.kullanicilar.models import Kullanici
 from app.features.nobet_cizelgesi.models import NobetCizelgesi
-from app.features.yatis.models import Refakatci, Servis, Yatak, YatisKaydi
+from app.features.yatak_yonetimi.models import Servis, Yatak
+from app.features.yatak_yonetimi.service import yatak_oda_bilgi
+from app.features.yatis.models import Refakatci, YatisKaydi
 
 
 def ozet(session: Session, current_user: Kullanici) -> GuvenlikOzet:
@@ -333,6 +335,7 @@ def refakatci_sorgula(session: Session, q: str) -> list[RefakatciSorguSonuc]:
 
     sonuclar: list[RefakatciSorguSonuc] = []
     for ref, yatis, servis, yatak in rows:
+        oda_no, yatak_no, _ = yatak_oda_bilgi(session, yatak)
         sonuclar.append(
             RefakatciSorguSonuc(
                 yatis_id=yatis.id,
@@ -340,7 +343,9 @@ def refakatci_sorgula(session: Session, q: str) -> list[RefakatciSorguSonuc]:
                 yakinlik=ref.yakinlik,
                 servis_adi=servis.ad if servis else None,
                 yatak_kodu=(
-                    f"{yatak.oda_no}-{yatak.yatak_no}" if yatak else None
+                    f"{oda_no}-{yatak_no}"
+                    if yatak and oda_no and yatak_no
+                    else (yatak.yatak_no if yatak else None)
                 ),
                 protokol_no=yatis.protokol_no,
             )

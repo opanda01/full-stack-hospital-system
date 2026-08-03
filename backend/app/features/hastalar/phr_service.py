@@ -14,13 +14,14 @@ from app.features.hastalar.phr_schemas import (
     HastaYatisOzetRead,
 )
 from app.features.klinik_onay.models import KlinikOnayKaydi
-from app.features.kullanicilar.models import Kullanici
 from app.features.randevular import service as randevu_service
 from app.features.randevular.models import Randevu
 from app.features.randevular.router import _to_read as randevu_to_read
 from app.features.tetkikler.models import Tetkik
 from app.features.tetkikler import service as tetkik_service
-from app.features.yatis.models import Servis, Yatak, YatisKaydi
+from app.features.yatak_yonetimi.models import Servis, Yatak
+from app.features.yatak_yonetimi.service import yatak_oda_bilgi
+from app.features.yatis.models import YatisKaydi
 
 
 def _belge_baslik_klinik(tur: str) -> str:
@@ -111,13 +112,14 @@ def yatis_ozet(session: Session, current_user: Kullanici) -> HastaYatisOzetRead:
         return HastaYatisOzetRead(aktif_mi=False)
     servis = session.get(Servis, row.servis_id) if row.servis_id else None
     yatak = session.get(Yatak, row.yatak_id) if row.yatak_id else None
+    oda_no, yatak_no, _ = yatak_oda_bilgi(session, yatak)
     return HastaYatisOzetRead(
         aktif_mi=bool(row.aktif_mi),
         yatis_id=row.id,
         protokol_no=row.protokol_no,
         servis_adi=servis.ad if servis else None,
-        yatak_no=yatak.yatak_no if yatak else None,
-        oda_no=yatak.oda_no if yatak else None,
+        yatak_no=yatak_no,
+        oda_no=oda_no,
         yatis_tarihi=row.yatis_tarihi,
         taburcu_tarihi=row.taburcu_tarihi,
     )
