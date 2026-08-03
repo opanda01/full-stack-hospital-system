@@ -7,25 +7,7 @@ from sqlmodel import Field
 from app.core.base_model import BaseModel, utc_now
 from app.core.enums import KlinikDurum
 
-
-class Servis(BaseModel, table=True):
-    __tablename__ = "servisler"
-
-    ad: str = Field(max_length=150, index=True)
-    kod: str = Field(max_length=50, unique=True, index=True)
-    kat_no: Optional[int] = Field(default=None)
-    departman_id: Optional[int] = Field(
-        default=None, foreign_key="departmanlar.id", index=True
-    )
-
-
-class Yatak(BaseModel, table=True):
-    __tablename__ = "yataklar"
-
-    servis_id: int = Field(foreign_key="servisler.id", index=True)
-    oda_no: str = Field(max_length=30)
-    yatak_no: str = Field(max_length=30)
-    dolu_mu: bool = Field(default=False, index=True)
+from app.features.yatak_yonetimi.models import Servis, Yatak
 
 
 class YatisKaydi(BaseModel, table=True):

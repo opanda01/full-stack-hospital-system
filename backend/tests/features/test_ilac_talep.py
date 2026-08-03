@@ -4,11 +4,13 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
-from app.core.enums import IlacTalepDurumu, KlinikDurum
+from app.core.enums import IlacTalepDurumu, KlinikDurum, YatakDurumu
 from app.core.security import create_access_token
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
-from app.features.yatis.models import Servis, Yatak, YatisKaydi
+from app.core.enums import KlinikDurum, YatakDurumu
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
+from app.features.yatis.models import YatisKaydi
 
 
 def auth_header(user: Kullanici) -> dict[str, str]:
@@ -29,7 +31,11 @@ def _seed_yatis(session: Session, seeded: dict) -> YatisKaydi:
     session.add(servis)
     session.commit()
     session.refresh(servis)
-    yatak = Yatak(servis_id=servis.id, oda_no="101", yatak_no="C", dolu_mu=True)
+    oda = Oda(servis_id=servis.id, oda_no="101")
+    session.add(oda)
+    session.commit()
+    session.refresh(oda)
+    yatak = Yatak(oda_id=oda.id, yatak_no="C", durum=YatakDurumu.DOLU)
     session.add(yatak)
     session.commit()
     session.refresh(yatak)

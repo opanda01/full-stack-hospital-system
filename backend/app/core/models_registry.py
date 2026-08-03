@@ -38,6 +38,7 @@ from app.features.saglik_kurulu.models import (  # noqa: F401
     SaglikKuruluKaydi,
     SaglikKuruluUye,
 )
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak, YatakGecmisi  # noqa: F401
 from app.features.yatis.models import (  # noqa: F401
     AmeliyatBilgisi,
     HastaIslemLogu,
@@ -47,16 +48,21 @@ from app.features.yatis.models import (  # noqa: F401
     IzinHareketi,
     PanelBildirim,
     Refakatci,
-    Servis,
     ServisHareketi,
     VardiyaDevirNotu,
     VitalBulgu,
-    Yatak,
     YatakHareketi,
     YatisKaydi,
 )
 from app.features.ilac_talep.models import IlacTalebi, IlacTalepKalemi  # noqa: F401
 from app.features.epikriz.models import Epikriz  # noqa: F401
+from app.features.ameliyathane.models import (  # noqa: F401
+    Ameliyathane,
+    AmeliyatEkibi,
+    AmeliyatPlani,
+    AnesteziKaydi,
+)
+from app.features.radyoloji.models import RadyolojiIstemi, RadyolojiSonucu  # noqa: F401
 from app.features.guvenlik.models import (  # noqa: F401
     GuvenlikDevriye,
     GuvenlikOlayi,

@@ -21,6 +21,7 @@ Bu belge **tasarım özetidir**. Çalışan kod matrisi tek kaynak gerçeğidir:
 | DOKTOR | `DOKTOR` | Meslek |
 | HEMŞİRE/EBE | `HEMSIRE`, `EBE` | Meslek |
 | LABORANT | `LABORANT` | Meslek |
+| RADYOLOG | `RADYOLOG` | Meslek (PACS raporlama) |
 | TEMİZLİK | `TEMIZLIK_PERSONELI` | Meslek |
 | HASTA | `HASTA` | Sistem |
 
@@ -55,6 +56,9 @@ Semboller:
 | Tetkik iste | `tetkik:iste` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Tetkik sonucu gir | `tetkik:sonuc_gir` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Tetkik görüntüle | `tetkik:goruntule` | ✅ | ✅ | *isteyen* | *departman* | ✅ | ❌ | *kendi* |
+| Radyoloji iste | `radyoloji:iste` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Radyoloji sonuç/rapor | `radyoloji:sonuc_gir` | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ (radyolog) | ❌ |
+| Radyoloji görüntüle | `radyoloji:goruntule` | ✅ | ✅ | *isteyen* | *departman* | ❌ | ✅ | *kendi (raporlu)* |
 | Epikriz görüntüle (hasta: yalnız onaylı) | `epikriz:goruntule` | ✅ | ✅ | *kendi* | ✅ | ❌ | ❌ | *kendi (onaylı)* |
 | Epikriz oluştur/güncelle | `epikriz:olustur` / `:guncelle` | ✅ | ✅ | *kendi* | ✅ | ❌ | ❌ | ❌ |
 | Epikriz onayla | `epikriz:onayla` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
@@ -67,6 +71,15 @@ Semboller:
 | Nöbet görüntüle | `nobet:goruntule` | ✅ | ✅ | *kendi* | *kendi* | *kendi* | *kendi* | ❌ |
 | Yatış görüntüle | `yatis:goruntule` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | *kendi özeti* |
 | Yatış işlem | `yatis:islem` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Servis görüntüle | `servis:goruntule` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Yatak görüntüle | `yatak:goruntule` | ✅ | ✅ | *departman* | *departman* | ❌ | ❌ | ❌ |
+| Yatak ata | `yatak:ata` | ✅ | ✅ | *departman* | *departman* | ❌ | ❌ | ❌ |
+| Yatak durum güncelle | `yatak:durum_guncelle` | ✅ | ✅ | *departman* | *departman* | ❌ | ❌ | ❌ |
+| Ameliyat planla | `ameliyat:planla` | ✅ | ✅ | *kendi cerrah* | ❌ | ❌ | ❌ | ❌ |
+| Ameliyat görüntüle | `ameliyat:goruntule` | ✅ | ✅ | *kendi* | *departman* | ❌ | ❌ | ❌ |
+| Ameliyat güncelle / başlat / tamamla | `ameliyat:guncelle` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Ameliyat iptal | `ameliyat:iptal_et` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
+| Anestezi kaydı | `anestezi:kaydet` | ✅ | ✅ | *kendi* | ❌ | ❌ | ❌ | ❌ |
 | Vital görüntüle/oluştur | `vital:goruntule` / `:olustur` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | İlaç uygulama (MAR) | `ilac_uygulama:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Hemşire görev | `hemsire_gorev:goruntule` / `:olustur` / `:guncelle` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |

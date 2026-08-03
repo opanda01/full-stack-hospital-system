@@ -8,7 +8,9 @@ from app.core.enums import KlinikDurum
 from app.core.security import create_access_token
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
-from app.features.yatis.models import Servis, Yatak, YatisKaydi
+from app.core.enums import KlinikDurum, YatakDurumu
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
+from app.features.yatis.models import YatisKaydi
 
 
 def auth_header(user: Kullanici) -> dict[str, str]:
@@ -29,7 +31,11 @@ def _seed_yatis(session: Session, seeded: dict) -> YatisKaydi:
     session.add(servis)
     session.commit()
     session.refresh(servis)
-    yatak = Yatak(servis_id=servis.id, oda_no="201", yatak_no="B", dolu_mu=True)
+    oda = Oda(servis_id=servis.id, oda_no="201")
+    session.add(oda)
+    session.commit()
+    session.refresh(oda)
+    yatak = Yatak(oda_id=oda.id, yatak_no="B", durum=YatakDurumu.DOLU)
     session.add(yatak)
     session.commit()
     session.refresh(yatak)

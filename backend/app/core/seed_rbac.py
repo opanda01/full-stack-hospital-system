@@ -79,6 +79,15 @@ DEMO_KULLANICILAR: list[dict] = [
         "sicil_no": "L-001",
     },
     {
+        "email": "radyolog@hastane.example.com",
+        "ad": "Test",
+        "soyad": "Radyolog",
+        "rol": Rol.RADYOLOG,
+        "tc": "10000000012",
+        "kullanici_adi": "radyolog",
+        "sicil_no": "R-001",
+    },
+    {
         "email": "temizlik@hastane.example.com",
         "ad": "Test",
         "soyad": "Temizlik",
@@ -123,6 +132,7 @@ _PERSONEL_ROLLER = {
     Rol.TEMIZLIK_PERSONELI,
     Rol.BASHEKIM,
     Rol.LABORANT,
+    Rol.RADYOLOG,
     Rol.MUDUR,
     Rol.GUVENLIK,
     Rol.IDARI_PERSONEL,
@@ -226,17 +236,22 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 if not conflict:
                     personel.sicil_no = item["sicil_no"]
                     session.add(personel)
-            if item["rol"] == Rol.DOKTOR:
+            if item["rol"] in (Rol.DOKTOR, Rol.RADYOLOG):
                 doktor = session.exec(
                     select(Doktor).where(Doktor.personel_id == personel.id)
                 ).first()
                 if not doktor:
+                    alan = (
+                        "Radyoloji"
+                        if item["rol"] == Rol.RADYOLOG
+                        else "Kardiyoloji"
+                    )
                     session.add(
                         Doktor(
                             personel_id=personel.id,
-                            uzmanlik_alani="Kardiyoloji",
+                            uzmanlik_alani=alan,
                             diploma_no=f"DEMO-DIP-{item['tc'][-4:]}",
-                            online_randevu_acik_mi=True,
+                            online_randevu_acik_mi=item["rol"] == Rol.DOKTOR,
                         )
                     )
     session.commit()

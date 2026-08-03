@@ -1,0 +1,1 @@
+export { YatakHaritasi } from "./YatakHaritasi";

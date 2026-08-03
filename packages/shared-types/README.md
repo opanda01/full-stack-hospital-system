@@ -7,13 +7,15 @@ FastAPI OpenAPI şemasından üretilen paylaşılan TypeScript tipleri.
 Backend (`http://localhost:8000`) ayaktayken:
 
 ```bash
-npx openapi-typescript http://localhost:8000/openapi.json -o src/index.ts
+pnpm --filter @hastane/shared-types generate
 ```
 
-veya monorepo kökünden:
+Komut, monorepo kökündeki hoisted `openapi-typescript` paketini doğrudan çağırır (`node-linker=hoisted` ile uyumlu).
+
+Alternatif (aynı çıktı):
 
 ```bash
-pnpm --filter @hastane/shared-types generate
+npx openapi-typescript http://localhost:8000/openapi.json -o packages/shared-types/src/index.ts
 ```
 
 Üretilen `src/index.ts` web ve mobile paketlerinde `@hastane/shared-types` olarak import edilir.

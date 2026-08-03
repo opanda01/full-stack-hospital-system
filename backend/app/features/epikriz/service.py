@@ -123,6 +123,42 @@ def create_epikriz(
     return _to_read(session, row)
 
 
+def olustur_taslak_epikriz_ameliyat_sonrasi(
+    session: Session,
+    *,
+    hasta_id: int,
+    ameliyat_adi: str,
+    yazar_id: int,
+) -> Epikriz | None:
+    """Ameliyat tamamlanınca aktif yatış için taslak epikriz (service-to-service)."""
+    yatis = session.exec(
+        select(YatisKaydi).where(
+            YatisKaydi.hasta_id == hasta_id,
+            YatisKaydi.aktif_mi == True,  # noqa: E712
+        )
+    ).first()
+    if yatis is None:
+        return None
+    mevcut = session.exec(
+        select(Epikriz).where(
+            Epikriz.yatis_id == yatis.id,
+            Epikriz.durum == EpikrizDurumu.TASLAK.value,
+        )
+    ).first()
+    if mevcut is not None:
+        return mevcut
+    row = Epikriz(
+        yatis_id=yatis.id,
+        hasta_id=hasta_id,
+        yazar_id=yazar_id,
+        durum=EpikrizDurumu.TASLAK.value,
+        tedavi_ozeti=f"Ameliyat: {ameliyat_adi}",
+    )
+    session.add(row)
+    session.flush()
+    return row
+
+
 def update_epikriz(
     session: Session, epikriz_id: int, body: EpikrizUpdate
 ) -> EpikrizRead:

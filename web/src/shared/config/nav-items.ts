@@ -35,6 +35,8 @@ import {
   Package,
   Footprints,
   BedDouble,
+  Scissors,
+  Scan,
 } from "lucide-react";
 
 /** Web paneline giriş yapabilen personel rolleri (HASTA hariç). */
@@ -46,6 +48,7 @@ export type Rol =
   | "HEMSIRE"
   | "EBE"
   | "LABORANT"
+  | "RADYOLOG"
   | "TEMIZLIK_PERSONELI"
   | "GUVENLIK"
   | "IDARI_PERSONEL";
@@ -82,6 +85,9 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: "Muayeneler", path: "/admin/muayeneler", icon: ClipboardList },
   { label: "Tetkikler", path: "/admin/tetkikler", icon: FlaskConical },
   { label: "Nöbet Çizelgesi", path: "/admin/nobet", icon: CalendarDays },
+  { label: "Yatak Yönetimi", path: "/admin/yatak-yonetimi", icon: BedDouble },
+  { label: "Ameliyathane", path: "/admin/ameliyathane", icon: Scissors },
+  { label: "Radyoloji", path: "/admin/radyoloji", icon: Scan },
   { label: "Temizlik Görevleri", path: "/admin/temizlik", icon: Sparkles },
   {
     label: "Şikayet/Öneriler",
@@ -103,6 +109,9 @@ function mudurItems(root: "/mudur"): NavItem[] {
     { label: "Muayeneler", path: `${root}/muayeneler`, icon: ClipboardList },
     { label: "Tetkikler", path: `${root}/tetkikler`, icon: FlaskConical },
     { label: "Nöbet Çizelgesi", path: `${root}/nobet`, icon: CalendarDays },
+    { label: "Yatak Yönetimi", path: `${root}/yatak-yonetimi`, icon: BedDouble },
+    { label: "Ameliyathane", path: `${root}/ameliyathane`, icon: Scissors },
+    { label: "Radyoloji", path: `${root}/radyoloji`, icon: Scan },
     { label: "Temizlik Görevleri", path: `${root}/temizlik`, icon: Sparkles },
     {
       label: "Şikayet/Öneriler",
@@ -135,6 +144,9 @@ function bashekimGroups(): NavGroup[] {
         { label: "Faturalandırma", path: `${root}/faturalandirma`, icon: Receipt },
         { label: "Döner sermaye", path: `${root}/doner-sermaye`, icon: Wallet },
         { label: "Nöbet", path: `${root}/nobet`, icon: CalendarDays },
+        { label: "Yatak Yönetimi", path: `${root}/yatak-yonetimi`, icon: BedDouble },
+        { label: "Ameliyathane", path: `${root}/ameliyathane`, icon: Scissors },
+    { label: "Radyoloji", path: `${root}/radyoloji`, icon: Scan },
         { label: "Temizlik", path: `${root}/temizlik`, icon: Sparkles },
         { label: "Şikayet/Öneri", path: `${root}/sikayet`, icon: MessageSquareWarning },
         { label: "Raporlar", path: `${root}/raporlar`, icon: BarChart3 },
@@ -158,6 +170,8 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
         { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
         { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
         { label: "Servisim", path: "/doktor/servisim", icon: BedDouble },
+        { label: "Ameliyathane", path: "/doktor/ameliyathane", icon: Scissors },
+        { label: "Radyoloji", path: "/doktor/radyoloji", icon: Scan },
         { label: "Nöbetlerim", path: "/doktor/nobetlerim", icon: CalendarDays },
         { label: "Hastalarım", path: "/doktor/hastalarim", icon: Users },
         { label: "Tetkiklerim", path: "/doktor/tetkiklerim", icon: FlaskConical },
@@ -191,11 +205,9 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ],
   HEMSIRE: asSingleGroup([
     { label: "Dashboard", path: "/hemsire", icon: LayoutDashboard },
-    {
-      label: "Servis Hasta Takip",
-      path: "/hemsire/servis-takip",
-      icon: HeartPulse,
-    },
+    { label: "Servis Hasta Takip", path: "/hemsire/servis-takip", icon: HeartPulse },
+    { label: "Yatak Yönetimi", path: "/hemsire/yatak-yonetimi", icon: BedDouble },
+    { label: "Ameliyathane", path: "/hemsire/ameliyathane", icon: Scissors },
     { label: "Hasta Arama", path: "/hemsire/hasta-arama", icon: Search },
     { label: "Order Takibi", path: "/hemsire/order-takip", icon: ListOrdered },
     { label: "Tetkikler", path: "/hemsire/tetkikler", icon: FlaskConical },
@@ -225,6 +237,8 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       path: "/ebe/servis-takip",
       icon: HeartPulse,
     },
+    { label: "Yatak Yönetimi", path: "/ebe/yatak-yonetimi", icon: BedDouble },
+    { label: "Ameliyathane", path: "/ebe/ameliyathane", icon: Scissors },
     { label: "Hasta Arama", path: "/ebe/hasta-arama", icon: Search },
     { label: "Order Takibi", path: "/ebe/order-takip", icon: ListOrdered },
     { label: "Tetkikler", path: "/ebe/tetkikler", icon: FlaskConical },
@@ -259,6 +273,10 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       path: "/laborant/tetkik-sonuc-girisi",
       icon: FlaskConical,
     },
+  ]),
+  RADYOLOG: asSingleGroup([
+    { label: "Radyoloji / PACS", path: "/radyolog/radyoloji", icon: Scan },
+    { label: "Ayarlar", path: "/radyolog/ayarlar", icon: Settings },
   ]),
   TEMIZLIK_PERSONELI: asSingleGroup([
     { label: "Dashboard", path: "/temizlik", icon: LayoutDashboard },
@@ -299,6 +317,7 @@ export const ROL_ETIKET: Record<Rol | "HASTA", string> = {
   HEMSIRE: "Hemşire",
   EBE: "Ebe",
   LABORANT: "Laborant",
+  RADYOLOG: "Radyolog",
   TEMIZLIK_PERSONELI: "Temizlik Personeli",
   GUVENLIK: "Güvenlik",
   IDARI_PERSONEL: "İdari Personel",

@@ -11,6 +11,7 @@ class ServisRead(BaseModel):
     id: int
     ad: str
     kod: str
+    tip: str | None = None
     kat_no: int | None
     departman_id: int | None
 
@@ -19,9 +20,11 @@ class ServisRead(BaseModel):
 
 class YatakRead(BaseModel):
     id: int
-    servis_id: int
-    oda_no: str
+    oda_id: int
+    oda_no: str | None = None
+    servis_id: int | None = None
     yatak_no: str
+    durum: str
     dolu_mu: bool
 
     model_config = {"from_attributes": True}

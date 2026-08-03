@@ -43,11 +43,16 @@ services:
       DATABASE_URL: postgresql+psycopg://hastane:hastane@postgres:5432/hastane_db
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      ORTHANC_URL: http://orthanc:8042
+      ORTHANC_USER: orthanc
+      ORTHANC_PASSWORD: orthanc
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      orthanc:
+        condition: service_started
     volumes:
       # Kaynak kod bind-mount; venv /opt/venv'de (Dockerfile) kalır, ezilmez
       - ./backend:/app
@@ -55,6 +60,20 @@ services:
     # Prod örneği (reload yok, multi-worker):
     # command: ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
     # PgBouncer eklerseniz yalnız transaction pooling; session mode SET LOCAL app.actor_id ile uyumsuz.
+
+  orthanc:
+    image: jodogne/orthanc-plugins:1.12.5
+    container_name: hastane-orthanc
+    restart: unless-stopped
+    ports:
+      - "8042:8042"
+      - "4242:4242"
+    environment:
+      ORTHANC__NAME: "Hastane Orthanc"
+      ORTHANC__REGISTERED_USERS: '{"orthanc":"orthanc"}'
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+    volumes:
+      - orthanc_data:/var/lib/orthanc/db
 
   celery-worker:
     build:
@@ -98,3 +117,4 @@ services:
 volumes:
   postgres_data:
   postgres_backups:
+  orthanc_data:

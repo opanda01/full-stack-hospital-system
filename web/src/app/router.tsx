@@ -11,6 +11,9 @@ import { SikayetOneriPage } from "@/pages/ortak/sikayet";
 import { HastaKayitPage } from "@/pages/ortak/hasta-kayit";
 import { AdminHastalarPage } from "@/pages/admin/hastalar";
 import { TemizlikAtaPage } from "@/pages/ortak/temizlik-ata";
+import { YatakYonetimiPage } from "@/pages/ortak/yatak-yonetimi";
+import { AmeliyathanePage } from "@/pages/ortak/ameliyathane";
+import { RadyolojiPage } from "@/pages/ortak/radyoloji";
 import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
 import { SifreSifirlaPage } from "@/pages/ortak/sifre-sifirla";
 import { KvkkOnayPage } from "@/pages/ortak/kvkk-onay";
@@ -62,6 +65,7 @@ import { DoktorEpikrizPage } from "@/pages/doktor/epikriz";
 import { LaborantDashboardPage } from "@/pages/laborant/dashboard";
 import { LaborantBekleyenPage } from "@/pages/laborant/bekleyen";
 import { LaborantPage } from "@/pages/laborant/tetkik-sonuc-girisi";
+import { RadyologRadyolojiPage } from "@/pages/radyolog/radyoloji";
 
 import { TemizlikDashboardPage } from "@/pages/temizlik/dashboard";
 import { TemizlikGorevlerimPage } from "@/pages/temizlik/gorevlerim";
@@ -155,6 +159,9 @@ export function AppRouter() {
           />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="temizlik" element={<TemizlikAtaPage />} />
+          <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
+          <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="muayeneler" element={<AdminMuayenelerPage />} />
           <Route path="tetkikler" element={<AdminTetkiklerPage />} />
@@ -189,6 +196,9 @@ export function AppRouter() {
           <Route path="yetki-matrisi" element={<AdminRbacPage />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="temizlik" element={<TemizlikAtaPage />} />
+          <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
+          <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
@@ -208,6 +218,9 @@ export function AppRouter() {
           <Route path="tetkikler" element={<AdminTetkiklerPage />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="temizlik" element={<TemizlikAtaPage />} />
+          <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
+          <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
@@ -223,6 +236,8 @@ export function AppRouter() {
           <Route path="epikriz" element={<DoktorEpikrizPage />} />
           <Route path="hastalarim" element={<DoktorHastalarimPage />} />
           <Route path="servisim" element={<DoktorServisimPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
+          <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="nobetlerim" element={<DoktorNobetlerimPage />} />
           <Route path="receteler" element={<DoktorRecetelerPage />} />
           <Route path="sevkler" element={<DoktorSevlerPage />} />
@@ -239,6 +254,8 @@ export function AppRouter() {
         <Route path="/hemsire" element={<RoleLayoutRoute rol="HEMSIRE" />}>
           <Route index element={<HemsireDashboardPage />} />
           <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
           <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
           <Route path="order-takip" element={<HemsireOrderTakipPage />} />
           <Route path="tetkikler" element={<HemsireTetkiklerPage />} />
@@ -260,6 +277,8 @@ export function AppRouter() {
         <Route path="/ebe" element={<RoleLayoutRoute rol="EBE" />}>
           <Route index element={<EbeDashboardPage />} />
           <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
+          <Route path="ameliyathane" element={<AmeliyathanePage />} />
           <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
           <Route path="order-takip" element={<HemsireOrderTakipPage />} />
           <Route path="tetkikler" element={<HemsireTetkiklerPage />} />
@@ -289,6 +308,13 @@ export function AppRouter() {
             path="isler"
             element={<Navigate to="/laborant/tetkik-sonuc-girisi" replace />}
           />
+          <Route path="ayarlar" element={<AyarlarPage />} />
+        </Route>
+
+        {/* RADYOLOG */}
+        <Route path="/radyolog" element={<RoleLayoutRoute rol="RADYOLOG" />}>
+          <Route index element={<Navigate to="/radyolog/radyoloji" replace />} />
+          <Route path="radyoloji" element={<RadyologRadyolojiPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 

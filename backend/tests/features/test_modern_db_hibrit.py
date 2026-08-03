@@ -14,8 +14,12 @@ from app.features.auth.models import DenetimKaydi
 from app.features.kullanicilar.models import Kullanici
 from app.core.timezone import as_utc
 from app.features.mhrs.router import _payload_hash
-from app.features.yatis.models import Servis, Yatak
-from app.features.yatis.service import _yatak_bosalt, _yatak_dolu_yap
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
+from app.core.enums import YatakDurumu
+from app.features.yatak_yonetimi.service import (
+    yatak_cikis_hazirligi,
+    yatak_dolu_yap_atomik,
+)
 from tests.conftest import auth_header
 
 
@@ -120,17 +124,20 @@ def test_yatak_atomic_occupy(session: Session):
     session.add(servis)
     session.commit()
     session.refresh(servis)
-    yatak = Yatak(servis_id=servis.id, oda_no="1", yatak_no="A", dolu_mu=False)
+    oda = Oda(servis_id=servis.id, oda_no="1")
+    session.add(oda)
+    session.flush()
+    yatak = Yatak(oda_id=oda.id, yatak_no="A", durum=YatakDurumu.BOS)
     session.add(yatak)
     session.commit()
     session.refresh(yatak)
 
-    _yatak_dolu_yap(session, yatak.id)
+    yatak_dolu_yap_atomik(session, yatak.id)
     session.commit()
     with pytest.raises(HTTPException) as ei:
-        _yatak_dolu_yap(session, yatak.id)
+        yatak_dolu_yap_atomik(session, yatak.id)
     assert ei.value.status_code == 409
-    _yatak_bosalt(session, yatak.id)
+    yatak_cikis_hazirligi(session, yatak.id)
     session.commit()
 
 
