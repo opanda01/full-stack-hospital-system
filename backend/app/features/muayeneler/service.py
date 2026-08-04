@@ -25,6 +25,7 @@ from app.features.muayeneler.schemas import (
     MuayeneUpdate,
     ReceteKalemRead,
 )
+from app.core.config import get_settings
 from app.features.randevular.models import Randevu
 
 
