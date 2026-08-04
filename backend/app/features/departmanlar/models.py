@@ -28,6 +28,7 @@ class Departman(BaseModel, table=True):
     birim_id: Optional[int] = Field(
         default=None, foreign_key="birimler.id", index=True
     )
+    kurum_id: int = Field(default=1, index=True)
 
     birim: Optional[Birim] = Relationship(back_populates="departmanlar")
     personeller: list["Personel"] = Relationship(back_populates="departman")  # noqa: F821

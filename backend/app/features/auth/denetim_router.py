@@ -2,9 +2,10 @@
 detay yalnız denetim:detay (ADMIN)."""
 
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
 from sqlmodel import Session, col, select
 
 from app.core.config import get_settings
@@ -12,6 +13,7 @@ from app.core.db import get_session
 from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.features.auth.models import DenetimKaydi
+from app.features.bashekim.router import phi_dis_aktarim_logla
 from app.features.kullanicilar.models import Kullanici
 
 router = APIRouter()
@@ -34,6 +36,30 @@ class DenetimKaydiRead(BaseModel):
 
 class DenetimKaydiDetayRead(DenetimKaydiRead):
     detay: dict | None = None
+
+
+class DisAktarimIstek(BaseModel):
+    kaynak: str = Field(min_length=1, max_length=80)
+    kaynak_id: str = Field(min_length=1, max_length=64)
+    format: Literal["PDF", "CSV", "XLSX", "PRINT"] = "PDF"
+
+
+@router.post("/dis-aktarim", status_code=status.HTTP_204_NO_CONTENT)
+def kayit_dis_aktarim_denetim(
+    body: DisAktarimIstek,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
+):
+    """PDF/export veya yazdırma öncesi denetim (KAYIT_EXPORT / KAYIT_YAZDIR)."""
+    phi_dis_aktarim_logla(
+        session,
+        actor=current_user,
+        kaynak=body.kaynak,
+        kaynak_id=body.kaynak_id,
+        format=body.format,
+        request=request,
+    )
 
 
 def _zaman_filtre(

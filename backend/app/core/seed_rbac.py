@@ -8,11 +8,22 @@ from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, Rol
 from app.core.security import hash_password
+from app.core.tc_kimlik import gecerli_tc_kimlik_no, tc_ilk_dokuz_haneden
 import app.core.models_registry  # noqa: F401
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.erisim_service import apply_erisim_durumu
 
 DEMO_SIFRE = "Test1234!"
+
+
+def _demo_tc(raw: str) -> str:
+    if gecerli_tc_kimlik_no(raw):
+        return raw
+    nine = raw[:9].zfill(9) if len(raw) >= 9 else raw.zfill(9)
+    if nine[0] == "0":
+        nine = "1" + nine[1:]
+    return tc_ilk_dokuz_haneden(nine)
+
 
 DEMO_KULLANICILAR: list[dict] = [
     {
@@ -147,6 +158,7 @@ def seed_demo_kullanicilar(session: Session) -> None:
 
     sifre_hash = hash_password(DEMO_SIFRE)
     for item in DEMO_KULLANICILAR:
+        item = {**item, "tc": _demo_tc(item["tc"])}
         existing = session.exec(
             select(Kullanici).where(Kullanici.email == item["email"])
         ).first()

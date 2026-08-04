@@ -99,6 +99,9 @@ def _plan_oku(session: Session, plan: AmeliyatPlani) -> AmeliyatPlaniOku:
         durum=_enum_val(plan.durum),
         ameliyat_adi=plan.ameliyat_adi,
         iptal_gerekcesi=plan.iptal_gerekcesi,
+        onam_alindi_mi=bool(plan.onam_alindi_mi),
+        onam_zamani=plan.onam_zamani,
+        e_imza_referans=plan.e_imza_referans,
         ekip=[
             AmeliyatEkipUyeOku(
                 id=e.id, personel_id=e.personel_id, rol=_enum_val(e.rol)
@@ -279,6 +282,16 @@ def get_ameliyat_plani(
     return _plan_oku(session, plan)
 
 
+def get_ameliyat_plani_kayit(
+    session: Session,
+    plan_id: int,
+    *,
+    kapsam: Kapsam,
+    current_user: Kullanici,
+) -> AmeliyatPlani:
+    return _plan_erisim(session, plan_id, kapsam=kapsam, current_user=current_user)
+
+
 def ameliyat_planla(
     session: Session,
     body: AmeliyatPlaniOlustur,
@@ -413,6 +426,11 @@ def ameliyat_baslat(
         AmeliyatPlaniDurumu.HAZIRLIK.value,
     ):
         raise HTTPException(status_code=400, detail="Ameliyat başlatılamaz")
+    if not plan.onam_alindi_mi:
+        raise HTTPException(
+            status_code=400,
+            detail="Ameliyat başlamadan önce dijital onam zorunludur",
+        )
 
     ameliyathane = session.get(Ameliyathane, plan.ameliyathane_id)
     if ameliyathane is None:

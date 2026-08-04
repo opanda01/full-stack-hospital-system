@@ -10,6 +10,7 @@ from sqlmodel.pool import StaticPool
 from app.core.db import get_session
 from app.core.enums import Rol
 from app.core.security import create_access_token, hash_password
+from app.core.tc_kimlik import tc_ilk_dokuz_haneden
 from app.features.departmanlar.models import Departman
 from app.features.doktorlar.models import Doktor
 from app.features.hastalar.models import Hasta
@@ -20,6 +21,10 @@ from app.features.temizlik_gorevleri.models import TemizlikGorevi
 from app.features.tetkikler.models import Tetkik
 from app.main import app
 from datetime import date, datetime, timedelta, timezone
+
+
+def _test_tc(nine: str) -> str:
+    return tc_ilk_dokuz_haneden(nine)
 
 
 @pytest.fixture(name="session")
@@ -85,41 +90,65 @@ def seeded(session: Session):
     session.refresh(dep_a)
     session.refresh(dep_b)
 
-    admin = _user(session, email="admin@t.test", rol=Rol.ADMIN, tc="11111111111")
+    admin = _user(session, email="admin@t.test", rol=Rol.ADMIN, tc=_test_tc("111111111"))
     doktor_a_u = _user(
-        session, email="doktora@t.test", rol=Rol.DOKTOR, tc="22222222221", soyad="DoktorA"
+        session,
+        email="doktora@t.test",
+        rol=Rol.DOKTOR,
+        tc=_test_tc("222222221"),
+        soyad="DoktorA",
     )
     doktor_b_u = _user(
-        session, email="doktorb@t.test", rol=Rol.DOKTOR, tc="22222222222", soyad="DoktorB"
+        session,
+        email="doktorb@t.test",
+        rol=Rol.DOKTOR,
+        tc=_test_tc("222222222"),
+        soyad="DoktorB",
     )
     hemsire_u = _user(
-        session, email="hemsire@t.test", rol=Rol.HEMSIRE, tc="33333333331", soyad="Hemsire"
+        session,
+        email="hemsire@t.test",
+        rol=Rol.HEMSIRE,
+        tc=_test_tc("333333331"),
+        soyad="Hemsire",
     )
     hasta_a_u = _user(
-        session, email="hastaa@t.test", rol=Rol.HASTA, tc="44444444441", soyad="HastaA"
+        session,
+        email="hastaa@t.test",
+        rol=Rol.HASTA,
+        tc=_test_tc("444444441"),
+        soyad="HastaA",
     )
     hasta_b_u = _user(
-        session, email="hastab@t.test", rol=Rol.HASTA, tc="44444444442", soyad="HastaB"
+        session,
+        email="hastab@t.test",
+        rol=Rol.HASTA,
+        tc=_test_tc("444444442"),
+        soyad="HastaB",
     )
     temizlik_a_u = _user(
         session,
         email="temizlika@t.test",
         rol=Rol.TEMIZLIK_PERSONELI,
-        tc="55555555551",
+        tc=_test_tc("555555551"),
         soyad="TemizlikA",
     )
     temizlik_b_u = _user(
         session,
         email="temizlikb@t.test",
         rol=Rol.TEMIZLIK_PERSONELI,
-        tc="55555555552",
+        tc=_test_tc("555555552"),
         soyad="TemizlikB",
     )
     laborant_u = _user(
-        session, email="lab@t.test", rol=Rol.LABORANT, tc="66666666661", soyad="Lab"
+        session, email="lab@t.test", rol=Rol.LABORANT, tc=_test_tc("666666661"), soyad="Lab"
     )
     bashekim_u = _user(
-        session, email="bashekim@t.test", rol=Rol.BASHEKIM, tc="77777777771", soyad="Bashekim"
+        session,
+        email="bashekim@t.test",
+        rol=Rol.BASHEKIM,
+        tc=_test_tc("777777771"),
+        soyad="Bashekim",
     )
 
     pa = Personel(
@@ -149,8 +178,8 @@ def seeded(session: Session):
     session.refresh(da)
     session.refresh(db)
 
-    ha = Hasta(kullanici_id=hasta_a_u.id, tc_kimlik_no="44444444441")
-    hb = Hasta(kullanici_id=hasta_b_u.id, tc_kimlik_no="44444444442")
+    ha = Hasta(kullanici_id=hasta_a_u.id, tc_kimlik_no=hasta_a_u.tc_kimlik_no)
+    hb = Hasta(kullanici_id=hasta_b_u.id, tc_kimlik_no=hasta_b_u.tc_kimlik_no)
     session.add_all([ha, hb])
     session.commit()
     session.refresh(ha)
@@ -226,6 +255,7 @@ def seeded(session: Session):
         "gorev_b": gorev_b,
         "doktor_a_entity": da,
         "doktor_b_entity": db,
+        "hemsire_entity": ph,
         "hasta_a_entity": ha,
         "hasta_b_entity": hb,
     }

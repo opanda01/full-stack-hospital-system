@@ -40,6 +40,12 @@ class AmeliyatPlani(BaseModel, table=True):
     )
     ameliyat_adi: str = Field(max_length=300)
     iptal_gerekcesi: Optional[str] = Field(default=None, max_length=1000)
+    onam_alindi_mi: bool = Field(default=False, index=True)
+    onam_zamani: Optional[datetime] = Field(default=None)
+    onam_kvkk_onay_id: Optional[int] = Field(
+        default=None, foreign_key="kvkk_onay_kayitlari.id", index=True
+    )
+    e_imza_referans: Optional[str] = Field(default=None, max_length=128)
 
 
 class AmeliyatEkibi(BaseModel, table=True):
