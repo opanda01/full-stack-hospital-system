@@ -218,29 +218,33 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
     - Bağımlılık: `Randevu`
     - Yapıldı: `GELMEDI` + `POST .../gelmedi`, `Hasta.gelmeyen_randevu_sayisi`, `NO_SHOW_RANDEVU_LIMIT`; `test_faz2_operasyon.py`
 
-13. **Yenidoğan / yabancı kimlik modeli**
+13. **Yenidoğan / yabancı kimlik modeli** ✅ (minimum)
     - Neden: TC zorunlu checksum; geçici protokol, anne FK, YKN/pasaport tipi yok.
     - Katman: `hastalar`, migration, web.
     - Büyüklük: **L**
     - Bağımlılık: `Hasta`, `tc_kimlik`
+    - Yapıldı: `kimlik_tipi`, pasaport/protokol alanları, `POST /hastalar/ozel-kimlik`, sentetik TC; migration `030`
 
-14. **İzolasyon + yatak kısıtı**
+14. **İzolasyon + yatak kısıtı** ✅ (minimum)
     - Neden: Yatak doluluk var; izolasyon tipi (damlacık/hava) yok.
     - Katman: `yatak_yonetimi`, `yatis`.
     - Büyüklük: **M**
     - Bağımlılık: `Yatak`, `YatisKaydi`
+    - Yapıldı: `Yatak.izolasyon_tipi`, `YatisKaydi.izolasyon_gerekli`, `yatak_ata` uyumluluk kontrolü
 
-15. **E-Nabız paket üretimi**
+15. **E-Nabız paket üretimi** ✅ (iskelet)
     - Neden: Port + panel test senkron var; klinik olaylardan otomatik paket tetikleme sınırlı.
     - Katman: `entegrasyonlar`, outbox, klinik feature’lar.
     - Büyüklük: **L**
     - Bağımlılık: `EnabizPort`, `entegrasyon_gonderimleri`
+    - Yapıldı: `enabiz_paket_service`, muayene sonrası outbox + `ENABIZ_OTOMATIK_PAKET`
 
-16. **Katkı payı / sevk kural motoru (basit)**
+16. **Katkı payı / sevk kural motoru (basit)** ✅ (minimum)
     - Neden: Klinik onayda sevk metni var; aile hekimi sevk doğrulama ve ilave ücret satırı yok.
     - Katman: `faturalandirma`, `klinik_onay`.
     - Büyüklük: **L**
     - Bağımlılık: fatura modelleri, sevk belgesi
+    - Yapıldı: `aile_hekimi_sevk_no`, `FaturaKalemi`, `sevk_kural_service` onayda katkı satırı; `test_faz2_devam.py`
 
 ### Faz 3 — İyileştirme (teknik borç / UX)
 

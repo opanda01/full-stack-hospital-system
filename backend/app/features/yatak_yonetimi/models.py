@@ -5,7 +5,7 @@ from sqlalchemy import Column, String
 from sqlmodel import Field
 
 from app.core.base_model import BaseModel, utc_now
-from app.core.enums import ServisTipi, YatakDurumu
+from app.core.enums import IzolasyonTipi, ServisTipi, YatakDurumu
 
 
 class Servis(BaseModel, table=True):
@@ -38,6 +38,10 @@ class Yatak(BaseModel, table=True):
     durum: YatakDurumu = Field(
         default=YatakDurumu.BOS,
         sa_column=Column(String(30), nullable=False, index=True),
+    )
+    izolasyon_tipi: IzolasyonTipi = Field(
+        default=IzolasyonTipi.YOK,
+        sa_column=Column(String(20), nullable=False, index=True),
     )
 
 

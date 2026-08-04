@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.core.enums import ServisTipi, YatakDurumu
+from app.core.enums import IzolasyonTipi, ServisTipi, YatakDurumu
 
 
 class ServisOku(BaseModel):
@@ -52,6 +52,7 @@ class YatakOku(BaseModel):
     servis_id: int | None = None
     yatak_no: str
     durum: str
+    izolasyon_tipi: str = IzolasyonTipi.YOK.value
 
     model_config = {"from_attributes": True}
 
@@ -65,6 +66,7 @@ class YatakOlustur(BaseModel):
 class YatakGuncelle(BaseModel):
     yatak_no: str | None = Field(default=None, max_length=30)
     durum: YatakDurumu | None = None
+    izolasyon_tipi: IzolasyonTipi | None = None
 
 
 class YatakAtaIstek(BaseModel):

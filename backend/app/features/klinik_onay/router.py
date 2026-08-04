@@ -19,6 +19,7 @@ from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.hastalar import service as hasta_service
+from app.features.faturalandirma.sevk_kural_service import sevk_onay_ek_ucret_uygula
 from app.features.klinik_onay.models import KlinikOnayKaydi
 from app.features.kullanicilar.models import Kullanici
 
@@ -30,6 +31,7 @@ class KlinikOnayCreate(BaseModel):
     muayene_id: int | None = None
     hasta_id: UUID | None = None
     icerik: str = Field(min_length=1, max_length=4000)
+    aile_hekimi_sevk_no: str | None = Field(default=None, max_length=64)
     # ACIL_RIZASIZ için zorunlu: ikinci hekim (kullanıcı id)
     ikinci_hekim_id: int | None = None
 
@@ -48,6 +50,7 @@ class KlinikOnayRead(BaseModel):
     bilgilendirme_yapildi_mi: bool = False
     bilgilendirme_tarihi: datetime | None = None
     bilgilendirme_notu: str | None = None
+    aile_hekimi_sevk_no: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -73,6 +76,7 @@ def _to_read(session: Session, row: KlinikOnayKaydi) -> KlinikOnayRead:
         bilgilendirme_yapildi_mi=bool(row.bilgilendirme_yapildi_mi),
         bilgilendirme_tarihi=row.bilgilendirme_tarihi,
         bilgilendirme_notu=row.bilgilendirme_notu,
+        aile_hekimi_sevk_no=row.aile_hekimi_sevk_no,
     )
 
 
@@ -229,6 +233,7 @@ def create_klinik_onay(
         onaylayan_id=onaylayan_id,
         onay_tarihi=onay_tarihi,
         ikinci_onaylayan_id=ikinci_id,
+        aile_hekimi_sevk_no=body.aile_hekimi_sevk_no,
     )
     session.add(row)
     session.flush()
@@ -300,6 +305,8 @@ def onayla(
     row.onaylayan_id = current_user.id
     row.onay_tarihi = datetime.utcnow()
     session.add(row)
+    if row.tur == "SEVK":
+        sevk_onay_ek_ucret_uygula(session, row)
     denetim_kaydi_yaz(
         session,
         aksiyon="KLINIK_ONAY",
