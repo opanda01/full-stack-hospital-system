@@ -5,12 +5,17 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import select
 
 from app.core.enums import OtpAmac, OturumTipi, Rol
+from app.core.tc_kimlik import tc_ilk_dokuz_haneden
 from app.core.request_ip import istemci_ip_al
 from app.core.security import create_access_token, hash_password, hash_token
 from app.features.auth.models import DenetimKaydi, OtpKodu
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.models import Personel
+
+
+def _tc(n: int) -> str:
+    return tc_ilk_dokuz_haneden(f"91000000{n}")
 
 
 def _auth(user: Kullanici, *, oturum_tipi: OturumTipi = OturumTipi.PERSONEL) -> dict:
@@ -44,7 +49,7 @@ def test_login_sicil_ok(client, session):
     user = _make_user(
         session,
         email="hemsire@example.com",
-        tc="91000000001",
+        tc=_tc(1),
         rol=Rol.HEMSIRE,
         kullanici_adi="h.ayse",
     )
@@ -71,7 +76,7 @@ def test_onboarding_allowlist(client, session):
     user = _make_user(
         session,
         email="yeni@example.com",
-        tc="91000000002",
+        tc=_tc(2),
         rol=Rol.HEMSIRE,
         sifre_degistirmeli_mi=True,
         kvkk_onaylandi_mi=False,
@@ -115,7 +120,7 @@ def test_otp_kayit_ve_giris(client, session, monkeypatch):
         "/auth/otp/gonder",
         json={
             "telefon": "05551112233",
-            "tc_kimlik_no": "91000000003",
+            "tc_kimlik_no": _tc(3),
             "amac": "KAYIT",
         },
     )
@@ -125,7 +130,7 @@ def test_otp_kayit_ve_giris(client, session, monkeypatch):
         "/auth/otp/dogrula",
         json={
             "telefon": "05551112233",
-            "tc_kimlik_no": "91000000003",
+            "tc_kimlik_no": _tc(3),
             "kod": "111111",
             "amac": "KAYIT",
             "ad": "Ali",
@@ -143,7 +148,7 @@ def test_otp_kayit_ve_giris(client, session, monkeypatch):
     session.add(
         OtpKodu(
             telefon="05551112233",
-            tc_kimlik_no="91000000003",
+            tc_kimlik_no=_tc(3),
             kod_hash=hash_token("111111"),
             amac=OtpAmac.GIRIS,
             deneme_sayisi=0,
@@ -157,7 +162,7 @@ def test_otp_kayit_ve_giris(client, session, monkeypatch):
         "/auth/otp/dogrula",
         json={
             "telefon": "05551112233",
-            "tc_kimlik_no": "91000000003",
+            "tc_kimlik_no": _tc(3),
             "kod": "111111",
             "amac": "GIRIS",
         },
@@ -172,7 +177,7 @@ def test_otp_rate_limit(client, session, monkeypatch):
     )
     payload = {
         "telefon": "05552223344",
-        "tc_kimlik_no": "91000000004",
+        "tc_kimlik_no": _tc(4),
         "amac": "KAYIT",
     }
     assert client.post("/auth/otp/gonder", json=payload).status_code == 200
@@ -185,7 +190,7 @@ def test_otp_max_deneme(client, session):
     session.add(
         OtpKodu(
             telefon="05553334455",
-            tc_kimlik_no="91000000005",
+            tc_kimlik_no=_tc(5),
             kod_hash=hash_token("999999"),
             amac=OtpAmac.KAYIT,
             deneme_sayisi=0,
@@ -201,7 +206,7 @@ def test_otp_max_deneme(client, session):
             "/auth/otp/dogrula",
             json={
                 "telefon": "05553334455",
-                "tc_kimlik_no": "91000000005",
+                "tc_kimlik_no": _tc(5),
                 "kod": "000000",
                 "amac": "KAYIT",
                 "ad": "X",
@@ -213,7 +218,7 @@ def test_otp_max_deneme(client, session):
         "/auth/otp/dogrula",
         json={
             "telefon": "05553334455",
-            "tc_kimlik_no": "91000000005",
+            "tc_kimlik_no": _tc(5),
             "kod": "000000",
             "amac": "KAYIT",
             "ad": "X",
@@ -233,7 +238,7 @@ def test_cift_profil_personel_sonra_otp_hasta(client, session, monkeypatch):
     user = _make_user(
         session,
         email="cift@example.com",
-        tc="91000000006",
+        tc=_tc(6),
         rol=Rol.HEMSIRE,
         telefon="05554445566",
     )
@@ -244,7 +249,7 @@ def test_cift_profil_personel_sonra_otp_hasta(client, session, monkeypatch):
         "/auth/otp/gonder",
         json={
             "telefon": "05554445566",
-            "tc_kimlik_no": "91000000006",
+            "tc_kimlik_no": _tc(6),
             "amac": "KAYIT",
         },
     )
@@ -252,7 +257,7 @@ def test_cift_profil_personel_sonra_otp_hasta(client, session, monkeypatch):
         "/auth/otp/dogrula",
         json={
             "telefon": "05554445566",
-            "tc_kimlik_no": "91000000006",
+            "tc_kimlik_no": _tc(6),
             "kod": "333333",
             "amac": "KAYIT",
             "kvkk_onay": True,
@@ -291,7 +296,7 @@ def test_deprecated_register_headers(client, session):
     r = client.post(
         "/auth/register",
         json={
-            "tc_kimlik_no": "91000000007",
+            "tc_kimlik_no": _tc(7),
             "ad": "Eski",
             "soyad": "Kayit",
             "email": "eski@example.com",
@@ -349,7 +354,7 @@ def test_sifre_sifirla_ok_and_login(client, session, monkeypatch):
     user = _make_user(
         session,
         email="reset@example.com",
-        tc="91000000008",
+        tc=_tc(8),
         rol=Rol.HEMSIRE,
     )
     session.add(Personel(kullanici_id=user.id, sicil_no="H-300"))
@@ -363,7 +368,7 @@ def test_sifre_sifirla_ok_and_login(client, session, monkeypatch):
     otp = session.exec(
         select(OtpKodu).where(
             OtpKodu.amac == OtpAmac.SIFRE_SIFIRLAMA,
-            OtpKodu.tc_kimlik_no == "91000000008",
+            OtpKodu.tc_kimlik_no == _tc(8),
         )
     ).first()
     assert otp is not None
@@ -409,7 +414,7 @@ def test_sifre_sifirla_rate_limit(client, session, monkeypatch):
     user = _make_user(
         session,
         email="rate-reset@example.com",
-        tc="91000000009",
+        tc=_tc(9),
         rol=Rol.ADMIN,
         telefon="05556667788",
     )

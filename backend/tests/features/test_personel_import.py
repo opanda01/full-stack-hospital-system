@@ -6,11 +6,16 @@ from sqlmodel import select
 
 from app.core.enums import ImportDurum, Rol
 from app.core.security import create_access_token, hash_password
+from app.core.tc_kimlik import tc_ilk_dokuz_haneden
 from app.features.auth.models import PersonelImportIsi
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel import import_service
 from app.features.personel.models import Personel
+
+
+def _tc92(n: int) -> str:
+    return tc_ilk_dokuz_haneden(f"92000000{n}")
 
 
 def _auth(user: Kullanici) -> dict[str, str]:
@@ -19,7 +24,7 @@ def _auth(user: Kullanici) -> dict[str, str]:
 
 def _admin(session) -> Kullanici:
     u = Kullanici(
-        tc_kimlik_no="92000000001",
+        tc_kimlik_no=_tc92(1),
         ad="Admin",
         soyad="Import",
         email="admin-import@example.com",
@@ -36,7 +41,7 @@ def _admin(session) -> Kullanici:
 
 def test_import_rbac_forbidden(client, session):
     hemsire = Kullanici(
-        tc_kimlik_no="92000000002",
+        tc_kimlik_no=_tc92(2),
         ad="H",
         soyad="E",
         email="h-imp@example.com",
@@ -62,7 +67,7 @@ def test_import_job_success_and_dual_profile(client, session):
 
     # Önce hasta olarak var olan TC
     hasta_u = Kullanici(
-        tc_kimlik_no="92000000003",
+        tc_kimlik_no=_tc92(3),
         ad="Ayse",
         soyad="Yilmaz",
         email="ayse-hasta@example.com",
@@ -73,14 +78,14 @@ def test_import_job_success_and_dual_profile(client, session):
     )
     session.add(hasta_u)
     session.flush()
-    session.add(Hasta(kullanici_id=hasta_u.id, tc_kimlik_no="92000000003"))
+    session.add(Hasta(kullanici_id=hasta_u.id, tc_kimlik_no=_tc92(3)))
     session.commit()
 
     rows = [
         {
             "ad": "Ayse",
             "soyad": "Yilmaz",
-            "tc_kimlik_no": "92000000003",
+            "tc_kimlik_no": _tc92(3),
             "sicil_no": "H-300",
             "rol": "HEMSIRE",
             "telefon": "05550001122",
@@ -89,7 +94,7 @@ def test_import_job_success_and_dual_profile(client, session):
         {
             "ad": "Yeni",
             "soyad": "Personel",
-            "tc_kimlik_no": "92000000004",
+            "tc_kimlik_no": _tc92(4),
             "sicil_no": "H-301",
             "rol": "EBE",
             "email": "yeni-p@example.com",
@@ -99,7 +104,7 @@ def test_import_job_success_and_dual_profile(client, session):
             # duplicate sicil on second pass — fail row when same sicil
             "ad": "Dup",
             "soyad": "Sicil",
-            "tc_kimlik_no": "92000000005",
+            "tc_kimlik_no": _tc92(5),
             "sicil_no": "H-300",
             "rol": "LABORANT",
             "email": "dup@example.com",
@@ -148,7 +153,7 @@ def test_import_endpoint_with_mocked_celery(client, session, monkeypatch):
 
     csv_body = (
         "Ad,Soyad,TC Kimlik No,Sicil No,Rol,Email,Telefon\n"
-        "Fatma,Demir,92000000006,H-400,GUVENLIK,fatma@example.com,05556667788\n"
+        f"Fatma,Demir,{_tc92(6)},H-400,GUVENLIK,fatma@example.com,05556667788\n"
     ).encode("utf-8")
 
     r = client.post(

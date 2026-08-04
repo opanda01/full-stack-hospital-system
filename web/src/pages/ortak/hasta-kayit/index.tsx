@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Button } from "@/shared/ui";
 import { api } from "@/shared/api";
+import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "@/shared/lib";
 
 export function HastaKayitPage() {
   const [form, setForm] = useState({
@@ -25,6 +26,10 @@ export function HastaKayitPage() {
         className="grid max-w-md gap-2"
         onSubmit={(e) => {
           e.preventDefault();
+          if (!gecerliTcKimlikNo(form.tc_kimlik_no)) {
+            setMsg(TC_GECERSIZ_MESAJ);
+            return;
+          }
           mut.mutate();
         }}
       >

@@ -8,6 +8,7 @@ import {
   Switch,
 } from "react-native";
 import { otpDogrula, otpGonder } from "@/shared/api";
+import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "@/shared/lib/tcKimlik";
 import { useAuthStore } from "@/shared/auth";
 import { goReplace } from "@/shared/nav";
 
@@ -27,8 +28,12 @@ export function KayitOlForm() {
 
   const gonder = async () => {
     setHata(null);
-    if (!telefon.trim() || tc.trim().length !== 11 || !ad.trim() || !soyad.trim()) {
-      setHata("Telefon, TC, ad ve soyad zorunludur");
+    if (!telefon.trim() || !gecerliTcKimlikNo(tc) || !ad.trim() || !soyad.trim()) {
+      setHata(
+        !gecerliTcKimlikNo(tc) && tc.trim().length > 0
+          ? TC_GECERSIZ_MESAJ
+          : "Telefon, TC, ad ve soyad zorunludur",
+      );
       return;
     }
     if (!kvkk) {

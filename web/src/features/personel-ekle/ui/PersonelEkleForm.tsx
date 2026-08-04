@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage } from "@/shared/lib";
+import { getApiErrorMessage, gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "@/shared/lib";
 
 type Departman = {
   id: number;
@@ -99,6 +99,10 @@ export function PersonelEkleForm({ onSuccess }: { onSuccess?: () => void }) {
       className="mb-6 grid max-w-2xl gap-2 rounded border bg-card p-4 sm:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
+        if (!gecerliTcKimlikNo(form.tc_kimlik_no)) {
+          setError(TC_GECERSIZ_MESAJ);
+          return;
+        }
         createMut.mutate();
       }}
     >

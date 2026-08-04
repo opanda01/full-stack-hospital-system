@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.core.enums import GuvenlikOlayDurumu, GuvenlikOlayTipi, KayipEsyaDurumu
+from app.core.tc_kimlik import TcKimlikNoOpsiyonel
 
 
 class GuvenlikOlayCreate(BaseModel):
@@ -39,7 +40,7 @@ class GuvenlikOlayRead(BaseModel):
 
 class ZiyaretciCreate(BaseModel):
     ad_soyad: str = Field(max_length=150)
-    tc_kimlik: str | None = Field(default=None, max_length=11)
+    tc_kimlik: TcKimlikNoOpsiyonel = None
     ziyaret_edilen: str = Field(max_length=150)
     servis: str | None = Field(default=None, max_length=100)
     yatis_id: int | None = None

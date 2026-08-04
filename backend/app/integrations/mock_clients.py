@@ -6,6 +6,7 @@ from datetime import date
 from uuid import uuid4
 
 from app.core.config import get_settings
+from app.core.tc_kimlik import gecerli_tc_kimlik_no
 from app.integrations.ports import EnabizSonuc, KpsSonuc, MedulaSonuc
 
 
@@ -48,7 +49,7 @@ class MockKps:
     def dogrula(self, tc_kimlik_no: str) -> KpsSonuc:
         if get_settings().MOCK_ENTEGRASYON_FAIL:
             return KpsSonuc(dogrulandi=False, mesaj="MOCK_KPS_FAIL")
-        if not (tc_kimlik_no.isdigit() and len(tc_kimlik_no) == 11):
+        if not gecerli_tc_kimlik_no(tc_kimlik_no):
             return KpsSonuc(dogrulandi=False, mesaj="Geçersiz TC formatı")
         return KpsSonuc(
             dogrulandi=True,

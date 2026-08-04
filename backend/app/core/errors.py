@@ -6,6 +6,17 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
+def _validation_errors_json(exc: RequestValidationError) -> list[dict]:
+    sanitized: list[dict] = []
+    for err in exc.errors():
+        item = dict(err)
+        ctx = item.get("ctx")
+        if isinstance(ctx, dict):
+            item["ctx"] = {k: str(v) for k, v in ctx.items()}
+        sanitized.append(item)
+    return sanitized
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(_request: Request, exc: StarletteHTTPException):
@@ -28,7 +39,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={
                 "error": True,
                 "status_code": 422,
-                "detail": exc.errors(),
+                "detail": _validation_errors_json(exc),
                 "code": "VALIDATION_ERROR",
             },
         )

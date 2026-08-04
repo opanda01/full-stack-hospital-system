@@ -3,10 +3,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.core.tc_kimlik import TcKimlikNo
+
 
 class HastaCreate(BaseModel):
     kullanici_id: int
-    tc_kimlik_no: str
+    tc_kimlik_no: TcKimlikNo
     dogum_tarihi: date | None = None
     cinsiyet: str | None = None
     kan_grubu: str | None = None
@@ -17,7 +19,7 @@ class HastaCreate(BaseModel):
 
 
 class HastaCreateWithUser(BaseModel):
-    tc_kimlik_no: str
+    tc_kimlik_no: TcKimlikNo
     ad: str
     soyad: str
     email: EmailStr

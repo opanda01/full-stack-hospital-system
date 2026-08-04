@@ -2,6 +2,7 @@
 
 from app.core.enums import Rol
 from app.core.security import create_access_token, hash_password
+from app.core.tc_kimlik import tc_ilk_dokuz_haneden
 from app.features.kullanicilar.models import Kullanici
 
 
@@ -208,7 +209,7 @@ def test_kullanici_create_admin(client, session):
         "/kullanicilar/",
         headers=_auth(admin),
         json={
-            "tc_kimlik_no": "90000000006",
+            "tc_kimlik_no": tc_ilk_dokuz_haneden("900000006"),
             "ad": "Yeni",
             "soyad": "Kullanici",
             "email": "yeni@example.com",

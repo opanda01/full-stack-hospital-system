@@ -3,10 +3,11 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 from app.core.enums import Rol
+from app.core.tc_kimlik import TcKimlikNo
 
 
 class KullaniciCreate(BaseModel):
-    tc_kimlik_no: str
+    tc_kimlik_no: TcKimlikNo
     ad: str
     soyad: str
     email: EmailStr
