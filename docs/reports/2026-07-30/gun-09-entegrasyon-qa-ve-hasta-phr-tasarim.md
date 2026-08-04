@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 9: Doktor Panel Entegrasyonu, QA ve Hasta PHR Tasarımı
 
 **Tarih:** 30 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS  
+**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
 **Kapsam:** Gün 8 doktor panel dalının `main` ile hizalanması sonrası manuel doğrulama; klinik belge → hasta görünürlüğü gereksinimleri; birleşik PHR API ve mobil ekran taslağı; RBAC ve ROADMAP güncelleme hazırlığı
 
 ---
