@@ -33,6 +33,7 @@ from app.features.entegrasyonlar.models import EntegrasyonDurum  # noqa: F401
 from app.features.klinik_onay.models import KlinikOnayKaydi  # noqa: F401
 from app.features.eczane.models import Ilac  # noqa: F401
 from app.features.faturalandirma.models import Fatura  # noqa: F401
+from app.features.faturalandirma.models import FaturaKalemi  # noqa: F401
 from app.features.doner_sermaye.models import DonerSermayeKayit  # noqa: F401
 from app.features.yetki_devri.models import YetkiDevriKaydi  # noqa: F401
 from app.features.konsultasyon.models import KonsultasyonIstegi  # noqa: F401

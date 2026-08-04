@@ -20,9 +20,11 @@ from app.features.hastalar.schemas import (
     HastaUpdate,
     MukerrerIstegiCreate,
     MukerrerIstegiRead,
+    OzelKimlikHastaCreate,
     YasalTemsilciCreate,
     YasalTemsilciRead,
 )
+from app.features.hastalar import ozel_kimlik_service
 from app.features.hastalar import mpi_service
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.schemas import HastaAlerjiCreate, HastaAlerjiRead
@@ -392,6 +394,20 @@ def create_hasta(
     _user=Depends(require_role(Rol.ADMIN, Rol.IDARI_PERSONEL)),
 ):
     h = hasta_service.create_hasta_with_user(session, body)
+    return hasta_service._hasta_to_read(session, h)
+
+
+@router.post(
+    "/ozel-kimlik",
+    response_model=HastaRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_ozel_kimlik_hasta(
+    body: OzelKimlikHastaCreate,
+    session: Session = Depends(get_session),
+    _user=Depends(require_role(Rol.ADMIN, Rol.IDARI_PERSONEL)),
+):
+    h = ozel_kimlik_service.create_ozel_kimlik_hasta(session, body)
     return hasta_service._hasta_to_read(session, h)
 
 

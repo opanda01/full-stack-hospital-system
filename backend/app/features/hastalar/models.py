@@ -24,6 +24,12 @@ class Hasta(BaseModel, table=True):
     anonymized_at: Optional[datetime] = Field(default=None)
     ehliyet_kisitli_mi: bool = Field(default=False)
     gelmeyen_randevu_sayisi: int = Field(default=0)
+    kimlik_tipi: str = Field(default="TC", max_length=30, index=True)
+    yabanci_kimlik_no: Optional[str] = Field(default=None, max_length=64, index=True)
+    gecici_protokol_no: Optional[str] = Field(default=None, max_length=50, index=True)
+    anne_hasta_id: Optional[int] = Field(
+        default=None, foreign_key="hastalar.id", index=True
+    )
     merged_into_hasta_id: Optional[int] = Field(
         default=None, foreign_key="hastalar.id", index=True
     )

@@ -180,6 +180,10 @@ def _hasta_to_read(session: Session, h: Hasta) -> HastaRead:
         email=k.email if k else None,
         telefon=k.telefon if k else None,
         aktif_mi=k.aktif_mi if k else None,
+        kimlik_tipi=h.kimlik_tipi or "TC",
+        yabanci_kimlik_no=h.yabanci_kimlik_no,
+        gecici_protokol_no=h.gecici_protokol_no,
+        anne_hasta_id=h.anne_hasta_id,
     )
 
 

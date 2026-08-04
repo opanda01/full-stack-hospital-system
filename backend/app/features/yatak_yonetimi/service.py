@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.base_model import utc_now
 from app.core.batch_load import batch_by_ids
-from app.core.enums import YatakDurumu, ServisTipi
+from app.core.enums import IzolasyonTipi, YatakDurumu, ServisTipi
 from app.core.permissions import Kapsam
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.hastalar.models import Hasta
@@ -54,7 +54,18 @@ def _yatak_oku(
         servis_id=o.servis_id if o else None,
         yatak_no=yatak.yatak_no,
         durum=_durum_str(yatak.durum),
+        izolasyon_tipi=_izolasyon_str(yatak.izolasyon_tipi),
     )
+
+
+def _izolasyon_str(t: IzolasyonTipi | str) -> str:
+    return t.value if hasattr(t, "value") else str(t)
+
+
+def _izolasyon_uyumlu(yatak_tip: IzolasyonTipi | str, gerekli: str | None) -> bool:
+    if not gerekli or gerekli == IzolasyonTipi.YOK.value:
+        return True
+    return _izolasyon_str(yatak_tip) == gerekli
 
 
 def _personel_departman_id(session: Session, user: Kullanici) -> int | None:
@@ -247,6 +258,13 @@ def yatak_ata(
     hasta = session.get(Hasta, yatis.hasta_id)
     if hasta is None:
         raise HTTPException(status_code=404, detail="Hasta bulunamadı")
+
+    gerekli = yatis.izolasyon_gerekli
+    if gerekli and not _izolasyon_uyumlu(yatak.izolasyon_tipi, gerekli):
+        raise HTTPException(
+            status_code=400,
+            detail="Yatak izolasyon tipi yatış gereksinimi ile uyumlu değil",
+        )
 
     if yatis.yatak_id and yatis.yatak_id != yatak_id:
         eski = session.get(Yatak, yatis.yatak_id)

@@ -77,6 +77,8 @@ class Settings(BaseSettings):
     MEDULA_PROVIZYON_ZORUNLU: bool = False
     # 0 = no-show engeli kapalı
     NO_SHOW_RANDEVU_LIMIT: int = 3
+    ENABIZ_OTOMATIK_PAKET: bool = True
+    SEVK_KATKI_PAYI_TUTAR: float = 150.0
 
     ORTHANC_URL: str = "http://localhost:8042"
     ORTHANC_USER: str = "orthanc"

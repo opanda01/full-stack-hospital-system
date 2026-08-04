@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.audit import denetim_kaydi_yaz
 from app.core.enums import Rol
+from app.core.config import get_settings
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
@@ -247,6 +248,17 @@ def create_muayene(
     session.add(randevu)
     session.commit()
     session.refresh(kayit)
+    if get_settings().ENABIZ_OTOMATIK_PAKET:
+        from app.features.entegrasyonlar.enabiz_paket_service import muayene_paketi_gonder
+
+        muayene_paketi_gonder(
+            session,
+            muayene=kayit,
+            hasta_id=randevu.hasta_id,
+            actor_id=current_user.id,
+            ip_adresi=ip_adresi,
+            commit=True,
+        )
     return kayit
 
 

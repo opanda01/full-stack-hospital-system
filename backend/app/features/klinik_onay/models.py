@@ -20,7 +20,8 @@ class KlinikOnayKaydi(BaseModel, table=True):
     olusturan_id: Optional[int] = Field(default=None)
     onaylayan_id: Optional[int] = Field(default=None)
     onay_tarihi: Optional[datetime] = Field(default=None)
-    # Acil rızasız müdahale: ikinci hekim + sonradan bilgilendirme
+    aile_hekimi_sevk_no: Optional[str] = Field(default=None, max_length=64)
+
     ikinci_onaylayan_id: Optional[int] = Field(default=None, index=True)
     bilgilendirme_yapildi_mi: bool = Field(default=False)
     bilgilendirme_tarihi: Optional[datetime] = Field(default=None)

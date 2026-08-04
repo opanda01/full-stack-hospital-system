@@ -16,3 +16,12 @@ class Fatura(BaseModel, table=True):
     medula_takip_no: Optional[str] = Field(default=None, max_length=64)
     provizyon_no: Optional[str] = Field(default=None, max_length=64)
     gonderim_durumu: Optional[str] = Field(default="BEKLEMEDE", max_length=40)
+
+
+class FaturaKalemi(BaseModel, table=True):
+    __tablename__ = "fatura_kalemleri"
+
+    fatura_id: int = Field(foreign_key="faturalar.id", index=True)
+    kod: str = Field(max_length=40, index=True)
+    aciklama: str = Field(max_length=500)
+    tutar: Decimal = Field(max_digits=12, decimal_places=2)

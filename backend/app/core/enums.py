@@ -293,3 +293,16 @@ class TriyajRenk(str, Enum):
     SARI = "SARI"
     YESIL = "YESIL"
     MAVI = "MAVI"
+
+
+class HastaKimlikTipi(str, Enum):
+    TC = "TC"
+    YABANCI_PASAPORT = "YABANCI_PASAPORT"
+    YENIDOGAN_GECICI = "YENIDOGAN_GECICI"
+
+
+class IzolasyonTipi(str, Enum):
+    YOK = "YOK"
+    DAMLACIK = "DAMLACIK"
+    HAVA = "HAVA"
+    KONTAK = "KONTAK"

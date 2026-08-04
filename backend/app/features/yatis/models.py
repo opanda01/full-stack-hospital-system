@@ -35,6 +35,9 @@ class YatisKaydi(BaseModel, table=True):
     )
     kontrol_edildi_mi: bool = Field(default=False)
     aktif_mi: bool = Field(default=True, index=True)
+    izolasyon_gerekli: Optional[str] = Field(
+        default=None, max_length=20, index=True
+    )
 
 
 class ServisHareketi(BaseModel, table=True):

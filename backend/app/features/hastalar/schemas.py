@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.core.enums import HastaKimlikTipi
 from app.core.tc_kimlik import TcKimlikNo
 
 
@@ -49,8 +50,28 @@ class HastaRead(BaseModel):
     email: str | None = None
     telefon: str | None = None
     aktif_mi: bool | None = None
+    kimlik_tipi: str = "TC"
+    yabanci_kimlik_no: str | None = None
+    gecici_protokol_no: str | None = None
+    anne_hasta_id: int | None = None
 
     model_config = {"from_attributes": True}
+
+
+class OzelKimlikHastaCreate(BaseModel):
+    kimlik_tipi: HastaKimlikTipi
+    ad: str = Field(max_length=100)
+    soyad: str = Field(max_length=100)
+    yabanci_kimlik_no: str | None = Field(default=None, max_length=64)
+    gecici_protokol_no: str | None = Field(default=None, max_length=50)
+    anne_hasta_id: int | None = None
+    email: EmailStr | None = None
+    sifre: str | None = Field(default=None, min_length=8)
+    telefon: str | None = None
+    dogum_tarihi: date | None = None
+    cinsiyet: str | None = None
+    kan_grubu: str | None = None
+    adres: str | None = None
 
 
 class HastaUpdate(BaseModel):
