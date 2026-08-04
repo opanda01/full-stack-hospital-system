@@ -10,7 +10,7 @@ type AuthLayoutProps = {
   hastaneAdi?: string;
 };
 
-const HOSPITAL_NAME = "Çanakkale Mehmet Akif Ersoy Devlet Hastanesi";
+const HOSPITAL_NAME = "Devlet Hastanesi";
 const PRODUCT_NAME = "Hastane Bilgi Yönetim Sistemi";
 const DEFAULT_KURUM = "T.C. Sağlık Bakanlığı";
 

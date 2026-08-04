@@ -20,6 +20,12 @@ export function getApiErrorMessage(
         )
         .join("; ");
     }
+    if (detail != null && typeof detail === "object" && !Array.isArray(detail)) {
+      const d = detail as { mesaj?: unknown; kod?: unknown; detail?: unknown };
+      if (typeof d.mesaj === "string") return d.mesaj;
+      if (typeof d.detail === "string") return d.detail;
+      if (typeof d.kod === "string") return d.kod;
+    }
     if (detail != null) return String(detail);
   }
   if (err instanceof Error && err.message) return err.message;

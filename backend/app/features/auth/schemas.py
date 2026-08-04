@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.core.enums import OtpAmac, OturumTipi, Rol
+from app.core.tc_kimlik import TcKimlikNo
 
 
 class LoginRequest(BaseModel):
@@ -42,6 +43,12 @@ class SifreDegistirRequest(BaseModel):
 
 class KvkkOnayRequest(BaseModel):
     onay: bool = True
+    yasal_temsilci_id: int | None = None
+    temsilci_ad_soyad: str | None = Field(default=None, max_length=200)
+    temsilci_tc_kimlik_no: TcKimlikNo | None = None
+    temsilci_tur: str | None = Field(
+        default=None, pattern="^(VELI|VASI|YASAL_TEMSILCI)$"
+    )
 
 
 class MeResponse(BaseModel):
@@ -72,7 +79,7 @@ class LogoutRequest(BaseModel):
 
 class OtpGonderRequest(BaseModel):
     telefon: str = Field(min_length=10, max_length=20)
-    tc_kimlik_no: str = Field(min_length=11, max_length=11)
+    tc_kimlik_no: TcKimlikNo
     amac: OtpAmac
     ad: str | None = None
     soyad: str | None = None
@@ -87,7 +94,7 @@ class OtpGonderResponse(BaseModel):
 
 class OtpDogrulaRequest(BaseModel):
     telefon: str = Field(min_length=10, max_length=20)
-    tc_kimlik_no: str = Field(min_length=11, max_length=11)
+    tc_kimlik_no: TcKimlikNo
     kod: str = Field(min_length=6, max_length=6)
     amac: OtpAmac
     ad: str | None = None

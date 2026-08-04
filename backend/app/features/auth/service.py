@@ -305,15 +305,47 @@ def kvkk_onayla(
     onay: bool,
     ip_adresi: str | None = None,
     kanal: str = "WEB",
+    yasal_temsilci_id: int | None = None,
+    temsilci_ad_soyad: str | None = None,
+    temsilci_tc_kimlik_no: str | None = None,
+    temsilci_tur: str | None = None,
 ) -> Kullanici:
     if not onay:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="KVKK onayı zorunludur",
         )
-    from app.core.enums import KvkkMetinTur, KvkkOnayKanal
+    from app.core.enums import KvkkMetinTur, KvkkOnayKanal, Rol
+    from app.features.hastalar.models import Hasta
+    from app.features.hastalar.yasal_temsilci_service import cozumle_temsilci_onam
     from app.features.kvkk.models import KvkkOnayKaydi
     from app.features.kvkk.router import aktif_metin
+
+    temsilci_fields: dict = {
+        "yasal_temsilci_id": None,
+        "temsilci_ad_soyad": None,
+        "temsilci_tc_kimlik_no": None,
+        "temsilci_tur": None,
+    }
+    if kullanici.rol == Rol.HASTA:
+        hasta = session.exec(
+            select(Hasta).where(Hasta.kullanici_id == kullanici.id)
+        ).first()
+        if hasta is not None:
+            tid, tad, ttc, ttur = cozumle_temsilci_onam(
+                session,
+                hasta=hasta,
+                yasal_temsilci_id=yasal_temsilci_id,
+                temsilci_ad_soyad=temsilci_ad_soyad,
+                temsilci_tc_kimlik_no=temsilci_tc_kimlik_no,
+                temsilci_tur=temsilci_tur,
+            )
+            temsilci_fields = {
+                "yasal_temsilci_id": tid,
+                "temsilci_ad_soyad": tad,
+                "temsilci_tc_kimlik_no": ttc,
+                "temsilci_tur": ttur,
+            }
 
     kullanici.kvkk_onaylandi_mi = True
     kullanici.kvkk_onay_tarihi = utc_now()
@@ -334,6 +366,7 @@ def kvkk_onayla(
                 onay_tarihi=utc_now(),
                 ip=ip_adresi,
                 kanal=kanal_enum,
+                **temsilci_fields,
             )
         )
 
@@ -343,7 +376,11 @@ def kvkk_onayla(
         actor_id=kullanici.id,
         kaynak="auth",
         ip_adresi=ip_adresi,
-        detay={"metin_id": metin.id if metin else None, "versiyon": metin.versiyon if metin else None},
+        detay={
+            "metin_id": metin.id if metin else None,
+            "versiyon": metin.versiyon if metin else None,
+            **{k: v for k, v in temsilci_fields.items() if v is not None},
+        },
         commit=False,
     )
     session.commit()
@@ -390,6 +427,11 @@ def otp_gonder(
     ip_adresi: str | None = None,
 ) -> OtpGonderResponse:
     _otp_rate_limit_check(session, telefon)
+
+    if amac == OtpAmac.KAYIT:
+        from app.core.kps_dogrulama import kps_dogrula_gerekirse
+
+        kps_dogrula_gerekirse(tc_kimlik_no)
 
     if amac == OtpAmac.GIRIS:
         kullanici = session.exec(

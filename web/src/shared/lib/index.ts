@@ -1,4 +1,5 @@
 export { cn } from "./utils";
+export { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "./tc-kimlik";
 export { getApiErrorMessage } from "./api-error";
 export {
   formatIstanbulDate,

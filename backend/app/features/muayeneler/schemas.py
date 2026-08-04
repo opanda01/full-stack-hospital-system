@@ -41,6 +41,9 @@ class MuayeneCreate(BaseModel):
     receteler: str | None = None  # deprecated
     recete_kalemleri: list[ReceteKalemCreate] | None = None
     uyari_onay: UyariOnay | None = None
+    bulasici_bildirim_mi: bool = False
+    adli_vaka_mi: bool = False
+    olum_bildirim_mi: bool = False
 
 
 class MuayeneUpdate(BaseModel):
@@ -49,6 +52,9 @@ class MuayeneUpdate(BaseModel):
     receteler: str | None = None  # deprecated
     recete_kalemleri: list[ReceteKalemCreate] | None = None
     uyari_onay: UyariOnay | None = None
+    bulasici_bildirim_mi: bool | None = None
+    adli_vaka_mi: bool | None = None
+    olum_bildirim_mi: bool | None = None
 
 
 class MuayeneRead(BaseModel):
@@ -58,6 +64,9 @@ class MuayeneRead(BaseModel):
     tedavi_plani: str | None = None
     receteler: str | None = None
     recete_kalemleri: list[ReceteKalemRead] = []
+    bulasici_bildirim_mi: bool = False
+    adli_vaka_mi: bool = False
+    olum_bildirim_mi: bool = False
 
     model_config = {"from_attributes": True}
 

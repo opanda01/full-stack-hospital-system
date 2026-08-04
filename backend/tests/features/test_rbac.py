@@ -3,6 +3,7 @@
 from app.core.enums import Rol
 from app.core.permissions import Kapsam, kapsam_getir
 from app.core.security import create_access_token
+from app.core.tc_kimlik import tc_ilk_dokuz_haneden
 from app.features.kullanicilar.models import Kullanici
 
 
@@ -270,18 +271,19 @@ def test_rbac_put_izinler_405(client, seeded):
 
 
 def test_auth_register_hasta(client):
+    tc = tc_ilk_dokuz_haneden("960000001")
     r = client.post(
         "/auth/register",
         json={
-            "tc_kimlik_no": "88888888881",
+            "tc_kimlik_no": tc,
             "ad": "Yeni",
             "soyad": "Hasta",
             "email": "yeni.hasta@example.com",
             "sifre": "Test1234!",
         },
     )
-    assert r.status_code == 201
-    assert r.json()["tc_kimlik_no"] == "88888888881"
+    assert r.status_code == 201, r.text
+    assert r.json()["tc_kimlik_no"] == tc
 
 
 def test_login_returns_permissions(client, session):

@@ -140,7 +140,7 @@ def seed_test_hastalar(session: Session, *, count: int = 100) -> tuple[int, int]
                 dogum_tarihi=date(dogum_yili, (i % 12) + 1, min(28, (i % 27) + 1)),
                 cinsiyet=cinsiyet,
                 kan_grubu=KAN_GRUPLARI[i % len(KAN_GRUPLARI)],
-                adres=f"Test Mah. No:{i} Çanakkale",
+                adres=f"Test Mah. No:{i}",
             )
         )
         created += 1

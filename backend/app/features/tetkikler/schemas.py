@@ -21,6 +21,9 @@ class TetkikSonucKalemRead(BaseModel):
     ref_min: float | None = None
     ref_max: float | None = None
     anormal_mi: bool = False
+    panic_min: float | None = None
+    panic_max: float | None = None
+    panic_mi: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -34,6 +37,9 @@ class TetkikSonucKalemCreate(BaseModel):
     ref_min: float | None = None
     ref_max: float | None = None
     anormal_mi: bool = False
+    panic_min: float | None = None
+    panic_max: float | None = None
+    panic_mi: bool = False
 
 
 class TetkikRead(BaseModel):

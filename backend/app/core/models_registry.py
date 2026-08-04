@@ -8,6 +8,8 @@ from app.features.personel.models import Personel  # noqa: F401
 from app.features.doktorlar.models import Doktor  # noqa: F401
 from app.features.hastalar.models import Hasta  # noqa: F401
 from app.features.hastalar.alerji_models import HastaAlerjisi  # noqa: F401
+from app.features.hastalar.mpi_models import HastaMukerrerIstegi  # noqa: F401
+from app.features.hastalar.yasal_temsilci_models import HastaYasalTemsilci  # noqa: F401
 from app.features.randevular.models import Randevu  # noqa: F401
 from app.features.muayeneler.models import MuayeneKaydi  # noqa: F401
 from app.features.muayeneler.recete_models import (  # noqa: F401

@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
+from app.core.tc_kimlik import TcKimlikNo
 from app.core.enums import (
     ErisimDurumu,
     ImportDurum,
@@ -45,7 +46,7 @@ class PersonelRead(BaseModel):
 class PersonelWithUserCreate(BaseModel):
     """Tek istekte kullanıcı + personel (+ doktor) oluşturma."""
 
-    tc_kimlik_no: str
+    tc_kimlik_no: TcKimlikNo
     ad: str
     soyad: str
     email: EmailStr

@@ -363,6 +363,9 @@ def create_hasta(session: Session, data: HastaCreate) -> Hasta:
 
 
 def create_hasta_with_user(session: Session, data: HastaCreateWithUser) -> Hasta:
+    from app.core.kps_dogrulama import kps_dogrula_gerekirse
+
+    kps_dogrula_gerekirse(data.tc_kimlik_no)
     existing_user = session.exec(
         select(Kullanici).where(
             (Kullanici.email == data.email)

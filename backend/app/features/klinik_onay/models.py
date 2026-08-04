@@ -10,7 +10,7 @@ from app.core.enums import KlinikOnayDurumu
 class KlinikOnayKaydi(BaseModel, table=True):
     __tablename__ = "klinik_onay_kayitlari"
 
-    tur: str = Field(max_length=20, index=True)  # RECETE | SEVK | TIBBI_RAPOR
+    tur: str = Field(max_length=20, index=True)  # RECETE | SEVK | TIBBI_RAPOR | ACIL_RIZASIZ
     muayene_id: Optional[int] = Field(default=None, foreign_key="muayene_kayitlari.id")
     hasta_id: Optional[int] = Field(default=None, foreign_key="hastalar.id")
     icerik: str = Field(max_length=4000)
@@ -20,3 +20,8 @@ class KlinikOnayKaydi(BaseModel, table=True):
     olusturan_id: Optional[int] = Field(default=None)
     onaylayan_id: Optional[int] = Field(default=None)
     onay_tarihi: Optional[datetime] = Field(default=None)
+    # Acil rızasız müdahale: ikinci hekim + sonradan bilgilendirme
+    ikinci_onaylayan_id: Optional[int] = Field(default=None, index=True)
+    bilgilendirme_yapildi_mi: bool = Field(default=False)
+    bilgilendirme_tarihi: Optional[datetime] = Field(default=None)
+    bilgilendirme_notu: Optional[str] = Field(default=None, max_length=2000)

@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 
 from app.core.audit import denetim_kaydi_yaz
 from app.core.base_model import utc_now
+from app.core.tc_kimlik import gecerli_tc_kimlik_no
 from app.core.enums import ImportDurum, Rol
 from app.core.notifications import get_bildirim
 from app.core.security import hash_password
@@ -192,7 +193,9 @@ def process_import_row(
     if rol not in PERSONEL_ROLLERI:
         raise ValueError(f"Personel rolü değil: {rol.value}")
 
-    tc = row["tc_kimlik_no"]
+    tc = row["tc_kimlik_no"].strip()
+    if not gecerli_tc_kimlik_no(tc):
+        raise ValueError(f"Geçersiz TC kimlik numarası (satır {satir_no})")
     sicil = row["sicil_no"]
     email = row.get("email")
     telefon = row.get("telefon")

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Text, TextInput, Pressable, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import { getApiUrl, otpDogrula, otpGonder } from "@/shared/api";
+import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "@/shared/lib/tcKimlik";
 import { useAuthStore } from "@/shared/auth";
 import { goReplace } from "@/shared/nav";
 
@@ -50,6 +51,14 @@ export function GirisYapForm() {
 
   const gonder = async () => {
     setHata(null);
+    if (!telefon.trim() || !gecerliTcKimlikNo(tc)) {
+      setHata(
+        tc.trim() && !gecerliTcKimlikNo(tc)
+          ? TC_GECERSIZ_MESAJ
+          : "Telefon ve TC zorunludur",
+      );
+      return;
+    }
     setLoading(true);
     try {
       const sonuc = await otpGonder({

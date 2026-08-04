@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 6: Mobil OTP / LAN API, Web Lookup ve Liste PR Birleştirme
 
 **Tarih:** 27 Temmuz 2026  
-**Proje:** Devlet Hastanesi HBYS (Çanakkale Mehmet Akif Ersoy Devlet Hastanesi)  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Cuma (24.07) WIP’inin `main`’e alınması; Expo Go’da LAN API çözümlemesi; development OTP (`gelistirme_kodu`); güvenli oturum depolama; web randevu/tetkik lookup `LOOKUP_PAGE_SIZE` + admin `ListPager`
 
 ---

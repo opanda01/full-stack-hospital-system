@@ -250,8 +250,13 @@ def patch_ilac_uygulama(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("ilac_uygulama:guncelle")),
 ):
+    onay = body.uyari_onay.model_dump() if body.uyari_onay else None
     return klinik_service.patch_ilac_uygulama_durum(
-        session, uygulama_id, body.durum, current_user
+        session,
+        uygulama_id,
+        body.durum,
+        current_user,
+        uyari_onay=onay,
     )
 
 

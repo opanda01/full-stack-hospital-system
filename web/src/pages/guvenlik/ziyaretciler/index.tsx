@@ -3,7 +3,9 @@ import { useState } from "react";
 import { api } from "@/shared/api";
 import {
   getApiErrorMessage,
+  gecerliTcKimlikNo,
   pageTotal,
+  TC_GECERSIZ_MESAJ,
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
@@ -91,6 +93,10 @@ export function GuvenlikZiyaretcilerPage() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!adSoyad.trim() || !ziyaretEdilen.trim()) return;
+          if (tc.trim() && !gecerliTcKimlikNo(tc)) {
+            setErr(TC_GECERSIZ_MESAJ);
+            return;
+          }
           createMut.mutate();
         }}
       >

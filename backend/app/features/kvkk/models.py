@@ -26,3 +26,10 @@ class KvkkOnayKaydi(BaseModel, table=True):
     onay_tarihi: datetime = Field(default_factory=datetime.utcnow)
     ip: Optional[str] = Field(default=None, max_length=64)
     kanal: KvkkOnayKanal = Field(default=KvkkOnayKanal.WEB, max_length=40)
+    # Reşit olmayan / ehliyeti kısıtlı hasta için yasal temsilci onamı
+    yasal_temsilci_id: Optional[int] = Field(
+        default=None, foreign_key="hasta_yasal_temsilciler.id", index=True
+    )
+    temsilci_ad_soyad: Optional[str] = Field(default=None, max_length=200)
+    temsilci_tc_kimlik_no: Optional[str] = Field(default=None, max_length=11)
+    temsilci_tur: Optional[str] = Field(default=None, max_length=30)

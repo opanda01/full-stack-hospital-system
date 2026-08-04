@@ -18,9 +18,16 @@ from app.features.hastalar.schemas import (
     HastaProfilUpdate,
     HastaRead,
     HastaUpdate,
+    MukerrerIstegiCreate,
+    MukerrerIstegiRead,
+    YasalTemsilciCreate,
+    YasalTemsilciRead,
 )
+from app.features.hastalar import mpi_service
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.schemas import HastaAlerjiCreate, HastaAlerjiRead
+from app.core.request_ip import istemci_ip_al
+from app.core.public_id import hasta_pk_from_public_id
 
 router = APIRouter()
 
@@ -107,6 +114,45 @@ def benim_yatis_ozet(
     return phr_service.yatis_ozet(session, current_user)
 
 
+@router.get("/ben/yasal-temsilciler", response_model=list[YasalTemsilciRead])
+def benim_yasal_temsilcilerim(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    from app.features.hastalar import yasal_temsilci_service as yt
+
+    h = hasta_getir(session, current_user.id)
+    assert h.id is not None
+    return yt.list_yasal_temsilciler(session, h.id)
+
+
+@router.post(
+    "/ben/yasal-temsilciler",
+    response_model=YasalTemsilciRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def benim_yasal_temsilci_ekle(
+    body: YasalTemsilciCreate,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    from app.features.hastalar import yasal_temsilci_service as yt
+
+    h = hasta_getir(session, current_user.id)
+    return yt.create_yasal_temsilci(
+        session,
+        hasta=h,
+        actor=current_user,
+        tur=body.tur,
+        ad_soyad=body.ad_soyad,
+        tc_kimlik_no=body.tc_kimlik_no,
+        telefon=body.telefon,
+        yakinlik=body.yakinlik,
+        ip_adresi=istemci_ip_al(request),
+    )
+
+
 @router.get("/benim", response_model=Page[HastaRead])
 def list_benim_hastalar(
     request: Request,
@@ -151,6 +197,127 @@ def list_hastalar(
         )
     return hasta_service.list_hastalar(
         session, page=pagination.page, page_size=pagination.page_size
+    )
+
+
+@router.get("/mukerrer-adaylar", response_model=list[HastaRead])
+def mukerrer_adaylar(
+    tc: str,
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(require_permission("hasta:listele")),
+):
+    """Aynı TC (veya HMAC) ile mükerrer aday hasta listesi."""
+    rows = mpi_service.mukerrer_adaylar(session, tc)
+    return [hasta_service._hasta_to_read(session, h) for h in rows]
+
+
+@router.post(
+    "/mukerrer-istekleri",
+    response_model=MukerrerIstegiRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def mukerrer_istek_olustur(
+    body: MukerrerIstegiCreate,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("hasta:listele")),
+):
+    kaynak_pk = hasta_pk_from_public_id(session, body.kaynak_hasta_id)
+    hedef_pk = hasta_pk_from_public_id(session, body.hedef_hasta_id)
+    row = mpi_service.mukerrer_istek_olustur(
+        session,
+        actor=current_user,
+        kaynak_hasta_id=kaynak_pk,
+        hedef_hasta_id=hedef_pk,
+        gerekce=body.gerekce,
+        ip_adresi=istemci_ip_al(request),
+    )
+    return MukerrerIstegiRead(
+        id=row.id,  # type: ignore[arg-type]
+        kaynak_hasta_id=body.kaynak_hasta_id,
+        hedef_hasta_id=body.hedef_hasta_id,
+        durum=row.durum,
+        gerekce=row.gerekce,
+        olusturan_id=row.olusturan_id,
+        onaylayan_id=row.onaylayan_id,
+        karar_tarihi=row.karar_tarihi,
+    )
+
+
+@router.post(
+    "/mukerrer-istekleri/{istek_id}/onayla",
+    response_model=MukerrerIstegiRead,
+)
+def mukerrer_istek_onayla(
+    istek_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.ADMIN, Rol.BASHEKIM)),
+):
+    from app.core.public_id import optional_hasta_public_id_from_pk
+
+    row = mpi_service.mukerrer_istek_onayla(
+        session,
+        actor=current_user,
+        istek_id=istek_id,
+        ip_adresi=istemci_ip_al(request),
+    )
+    return MukerrerIstegiRead(
+        id=row.id,  # type: ignore[arg-type]
+        kaynak_hasta_id=optional_hasta_public_id_from_pk(session, row.kaynak_hasta_id),
+        hedef_hasta_id=optional_hasta_public_id_from_pk(session, row.hedef_hasta_id),
+        durum=row.durum,
+        gerekce=row.gerekce,
+        olusturan_id=row.olusturan_id,
+        onaylayan_id=row.onaylayan_id,
+        karar_tarihi=row.karar_tarihi,
+    )
+
+
+@router.get("/{public_id}/yasal-temsilciler", response_model=list[YasalTemsilciRead])
+def list_yasal_temsilciler(
+    public_id: UUID,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
+):
+    from app.features.hastalar import yasal_temsilci_service as yt
+    from app.features.hastalar.alerji_service import _assert_hasta_erisim
+
+    h = hasta_service.get_hasta_by_public_id(session, public_id)
+    assert h.id is not None
+    _assert_hasta_erisim(session, current_user, h.id, request.state.kapsam)
+    return yt.list_yasal_temsilciler(session, h.id)
+
+
+@router.post(
+    "/{public_id}/yasal-temsilciler",
+    response_model=YasalTemsilciRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_yasal_temsilci(
+    public_id: UUID,
+    body: YasalTemsilciCreate,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("hasta:guncelle")),
+):
+    from app.features.hastalar import yasal_temsilci_service as yt
+    from app.features.hastalar.alerji_service import _assert_hasta_erisim
+
+    h = hasta_service.get_hasta_by_public_id(session, public_id)
+    assert h.id is not None
+    _assert_hasta_erisim(session, current_user, h.id, request.state.kapsam)
+    return yt.create_yasal_temsilci(
+        session,
+        hasta=h,
+        actor=current_user,
+        tur=body.tur,
+        ad_soyad=body.ad_soyad,
+        tc_kimlik_no=body.tc_kimlik_no,
+        telefon=body.telefon,
+        yakinlik=body.yakinlik,
+        ip_adresi=istemci_ip_al(request),
     )
 
 

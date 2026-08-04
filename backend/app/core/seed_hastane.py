@@ -1,7 +1,6 @@
 """Hastane referans seed — birim + departman + örnek doktor.
 
-Kaynak branşlar: Çanakkale Mehmet Akif Ersoy Devlet Hastanesi
-(https://canakkaledh.saglik.gov.tr / branş listeleri)
+Örnek branş listesi kamu hastanesi HBYS senaryosuna göre derlenmiştir.
 """
 
 from sqlmodel import Session, select

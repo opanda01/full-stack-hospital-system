@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 4: Hasta Mobil İstemci (Faz D) + Expo SDK 54
 
 **Tarih:** 23 Temmuz 2026  
-**Proje:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Hasta mobil Faz D (OTP auth, oturum, randevu, tetkik); fiziksel cihazda Expo Go çalıştırma; monorepo Metro sorunları; Expo SDK 52 → 54 yükseltmesi
 
 ---

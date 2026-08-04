@@ -1,7 +1,7 @@
 # Staj Defteri — Gün 2: Auth/RBAC Entegrasyonu, Web Panel Düzeni ve Tema
 
 **Tarih:** 21 Temmuz 2026  
-**Proje:** Çanakkale Mehmet Akif Ersoy Devlet Hastanesi HBYS  
+**Proje:** Devlet Hastanesi HBYS  
 **Kapsam:** Access/refresh auth akışı, web login/onboarding, `pages/` rol bazlı yeniden düzenleme, 3’lü tema sistemi, mock auth, erken admin/operasyon bağlantıları
 
 ---

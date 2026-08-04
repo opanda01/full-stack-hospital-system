@@ -303,6 +303,47 @@ def olustur(
     return _to_read(session, tetkik)
 
 
+def _panic_mi(k: TetkikSonucKalemCreate) -> bool:
+    if k.panic_mi:
+        return True
+    if k.deger_sayisal is None:
+        return False
+    if k.panic_min is not None and k.deger_sayisal < k.panic_min:
+        return True
+    if k.panic_max is not None and k.deger_sayisal > k.panic_max:
+        return True
+    return False
+
+
+def _bildir_kritik_lab(
+    session: Session,
+    tetkik: Tetkik,
+    panic_kalemler: list[TetkikSonucKalemCreate],
+) -> None:
+    from app.core.enums import PanelBildirimTipi
+    from app.features.yatis.klinik_service import panel_bildirim_olustur
+
+    doktor = session.get(Doktor, tetkik.istek_yapan_doktor_id)
+    if doktor is None:
+        return
+    personel = session.get(Personel, doktor.personel_id)
+    if personel is None:
+        return
+    ozet = "; ".join(
+        f"{k.parametre_adi}={k.deger_sayisal if k.deger_sayisal is not None else k.deger_metin}"
+        for k in panic_kalemler[:5]
+    )
+    panel_bildirim_olustur(
+        session,
+        alici_id=personel.kullanici_id,
+        baslik="Kritik laboratuvar değeri",
+        govde=f"{tetkik.tetkik_turu}: {ozet}",
+        tip=PanelBildirimTipi.KRITIK_LAB.value,
+        kaynak_tip="tetkik",
+        kaynak_id=tetkik.id,
+    )
+
+
 def sonuc_gir(
     session: Session,
     current_user: Kullanici,
@@ -320,6 +361,7 @@ def sonuc_gir(
     session.add(tetkik)
     session.flush()
 
+    panic_list: list[TetkikSonucKalemCreate] = []
     if sonuc_kalemleri is not None:
         for old in session.exec(
             select(TetkikSonucKalemi).where(TetkikSonucKalemi.tetkik_id == tetkik.id)
@@ -336,6 +378,9 @@ def sonuc_gir(
                     anormal = True
                 if k.ref_max is not None and k.deger_sayisal > k.ref_max:
                     anormal = True
+            panic = _panic_mi(k)
+            if panic:
+                panic_list.append(k)
             session.add(
                 TetkikSonucKalemi(
                     tetkik_id=tetkik.id,  # type: ignore[arg-type]
@@ -346,9 +391,15 @@ def sonuc_gir(
                     birim=k.birim,
                     ref_min=k.ref_min,
                     ref_max=k.ref_max,
-                    anormal_mi=anormal,
+                    anormal_mi=anormal or panic,
+                    panic_min=k.panic_min,
+                    panic_max=k.panic_max,
+                    panic_mi=panic,
                 )
             )
+
+    if panic_list and durum == "SONUCLANDI":
+        _bildir_kritik_lab(session, tetkik, panic_list)
 
     session.commit()
     session.refresh(tetkik)
