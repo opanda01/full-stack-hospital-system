@@ -9,6 +9,7 @@ from app.core.login_rate_limit import LoginRateLimitMiddleware
 from app.core.security import require_role
 from app.core.security_headers import SecurityHeadersMiddleware
 
+from app.features.acil.router import router as acil_router
 from app.features.auth.denetim_router import router as denetim_router
 from app.features.auth.router import router as auth_router
 from app.features.bashekim.router import router as bashekim_router
@@ -112,6 +113,7 @@ app.include_router(
 app.include_router(sikayet_oneri_router, prefix="/sikayet-oneri", tags=["sikayet_oneri"])
 app.include_router(bashekim_router, prefix="/bashekim", tags=["bashekim"])
 app.include_router(mhrs_router, prefix="/mhrs", tags=["mhrs"])
+app.include_router(acil_router, prefix="/acil", tags=["acil"])
 app.include_router(entegrasyon_router, prefix="/entegrasyonlar", tags=["entegrasyonlar"])
 app.include_router(klinik_onay_router, prefix="/klinik-onay", tags=["klinik_onay"])
 app.include_router(eczane_router, prefix="/eczane", tags=["eczane"])

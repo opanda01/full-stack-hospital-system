@@ -283,3 +283,13 @@ class RadyolojiIstemDurumu(str, Enum):
     CEKILDI = "CEKILDI"
     RAPORLANDI = "RAPORLANDI"
     IPTAL = "IPTAL"
+
+
+class TriyajRenk(str, Enum):
+    """Acil servis triyaj (Manchester/ATS özet renk)."""
+
+    KIRMIZI = "KIRMIZI"
+    TURUNCU = "TURUNCU"
+    SARI = "SARI"
+    YESIL = "YESIL"
+    MAVI = "MAVI"

@@ -20,6 +20,9 @@ class Randevu(BaseModel, table=True):
     )
     durum: str = Field(default="BEKLEMEDE", max_length=50, index=True)
     notlar: Optional[str] = Field(default=None, max_length=1000)
+    medula_provizyon_no: Optional[str] = Field(default=None, max_length=64, index=True)
+    medula_takip_no: Optional[str] = Field(default=None, max_length=64)
+    mhrs_randevu_id: Optional[str] = Field(default=None, max_length=64, index=True)
 
     hasta: Optional["Hasta"] = Relationship(back_populates="randevular")  # noqa: F821
     doktor: Optional["Doktor"] = Relationship(back_populates="randevular")  # noqa: F821

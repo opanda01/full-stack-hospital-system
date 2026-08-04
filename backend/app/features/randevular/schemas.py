@@ -24,5 +24,8 @@ class RandevuRead(BaseModel):
     hasta_ad_soyad: str | None = None
     doktor_ad_soyad: str | None = None
     departman_ad: str | None = None
+    medula_provizyon_no: str | None = None
+    medula_takip_no: str | None = None
+    mhrs_randevu_id: str | None = None
 
     model_config = {"from_attributes": True}

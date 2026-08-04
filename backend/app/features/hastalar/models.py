@@ -23,6 +23,7 @@ class Hasta(BaseModel, table=True):
     kilo_kg: Optional[float] = Field(default=None)
     anonymized_at: Optional[datetime] = Field(default=None)
     ehliyet_kisitli_mi: bool = Field(default=False)
+    gelmeyen_randevu_sayisi: int = Field(default=0)
     merged_into_hasta_id: Optional[int] = Field(
         default=None, foreign_key="hastalar.id", index=True
     )

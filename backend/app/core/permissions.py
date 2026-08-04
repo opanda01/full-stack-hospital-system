@@ -74,6 +74,8 @@ def _mudur_izinleri() -> dict[str, Kapsam]:
         "guvenlik_ziyaretci:goruntule": Kapsam.GLOBAL,
         "kayip_esya:goruntule": Kapsam.GLOBAL,
         "guvenlik_devriye:goruntule": Kapsam.GLOBAL,
+        "mhrs:yonet": Kapsam.GLOBAL,
+        "acil:triyaj": Kapsam.GLOBAL,
     }
 
 
@@ -86,6 +88,7 @@ def _bashekim_izinleri() -> dict[str, Kapsam]:
             "denetim:goruntule": Kapsam.GLOBAL,
             "bashekim:ozet": Kapsam.GLOBAL,
             "mhrs:yonet": Kapsam.GLOBAL,
+            "acil:triyaj": Kapsam.GLOBAL,
             "entegrasyon:goruntule": Kapsam.GLOBAL,
             "klinik_onay:goruntule": Kapsam.GLOBAL,
             "klinik_onay:olustur": Kapsam.GLOBAL,
@@ -149,6 +152,7 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "radyoloji:goruntule": Kapsam.KENDI_KAYDIM,
         "vital:goruntule": Kapsam.GLOBAL,
         "ilac_uygulama:goruntule": Kapsam.GLOBAL,
+        "acil:triyaj": Kapsam.GLOBAL,
     },
     Rol.HEMSIRE: {
         "departman:goruntule": Kapsam.GLOBAL,
@@ -187,6 +191,7 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "panel_bildirim:goruntule": Kapsam.GLOBAL,
         "panel_bildirim:guncelle": Kapsam.GLOBAL,
         "ameliyat:goruntule": Kapsam.DEPARTMANIM,
+        "acil:triyaj": Kapsam.GLOBAL,
     },
     Rol.EBE: {
         "departman:goruntule": Kapsam.GLOBAL,
@@ -224,6 +229,7 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "vardiya_devir:olustur": Kapsam.GLOBAL,
         "panel_bildirim:goruntule": Kapsam.GLOBAL,
         "panel_bildirim:guncelle": Kapsam.GLOBAL,
+        "acil:triyaj": Kapsam.GLOBAL,
     },
     Rol.LABORANT: {
         "departman:goruntule": Kapsam.GLOBAL,
