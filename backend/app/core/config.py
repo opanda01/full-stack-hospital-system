@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     MOCK_ENTEGRASYON_FAIL: bool = False
     KPS_DOGRULAMA_ZORUNLU: bool = False
 
+    # Faz 2: muayene öncesi randevuda MEDULA provizyon zorunluluğu
+    MEDULA_PROVIZYON_ZORUNLU: bool = False
+    # 0 = no-show engeli kapalı
+    NO_SHOW_RANDEVU_LIMIT: int = 3
+
     ORTHANC_URL: str = "http://localhost:8042"
     ORTHANC_USER: str = "orthanc"
     ORTHANC_PASSWORD: str = "orthanc"

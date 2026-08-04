@@ -190,29 +190,33 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
 
 ### Faz 2 — Önemli (operasyonel eksikler)
 
-9. **MEDULA provizyon iş akışı**
+9. **MEDULA provizyon iş akışı** ✅ (iskelet)
    - Neden: `MedulaPort.provizyon_al` mock var; kabul/muayene öncesi provizyon zinciri yok.
    - Katman: `faturalandirma`, `entegrasyonlar`, outbox.
    - Büyüklük: **L**
    - Bağımlılık: `MedulaPort`, fatura `provizyon_no` / `medula_takip_no`
+   - Yapıldı: `POST /randevular/{id}/provizyon`, `provizyon_service`, outbox + `MEDULA_PROVIZYON` denetim; `MEDULA_PROVIZYON_ZORUNLU` → muayene kapısı; migration `029`
 
-10. **MHRS iki yönlü stub → sandbox**
+10. **MHRS iki yönlü stub → sandbox** ✅ (iskelet)
     - Neden: Kapasite + mock senkron var; randevu oluştur/iptal MHRS id eşlemesi yok.
     - Katman: `mhrs`, `randevular`, web başhekim.
     - Büyüklük: **L**
     - Bağımlılık: `mhrs_kapasiteler`, `Randevu`
+    - Yapıldı: `mhrs_randevu_id`, `POST /randevular/{id}/mhrs`, iptalde `mhrs_randevu_iptal`; outbox `MHRS_*`
 
-11. **Acil triyaj modülü**
+11. **Acil triyaj modülü** ✅ (minimum)
     - Neden: `ServisTipi.ACIL` var; Manchester/ATS skor/renk kaydı yok.
     - Katman: yeni `acil` veya `yatis`, web.
     - Büyüklük: **M**
     - Bağımlılık: `ServisTipi.ACIL`
+    - Yapıldı: `acil_triyaj_kayitlari`, `GET/POST /acil/triyaj`, `TriyajRenk`, `acil:triyaj` izin
 
-12. **No-show politikası**
+12. **No-show politikası** ✅ (minimum)
     - Neden: `Randevu.durum` genel string; GELMEDI sayacı ve kısıt yok.
     - Katman: `randevular`, web/mobil.
     - Büyüklük: **M**
     - Bağımlılık: `Randevu`
+    - Yapıldı: `GELMEDI` + `POST .../gelmedi`, `Hasta.gelmeyen_randevu_sayisi`, `NO_SHOW_RANDEVU_LIMIT`; `test_faz2_operasyon.py`
 
 13. **Yenidoğan / yabancı kimlik modeli**
     - Neden: TC zorunlu checksum; geçici protokol, anne FK, YKN/pasaport tipi yok.

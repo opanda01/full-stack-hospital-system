@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.core.batch_load import batch_by_ids
 from app.core.db import get_session
+from app.core.request_ip import istemci_ip_al
 from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
 from app.core.timezone import to_istanbul
@@ -51,6 +52,9 @@ def _to_read_maps(
         tarih_saat=to_istanbul(r.tarih_saat),
         durum=r.durum,
         notlar=r.notlar,
+        medula_provizyon_no=r.medula_provizyon_no,
+        medula_takip_no=r.medula_takip_no,
+        mhrs_randevu_id=r.mhrs_randevu_id,
         hasta_ad_soyad=ad,
         doktor_ad_soyad=doktor_ad,
         departman_ad=dep.ad if dep else None,
@@ -136,8 +140,59 @@ def randevu_olustur(
     return _to_read(session, r)
 
 
+@router.post("/{public_id}/provizyon", response_model=RandevuRead)
+def randevu_provizyon(
+    public_id: UUID,
+    request: Request,
+    current_user: Kullanici = Depends(require_permission("randevu:olustur")),
+    session: Session = Depends(get_session),
+):
+    from app.features.faturalandirma.provizyon_service import provizyon_al_randevu
+
+    randevu = randevu_service.getir(session, current_user, public_id)
+    randevu = provizyon_al_randevu(
+        session,
+        randevu=randevu,
+        actor=current_user,
+        ip_adresi=istemci_ip_al(request),
+    )
+    return _to_read(session, randevu)
+
+
+@router.post("/{public_id}/mhrs", response_model=RandevuRead)
+def randevu_mhrs_kaydet(
+    public_id: UUID,
+    request: Request,
+    current_user: Kullanici = Depends(require_permission("mhrs:yonet")),
+    session: Session = Depends(get_session),
+):
+    from app.features.mhrs.randevu_service import mhrs_randevu_olustur
+
+    randevu = randevu_service.getir(session, current_user, public_id)
+    randevu = mhrs_randevu_olustur(
+        session,
+        randevu=randevu,
+        actor=current_user,
+        ip_adresi=istemci_ip_al(request),
+    )
+    return _to_read(session, randevu)
+
+
+@router.post("/{public_id}/gelmedi", response_model=RandevuRead)
+def randevu_gelmedi(
+    public_id: UUID,
+    current_user: Kullanici = Depends(require_permission("randevu:olustur")),
+    session: Session = Depends(get_session),
+):
+    return _to_read(
+        session,
+        randevu_service.gelmedi_isaretle(session, current_user, public_id),
+    )
+
+
 @router.delete("/{public_id}", response_model=RandevuRead)
 def randevu_iptal(
+
     public_id: UUID,
     current_user: Kullanici = Depends(require_permission("randevu:iptal")),
     session: Session = Depends(get_session),

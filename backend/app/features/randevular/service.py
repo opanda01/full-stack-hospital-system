@@ -5,12 +5,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.config import get_settings
 from app.core.enums import Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.permissions import Kapsam
 from app.core.public_id import get_by_public_id, hasta_from_public_id
 from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.core.timezone import ISTANBUL, as_utc, to_istanbul
+from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
 from app.features.randevular.clinic_slots import (
     klinik_saatleri_icinde_mi,
@@ -110,6 +112,16 @@ def olustur(
     hasta = hasta_from_public_id(session, veri.hasta_id)
     assert hasta.id is not None
 
+    limit = get_settings().NO_SHOW_RANDEVU_LIMIT
+    if limit > 0 and int(hasta.gelmeyen_randevu_sayisi or 0) >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Son {limit} randevuya gelmeme kaydı nedeniyle "
+                "yeni randevu oluşturulamaz"
+            ),
+        )
+
     if kapsam == Kapsam.KENDI_KAYDIM and current_user.rol == Rol.HASTA:
         kendi = hasta_getir(session, current_user.id)
         if hasta.id != kendi.id:
@@ -188,6 +200,43 @@ def iptal_et(session: Session, current_user: Kullanici, public_id: UUID) -> Rand
         )
     randevu.durum = "IPTAL"
     randevu.updated_at = datetime.now(timezone.utc)
+    if randevu.mhrs_randevu_id:
+        from app.features.mhrs.randevu_service import mhrs_randevu_iptal
+
+        mhrs_randevu_iptal(
+            session,
+            randevu=randevu,
+            actor=current_user,
+            commit=False,
+        )
+    session.add(randevu)
+    session.commit()
+    session.refresh(randevu)
+    return randevu
+
+
+def gelmedi_isaretle(
+    session: Session, current_user: Kullanici, public_id: UUID
+) -> Randevu:
+    randevu = get_by_public_id(session, Randevu, public_id)
+    randevu_erisim_kontrolu(session, randevu, current_user)
+    if randevu.durum == "IPTAL":
+        raise HTTPException(status_code=400, detail="İptal randevu gelmedi işaretlenemez")
+    if randevu.durum == "GELMEDI":
+        raise HTTPException(status_code=400, detail="Randevu zaten gelmedi olarak işaretli")
+    now = datetime.now(timezone.utc)
+    ts = as_utc(randevu.tarih_saat)
+    if ts > now:
+        raise HTTPException(
+            status_code=400,
+            detail="Gelecek randevu gelmedi olarak işaretlenemez",
+        )
+    randevu.durum = "GELMEDI"
+    randevu.updated_at = now
+    hasta = session.get(Hasta, randevu.hasta_id)
+    if hasta is not None:
+        hasta.gelmeyen_randevu_sayisi = int(hasta.gelmeyen_randevu_sayisi or 0) + 1
+        session.add(hasta)
     session.add(randevu)
     session.commit()
     session.refresh(randevu)

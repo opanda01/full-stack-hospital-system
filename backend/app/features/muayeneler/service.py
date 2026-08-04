@@ -24,6 +24,7 @@ from app.features.muayeneler.schemas import (
     MuayeneUpdate,
     ReceteKalemRead,
 )
+from app.core.config import get_settings
 from app.features.randevular.models import Randevu
 
 
@@ -190,6 +191,12 @@ def create_muayene(
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Bu randevu için muayene zaten var")
+
+    if get_settings().MEDULA_PROVIZYON_ZORUNLU and not randevu.medula_provizyon_no:
+        raise HTTPException(
+            status_code=400,
+            detail="Muayene öncesi MEDULA provizyonu zorunludur",
+        )
 
     dump = data.model_dump(
         exclude={"recete_kalemleri", "uyari_onay"},
