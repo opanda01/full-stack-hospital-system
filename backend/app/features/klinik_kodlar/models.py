@@ -33,3 +33,6 @@ class TetkikSonucKalemi(BaseModel, table=True):
     ref_min: Optional[float] = Field(default=None)
     ref_max: Optional[float] = Field(default=None)
     anormal_mi: bool = Field(default=False)
+    panic_min: Optional[float] = Field(default=None)
+    panic_max: Optional[float] = Field(default=None)
+    panic_mi: bool = Field(default=False)

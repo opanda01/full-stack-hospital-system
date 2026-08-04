@@ -177,18 +177,27 @@ def uygula_veya_engelle(
     kalemler: list[ReceteKalemGirdi],
     uyari_kodlari: list[str] | None,
     gerekce: str | None,
+    baglam: str = "RECETE",
 ) -> list[GuvenlikUyari]:
-    """Hard-stop → 422; uyarılar gerekçe + kod listesi olmadan → 422."""
+    """Hard-stop → 422; uyarılar gerekçe + kod listesi olmadan → 422.
+
+    baglam: RECETE | MAR — hata kodu öneki.
+    """
     uyarilar = kontrol_et(session, hasta_id=hasta_id, kalemler=kalemler)
     hard = [u for u in uyarilar if u.seviye == "HARD_STOP"]
     soft = [u for u in uyarilar if u.seviye == "UYARI"]
+    prefix = baglam if baglam in {"RECETE", "MAR"} else "RECETE"
 
     if hard:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "kod": "RECETE_HARD_STOP",
-                "mesaj": "Reçete engellendi (break-glass yok)",
+                "kod": f"{prefix}_HARD_STOP",
+                "mesaj": (
+                    "İlaç uygulama engellendi (break-glass yok)"
+                    if prefix == "MAR"
+                    else "Reçete engellendi (break-glass yok)"
+                ),
                 "uyarilar": [{"kod": u.kod, "mesaj": u.mesaj} for u in hard],
             },
         )
@@ -200,7 +209,7 @@ def uygula_veya_engelle(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
-                    "kod": "RECETE_UYARI_ONAY_GEREKLI",
+                    "kod": f"{prefix}_UYARI_ONAY_GEREKLI",
                     "mesaj": "Uyarılar için gerekçe ve onay zorunlu",
                     "uyarilar": [{"kod": u.kod, "mesaj": u.mesaj} for u in soft],
                 },
@@ -209,7 +218,7 @@ def uygula_veya_engelle(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
-                    "kod": "RECETE_UYARI_GEREKCE",
+                    "kod": f"{prefix}_UYARI_GEREKCE",
                     "mesaj": "Override gerekçesi en az 10 karakter olmalı",
                     "uyarilar": [{"kod": u.kod, "mesaj": u.mesaj} for u in soft],
                 },

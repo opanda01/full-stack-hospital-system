@@ -43,6 +43,12 @@ class SifreDegistirRequest(BaseModel):
 
 class KvkkOnayRequest(BaseModel):
     onay: bool = True
+    yasal_temsilci_id: int | None = None
+    temsilci_ad_soyad: str | None = Field(default=None, max_length=200)
+    temsilci_tc_kimlik_no: TcKimlikNo | None = None
+    temsilci_tur: str | None = Field(
+        default=None, pattern="^(VELI|VASI|YASAL_TEMSILCI)$"
+    )
 
 
 class MeResponse(BaseModel):

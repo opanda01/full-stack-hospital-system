@@ -22,6 +22,10 @@ class Hasta(BaseModel, table=True):
     boy_cm: Optional[float] = Field(default=None)
     kilo_kg: Optional[float] = Field(default=None)
     anonymized_at: Optional[datetime] = Field(default=None)
+    ehliyet_kisitli_mi: bool = Field(default=False)
+    merged_into_hasta_id: Optional[int] = Field(
+        default=None, foreign_key="hastalar.id", index=True
+    )
 
     kullanici: Optional["Kullanici"] = Relationship(back_populates="hasta")  # noqa: F821
     randevular: list["Randevu"] = Relationship(back_populates="hasta")  # noqa: F821

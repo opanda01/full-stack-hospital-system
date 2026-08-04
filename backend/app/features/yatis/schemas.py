@@ -191,16 +191,25 @@ class VitalRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MarUyariOnay(BaseModel):
+    """Hafif/orta alerji-DDI uyarısı için hemşire override."""
+
+    uyari_kodlari: list[str] = Field(default_factory=list)
+    gerekce: str | None = None
+
+
 class IlacUygulamaCreate(BaseModel):
     ilac_adi: str = Field(max_length=200)
     doz: str | None = None
     kullanim_sekli: str = "ORAL"
     planlanan_saat: datetime
     notlar: str | None = None
+    uyari_onay: MarUyariOnay | None = None
 
 
 class IlacUygulamaDurumPatch(BaseModel):
     durum: str
+    uyari_onay: MarUyariOnay | None = None
 
 
 class IlacUygulamaRead(BaseModel):

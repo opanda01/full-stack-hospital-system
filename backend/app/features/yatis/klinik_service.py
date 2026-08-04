@@ -229,8 +229,84 @@ def list_ilac_uygulamalari_toplu(
     return make_page(out, total=total, page=page, page_size=page_size)
 
 
+def _mar_kalemler(
+    session: Session,
+    yatis_id: int,
+    *,
+    yeni_ilac_adi: str,
+    exclude_uygulama_id: int | None = None,
+) -> list:
+    """Yeni ilaç + aynı yatıştaki aktif MAR satırları (DDI için)."""
+    from app.features.muayeneler.recete_guvenlik import ReceteKalemGirdi
+
+    kalemler = [ReceteKalemGirdi(urun_adi=yeni_ilac_adi)]
+    aktif_durumlar = {
+        IlacUygulamaDurumu.BEKLIYOR.value,
+        IlacUygulamaDurumu.VERILDI.value,
+    }
+    for row in session.exec(
+        select(IlacUygulama).where(IlacUygulama.yatis_id == yatis_id)
+    ).all():
+        if row.durum not in aktif_durumlar:
+            continue
+        if exclude_uygulama_id is not None and row.id == exclude_uygulama_id:
+            continue
+        kalemler.append(ReceteKalemGirdi(urun_adi=row.ilac_adi))
+    return kalemler
+
+
+def _mar_guvenlik_kontrol(
+    session: Session,
+    *,
+    yatis: YatisKaydi,
+    ilac_adi: str,
+    uyari_onay: dict | None,
+    exclude_uygulama_id: int | None = None,
+) -> None:
+    from app.core.audit import denetim_kaydi_yaz
+    from app.features.muayeneler.recete_guvenlik import uygula_veya_engelle
+
+    assert yatis.id is not None
+    kalemler = _mar_kalemler(
+        session,
+        yatis.id,
+        yeni_ilac_adi=ilac_adi,
+        exclude_uygulama_id=exclude_uygulama_id,
+    )
+    soft = uygula_veya_engelle(
+        session,
+        hasta_id=yatis.hasta_id,
+        kalemler=kalemler,
+        uyari_kodlari=(uyari_onay or {}).get("uyari_kodlari"),
+        gerekce=(uyari_onay or {}).get("gerekce"),
+        baglam="MAR",
+    )
+    if soft and uyari_onay:
+        denetim_kaydi_yaz(
+            session,
+            aksiyon="MAR_UYARI_OVERRIDE",
+            kaynak="ilac_uygulama",
+            kaynak_id=yatis.id,
+            detay={
+                "ilac_adi": ilac_adi,
+                "uyari_kodlari": uyari_onay.get("uyari_kodlari"),
+                "gerekce": uyari_onay.get("gerekce"),
+            },
+            commit=False,
+        )
+
+
 def create_ilac_uygulama(session: Session, yatis_id: int, data: dict) -> IlacUygulama:
-    _yatis_or_404(session, yatis_id)
+    yatis = _yatis_or_404(session, yatis_id)
+    uyari_onay = data.get("uyari_onay")
+    if hasattr(uyari_onay, "model_dump"):
+        uyari_onay = uyari_onay.model_dump()
+    _mar_guvenlik_kontrol(
+        session,
+        yatis=yatis,
+        ilac_adi=data["ilac_adi"],
+        uyari_onay=uyari_onay,
+    )
     row = IlacUygulama(
         yatis_id=yatis_id,
         ilac_adi=data["ilac_adi"],
@@ -251,14 +327,26 @@ def patch_ilac_uygulama_durum(
     uygulama_id: int,
     durum: str,
     yapan: Kullanici,
+    *,
+    uyari_onay: dict | None = None,
 ) -> IlacUygulama:
     row = session.get(IlacUygulama, uygulama_id)
     if row is None:
         raise HTTPException(status_code=404, detail="İlaç uygulama kaydı bulunamadı")
-    row.durum = durum
     if durum == IlacUygulamaDurumu.VERILDI.value:
+        yatis = _yatis_or_404(session, row.yatis_id)
+        if hasattr(uyari_onay, "model_dump"):
+            uyari_onay = uyari_onay.model_dump()  # type: ignore[union-attr]
+        _mar_guvenlik_kontrol(
+            session,
+            yatis=yatis,
+            ilac_adi=row.ilac_adi,
+            uyari_onay=uyari_onay if isinstance(uyari_onay, dict) else None,
+            exclude_uygulama_id=row.id,
+        )
         row.uygulandi_at = utc_now()
         row.uygulayan_hemsire_id = personel_id_of(session, yapan)
+    row.durum = durum
     session.add(row)
     session.commit()
     session.refresh(row)

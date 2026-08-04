@@ -90,6 +90,10 @@ def kvkk_onay(
         current_user,
         onay=body.onay,
         ip_adresi=istemci_ip_al(request),
+        yasal_temsilci_id=body.yasal_temsilci_id,
+        temsilci_ad_soyad=body.temsilci_ad_soyad,
+        temsilci_tc_kimlik_no=body.temsilci_tc_kimlik_no,
+        temsilci_tur=body.temsilci_tur,
     )
 
 

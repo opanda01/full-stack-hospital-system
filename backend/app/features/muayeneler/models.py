@@ -12,5 +12,8 @@ class MuayeneKaydi(BaseModel, table=True):
     tani: Optional[str] = Field(default=None, max_length=2000)
     tedavi_plani: Optional[str] = Field(default=None, max_length=2000)
     receteler: Optional[str] = Field(default=None, max_length=2000)
+    bulasici_bildirim_mi: bool = Field(default=False)
+    adli_vaka_mi: bool = Field(default=False)
+    olum_bildirim_mi: bool = Field(default=False)
 
     randevu: Optional["Randevu"] = Relationship(back_populates="muayene")  # noqa: F821

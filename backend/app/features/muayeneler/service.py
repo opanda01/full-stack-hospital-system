@@ -64,6 +64,38 @@ def muayene_to_read(session: Session, kayit: MuayeneKaydi) -> MuayeneRead:
         tedavi_plani=kayit.tedavi_plani,
         receteler=recete_text,
         recete_kalemleri=kalemler,
+        bulasici_bildirim_mi=bool(kayit.bulasici_bildirim_mi),
+        adli_vaka_mi=bool(kayit.adli_vaka_mi),
+        olum_bildirim_mi=bool(kayit.olum_bildirim_mi),
+    )
+
+
+def _zorunlu_bildirim_audit(
+    session: Session,
+    *,
+    muayene: MuayeneKaydi,
+    actor_id: int | None,
+    ip_adresi: str | None,
+    onceki: dict[str, bool] | None = None,
+) -> None:
+    bayraklar = {
+        "bulasici_bildirim_mi": bool(muayene.bulasici_bildirim_mi),
+        "adli_vaka_mi": bool(muayene.adli_vaka_mi),
+        "olum_bildirim_mi": bool(muayene.olum_bildirim_mi),
+    }
+    if not any(bayraklar.values()):
+        return
+    if onceki is not None and bayraklar == onceki:
+        return
+    denetim_kaydi_yaz(
+        session,
+        aksiyon="ZORUNLU_BILDIRIM_ISARET",
+        actor_id=actor_id,
+        kaynak="muayene",
+        kaynak_id=muayene.id,
+        detay=bayraklar,
+        ip_adresi=ip_adresi,
+        commit=False,
     )
 
 
@@ -196,6 +228,13 @@ def create_muayene(
     elif data.receteler:
         kayit.receteler = data.receteler
 
+    _zorunlu_bildirim_audit(
+        session,
+        muayene=kayit,
+        actor_id=current_user.id,
+        ip_adresi=ip_adresi,
+    )
+
     randevu.durum = "TAMAMLANDI"
     randevu.updated_at = datetime.now(timezone.utc)
     session.add(randevu)
@@ -228,6 +267,11 @@ def update_muayene(
     elif kapsam != Kapsam.GLOBAL:
         raise HTTPException(status_code=403, detail="Muayene güncelleme yetkiniz yok")
 
+    onceki_bildirim = {
+        "bulasici_bildirim_mi": bool(kayit.bulasici_bildirim_mi),
+        "adli_vaka_mi": bool(kayit.adli_vaka_mi),
+        "olum_bildirim_mi": bool(kayit.olum_bildirim_mi),
+    }
     payload = data.model_dump(
         exclude_unset=True, exclude={"recete_kalemleri", "uyari_onay"}
     )
@@ -244,6 +288,14 @@ def update_muayene(
             uyari_onay=data.uyari_onay,
             ip_adresi=ip_adresi,
         )
+
+    _zorunlu_bildirim_audit(
+        session,
+        muayene=kayit,
+        actor_id=current_user.id,
+        ip_adresi=ip_adresi,
+        onceki=onceki_bildirim,
+    )
 
     kayit.updated_at = datetime.now(timezone.utc)
     session.add(kayit)

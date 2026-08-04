@@ -180,6 +180,7 @@ class IlacUygulamaDurumu(str, Enum):
 
 class PanelBildirimTipi(str, Enum):
     KRITIK_VITAL = "KRITIK_VITAL"
+    KRITIK_LAB = "KRITIK_LAB"
     ILAC_TALEP = "ILAC_TALEP"
     KONSULTASYON = "KONSULTASYON"
     GOREV = "GOREV"
