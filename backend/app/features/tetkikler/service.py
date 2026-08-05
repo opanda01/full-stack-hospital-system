@@ -420,9 +420,22 @@ def _bildir_hasta_sonuc_hazir(session: Session, tetkik: Tetkik) -> None:
     tel = k.telefon
     if not tel:
         return
-    get_bildirim().sms_gonder(
-        tel,
-        f"{tetkik.tetkik_turu} sonucunuz hazır. Mobil uygulamadan görüntüleyebilirsiniz.",
+    mesaj = (
+        f"{tetkik.tetkik_turu} sonucunuz hazır. Mobil uygulamadan görüntüleyebilirsiniz."
+    )
+    get_bildirim().sms_gonder(tel, mesaj)
+
+    from app.features.mobil import service as mobil_service
+
+    mobil_service.hasta_push_gonder(
+        session,
+        hasta.kullanici_id,
+        baslik="Tahlil sonucu hazır",
+        mesaj=mesaj,
+        data={
+            "tip": "TETKIK_SONUC",
+            "tetkik_id": str(tetkik.public_id),
+        },
     )
 
 

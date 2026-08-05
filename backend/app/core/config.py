@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     OTP_GUNLUK_MAX: int = 5
 
     BILDIRIM_BACKEND: str = "console"
+    # Mobil push: console (log) | expo (Expo Push API)
+    PUSH_BACKEND: str = "console"
+    EXPO_ACCESS_TOKEN: str = ""
     TEMP_SIFRE_UZUNLUK: int = 12
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

@@ -28,6 +28,8 @@ from app.features.hastalar import ozel_kimlik_service
 from app.features.hastalar import mpi_service
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.schemas import HastaAlerjiCreate, HastaAlerjiRead
+from app.features.mobil import service as mobil_service
+from app.features.mobil.schemas import MobilCihazKayit, MobilCihazRead
 from app.core.request_ip import istemci_ip_al
 from app.core.public_id import hasta_pk_from_public_id
 
@@ -114,6 +116,25 @@ def benim_yatis_ozet(
     current_user: Kullanici = Depends(require_role(Rol.HASTA)),
 ):
     return phr_service.yatis_ozet(session, current_user)
+
+
+@router.put("/ben/mobil-cihaz", response_model=MobilCihazRead)
+def benim_mobil_cihaz_kaydet(
+    body: MobilCihazKayit,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    """Expo push token kaydı (Faz 1 mobil)."""
+    return mobil_service.kaydet_cihaz(session, current_user.id, body)
+
+
+@router.delete("/ben/mobil-cihaz", status_code=status.HTTP_204_NO_CONTENT)
+def benim_mobil_cihaz_sil(
+    push_token: str,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    mobil_service.sil_cihaz(session, current_user.id, push_token)
 
 
 @router.get("/ben/yasal-temsilciler", response_model=list[YasalTemsilciRead])
