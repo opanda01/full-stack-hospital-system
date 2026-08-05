@@ -7,17 +7,31 @@ import {
   RefreshControl,
   Pressable,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  FlaskConical,
+  WifiOff,
+} from "lucide-react-native";
 import { fetchTetkikler } from "@/shared/api/hastaApi";
-import type { TetkikDto } from "@/shared/api/types";
+import type { TetkikDto, TetkikSonucKalemDto } from "@/shared/api/types";
 import { go } from "@/shared/nav";
 import {
   Card,
-  EmptyText,
-  ErrorText,
+  type CardStatus,
+  EmptyState,
   Loading,
+  PageHero,
   Screen,
   colors,
+  palette,
+  radius,
+  shadows,
+  spacing,
+  typography,
 } from "@/shared/ui";
 
 type IstekGrubu = {
@@ -59,6 +73,19 @@ function durumEtiket(durum: string): string {
   return durum;
 }
 
+function tetkikStatus(t: TetkikDto): CardStatus {
+  if (t.durum !== "SONUCLANDI") return "pending";
+  if (t.sonuc_kalemleri?.some((k) => k.anormal_mi)) return "critical";
+  return "normal";
+}
+
+function formatKalemDeger(k: TetkikSonucKalemDto): string {
+  if (k.deger_sayisal != null) {
+    return `${k.deger_sayisal}${k.birim ? ` ${k.birim}` : ""}`;
+  }
+  return k.deger_metin ?? "—";
+}
+
 function groupTetkikler(items: TetkikDto[]): TarihGrubu[] {
   const byDate = new Map<string, TetkikDto[]>();
   for (const t of items) {
@@ -97,6 +124,7 @@ function groupTetkikler(items: TetkikDto[]): TarihGrubu[] {
 }
 
 export default function TetkikSonuclarimScreen() {
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<TetkikDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [hata, setHata] = useState<string | null>(null);
@@ -108,7 +136,6 @@ export default function TetkikSonuclarimScreen() {
   const refresh = useCallback(async () => {
     setHata(null);
     try {
-      // Hasta ekranında tarih grupları için yeterli kayıt çek
       const body = await fetchTetkikler(1, 100);
       setItems(body.items);
       setOpenDate(null);
@@ -129,17 +156,67 @@ export default function TetkikSonuclarimScreen() {
 
   if (loading) return <Loading />;
 
+  if (hata && groups.length === 0) {
+    return (
+      <Screen>
+        <EmptyState
+          tone="error"
+          icon={WifiOff}
+          title="Sunucuya bağlanılamadı"
+          description="Tetkik sonuçları şu an yüklenemiyor. İnternet bağlantınızı kontrol edip tekrar deneyin."
+          actionLabel="Tekrar Dene"
+          onAction={() => {
+            setLoading(true);
+            void refresh();
+          }}
+        />
+      </Screen>
+    );
+  }
+
   return (
-    <Screen>
-      <ErrorText>{hata}</ErrorText>
+    <Screen bleed>
       <FlatList
         data={groups}
         keyExtractor={(g) => g.key}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
         }
-        ListEmptyComponent={<EmptyText>Tetkik sonucu yok</EmptyText>}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        ListHeaderComponent={
+          <>
+            <View style={{ paddingTop: insets.top }}>
+              <PageHero
+                title="Tahlil sonuçları"
+                subtitle="Laboratuvar ve tetkik raporları"
+              />
+            </View>
+            {hata ? (
+              <View style={{ paddingHorizontal: spacing.lg }}>
+                <EmptyState
+                  tone="error"
+                  icon={WifiOff}
+                  title="Bağlantı sorunu"
+                  description={hata}
+                  actionLabel="Tekrar Dene"
+                  onAction={() => void refresh()}
+                />
+              </View>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            tone="neutral"
+            icon={FlaskConical}
+            title="Tetkik sonucu yok"
+            description="Henüz kayıtlı tetkik veya sonuç bulunmuyor."
+          />
+        }
+        contentContainerStyle={{
+          paddingBottom: spacing.xl,
+          flexGrow: 1,
+          paddingHorizontal: spacing.lg,
+        }}
         renderItem={({ item: gun }) => {
           const dateOpen = openDate === gun.key;
           return (
@@ -151,10 +228,16 @@ export default function TetkikSonuclarimScreen() {
                   setOpenIstek(null);
                 }}
               >
+                <Calendar size={18} color={palette.bosphorus500} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.dateTitle}>{gun.label}</Text>
+                  <Text style={styles.dateMeta}>{gun.toplam} kalem</Text>
                 </View>
-                <Text style={styles.chevron}>{dateOpen ? "▾" : "▸"}</Text>
+                {dateOpen ? (
+                  <ChevronDown size={20} color={palette.slate400} />
+                ) : (
+                  <ChevronRight size={20} color={palette.slate400} />
+                )}
               </Pressable>
 
               {dateOpen
@@ -168,32 +251,72 @@ export default function TetkikSonuclarimScreen() {
                             setOpenIstek(istekOpen ? null : istek.key)
                           }
                         >
-                          <Text style={styles.istekTitle}>{istek.label}</Text>
-                          <Text style={styles.dateMeta}>
-                            {istek.items.length} kalem {istekOpen ? "▾" : "▸"}
-                          </Text>
+                          <FlaskConical size={16} color={palette.navy800} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.istekTitle}>{istek.label}</Text>
+                            <Text style={styles.dateMetaDark}>
+                              {istek.items.length} kalem
+                            </Text>
+                          </View>
+                          {istekOpen ? (
+                            <ChevronDown size={18} color={colors.muted} />
+                          ) : (
+                            <ChevronRight size={18} color={colors.muted} />
+                          )}
                         </Pressable>
                         {istekOpen
-                          ? istek.items.map((t) => (
-                              <Pressable
-                                key={t.id}
-                                onPress={() =>
-                                  go(`/(hasta)/tetkik-sonuclarim/${t.id}`)
-                                }
-                              >
-                                <Card style={styles.itemCard}>
-                                  <Text style={styles.cardTitle}>
-                                    {t.tetkik_turu}
-                                  </Text>
-                                  <Text style={styles.meta}>
-                                    {durumEtiket(t.durum)}
-                                  </Text>
-                                  <Text style={styles.meta} numberOfLines={1}>
-                                    {t.sonuc_dosyasi ?? "Sonuç bekleniyor"}
-                                  </Text>
-                                </Card>
-                              </Pressable>
-                            ))
+                          ? istek.items.map((t) => {
+                              const status = tetkikStatus(t);
+                              const ilkKalem = t.sonuc_kalemleri?.[0];
+                              return (
+                                <Pressable
+                                  key={t.id}
+                                  onPress={() =>
+                                    go(`/(hasta)/tetkik-sonuclarim/${t.id}`)
+                                  }
+                                >
+                                  <Card status={status} style={styles.itemCard}>
+                                    <View style={styles.cardTitleRow}>
+                                      <FlaskConical
+                                        size={16}
+                                        color={
+                                          status === "critical"
+                                            ? palette.poppy600
+                                            : palette.navy800
+                                        }
+                                      />
+                                      <Text style={styles.cardTitle}>
+                                        {t.tetkik_turu}
+                                      </Text>
+                                    </View>
+                                    <Text style={typography.bodySm}>
+                                      {durumEtiket(t.durum)}
+                                    </Text>
+                                    {ilkKalem ? (
+                                      <>
+                                        <Text style={typography.dataLg}>
+                                          {formatKalemDeger(ilkKalem)}
+                                        </Text>
+                                        {ilkKalem.ref_min != null ||
+                                        ilkKalem.ref_max != null ? (
+                                          <Text style={typography.bodySm}>
+                                            Ref: {ilkKalem.ref_min ?? "—"} –{" "}
+                                            {ilkKalem.ref_max ?? "—"}
+                                            {ilkKalem.birim
+                                              ? ` ${ilkKalem.birim}`
+                                              : ""}
+                                          </Text>
+                                        ) : null}
+                                      </>
+                                    ) : (
+                                      <Text style={typography.bodySm} numberOfLines={1}>
+                                        {t.sonuc_dosyasi ?? "Sonuç bekleniyor"}
+                                      </Text>
+                                    )}
+                                  </Card>
+                                </Pressable>
+                              );
+                            })
                           : null}
                       </View>
                     );
@@ -208,36 +331,46 @@ export default function TetkikSonuclarimScreen() {
 }
 
 const styles = StyleSheet.create({
-  block: { marginBottom: 10 },
+  block: { marginBottom: spacing.sm + 2 },
   dateHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.md + 2,
+    gap: spacing.sm + 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.cardSoft,
   },
-  dateHeaderOpen: { borderBottomLeftRadius: 4, borderBottomRightRadius: 4 },
-  dateTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  dateMeta: { color: "#bae6fd", fontSize: 12, marginTop: 2 },
-  chevron: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  dateHeaderOpen: {
+    borderBottomLeftRadius: spacing.sm,
+    borderBottomRightRadius: spacing.sm,
+  },
+  dateTitle: { color: palette.ink, fontWeight: "700", fontSize: 15 },
+  dateMeta: { color: palette.slate400, fontSize: 12, marginTop: 2 },
+  dateMetaDark: { color: colors.muted, fontSize: 12, marginTop: 2 },
   istekWrap: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderTopWidth: 0,
-    paddingHorizontal: 10,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.sm + 2,
+    paddingBottom: spacing.sm,
+    borderBottomLeftRadius: radius.md,
+    borderBottomRightRadius: radius.md,
   },
   istekHeader: {
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    gap: 2,
   },
   istekTitle: { fontWeight: "600", color: colors.text },
-  itemCard: { marginTop: 8, marginBottom: 0 },
-  cardTitle: { fontWeight: "700", color: colors.text },
-  meta: { color: colors.muted, fontSize: 13 },
+  itemCard: { marginTop: spacing.sm, marginBottom: 0 },
+  cardTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  cardTitle: { fontWeight: "700", color: colors.text, flex: 1 },
 });

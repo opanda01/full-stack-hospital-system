@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Text, TextInput, Pressable, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import { getApiUrl, otpDogrula, otpGonder } from "@/shared/api";
-import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ } from "@/shared/lib/tcKimlik";
+import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ, DEMO_HASTA_TC } from "@/shared/lib/tcKimlik";
 import { useAuthStore } from "@/shared/auth";
 import { goReplace } from "@/shared/nav";
+import { palette, radius, spacing } from "@/shared/ui";
 
 type Step = "bilgi" | "otp";
 
@@ -25,7 +26,7 @@ export function GirisYapForm() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [step, setStep] = useState<Step>("bilgi");
   const [telefon, setTelefon] = useState("05551234567");
-  const [tc, setTc] = useState("10000000006");
+  const [tc, setTc] = useState(DEMO_HASTA_TC);
   const [kod, setKod] = useState("");
   const [hata, setHata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,6 +97,8 @@ export function GirisYapForm() {
         data.refresh_token,
         data.rol ?? "HASTA",
       );
+      const { syncPushRegistration } = await import("@/shared/push");
+      void syncPushRegistration();
       goReplace("/(hasta)/ozet");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Doğrulama başarısız");
@@ -183,25 +186,26 @@ export function GirisYapForm() {
 }
 
 const styles = StyleSheet.create({
-  form: { width: "100%", maxWidth: 320, gap: 10 },
+  form: { width: "100%", maxWidth: 320, gap: spacing.sm + 2 },
   input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: palette.line,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    backgroundColor: palette.white,
+    fontSize: 15,
   },
   button: {
-    backgroundColor: "#0c4a6e",
-    borderRadius: 8,
-    paddingVertical: 12,
+    backgroundColor: palette.navy900,
+    borderRadius: radius.md + 2,
+    paddingVertical: spacing.md,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  error: { color: "#dc2626", fontSize: 12 },
-  hint: { color: "#64748b", fontSize: 13, marginBottom: 4 },
-  devBox: { marginBottom: 8, gap: 4 },
-  devApi: { color: "#94a3b8", fontSize: 11 },
-  link: { color: "#0369a1", textAlign: "center", marginTop: 4 },
+  buttonText: { color: palette.white, fontWeight: "700", fontSize: 15 },
+  error: { color: palette.poppy600, fontSize: 12 },
+  hint: { color: palette.slate600, fontSize: 13, marginBottom: spacing.xs },
+  devBox: { marginBottom: spacing.sm, gap: spacing.xs },
+  devApi: { color: palette.slate400, fontSize: 11 },
+  link: { color: palette.bosphorus500, textAlign: "center", marginTop: spacing.xs },
 });

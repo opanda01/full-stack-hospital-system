@@ -5,7 +5,7 @@ Geliştirme ortamında [Maestro](https://maestro.mobile.dev/) ile temel akış d
 ## Önkoşullar
 
 - Backend: `http://localhost:8000` (veya `EXPO_PUBLIC_API_URL`)
-- Seed hasta: TC `10000000006`, telefon `05551234567`
+- Seed hasta: TC `34917047162`, telefon `05551234567`
 - Expo uygulaması cihaz/emülatörde açık
 
 ## Çalıştırma

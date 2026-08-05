@@ -76,6 +76,8 @@ export function KayitOlForm() {
         data.refresh_token,
         data.rol ?? "HASTA",
       );
+      const { syncPushRegistration } = await import("@/shared/push");
+      void syncPushRegistration();
       goReplace("/(hasta)/ozet");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Kayıt doğrulama başarısız");

@@ -1,14 +1,15 @@
 import { Text, View, StyleSheet } from "react-native";
 import { Link } from "expo-router";
 import { GirisYapForm } from "@/features/giris-yap";
+import { palette, spacing } from "@/shared/ui";
 
 export default function GirisScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        Devlet Hastanesi
-      </Text>
-      <Text style={styles.subtitle}>Hasta Mobil Giriş (OTP)</Text>
+      <View style={styles.brand}>
+        <Text style={styles.title}>Devlet Hastanesi</Text>
+        <Text style={styles.subtitle}>Hasta mobil giriş (OTP)</Text>
+      </View>
       <GirisYapForm />
       <Link href="/(auth)/kayit" style={styles.link}>
         Hesap oluştur
@@ -22,23 +23,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
-    gap: 12,
-    backgroundColor: "#f8fafc",
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: palette.sand50,
   },
+  brand: { alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "800",
     textAlign: "center",
-    color: "#0c4a6e",
+    color: palette.navy900,
   },
   subtitle: {
     fontSize: 14,
-    color: "#64748b",
-    marginBottom: 8,
+    color: palette.slate600,
   },
   link: {
-    color: "#0369a1",
-    marginTop: 8,
+    color: palette.bosphorus500,
+    marginTop: spacing.sm,
+    fontWeight: "600",
   },
 });
