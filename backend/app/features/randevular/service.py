@@ -6,11 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.config import get_settings
-from app.core.enums import Rol
+from app.core.enums import OturumTipi, Rol
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.permissions import Kapsam
 from app.core.public_id import get_by_public_id, hasta_from_public_id
-from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.core.scope import erisim_rolu, kullanici_kapsamli_filtre_uygula
 from app.core.timezone import ISTANBUL, as_utc, to_istanbul
 from app.features.hastalar.models import Hasta
 from app.features.kullanicilar.models import Kullanici
@@ -40,15 +40,20 @@ def _cakisma_var_mi(session: Session, doktor_id: int, tarih_saat: datetime) -> b
 
 
 def listele_sorgu(
-    session: Session, current_user: Kullanici, kapsam: Kapsam
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ):
     query = select(Randevu)
+    rol = erisim_rolu(current_user, oturum_tipi)
 
     def kendi(q):
-        if current_user.rol == Rol.DOKTOR:
+        if rol == Rol.DOKTOR:
             doktor = doktor_getir(session, current_user.id)
             return q.where(Randevu.doktor_id == doktor.id)
-        if current_user.rol == Rol.HASTA:
+        if rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             return q.where(Randevu.hasta_id == hasta.id)
         raise HTTPException(
@@ -75,9 +80,17 @@ def listele_sorgu(
 
 
 def listele(
-    session: Session, current_user: Kullanici, kapsam: Kapsam
+    session: Session,
+    current_user: Kullanici,
+    kapsam: Kapsam,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> list[Randevu]:
-    return list(session.exec(listele_sorgu(session, current_user, kapsam)).all())
+    return list(
+        session.exec(
+            listele_sorgu(session, current_user, kapsam, oturum_tipi=oturum_tipi)
+        ).all()
+    )
 
 
 def randevu_erisim_kontrolu(

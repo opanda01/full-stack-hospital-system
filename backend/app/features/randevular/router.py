@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.core.batch_load import batch_by_ids
 from app.core.db import get_session
+from app.core.enums import OturumTipi
 from app.core.request_ip import istemci_ip_al
 from app.core.pagination import Page, PaginationParams, get_pagination, make_page, paginate
 from app.core.security import require_permission
@@ -106,7 +107,12 @@ def randevu_listele(
     current_user: Kullanici = Depends(require_permission("randevu:goruntule")),
     session: Session = Depends(get_session),
 ):
-    q = randevu_service.listele_sorgu(session, current_user, request.state.kapsam)
+    q = randevu_service.listele_sorgu(
+        session,
+        current_user,
+        request.state.kapsam,
+        oturum_tipi=getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
+    )
     rows, total = paginate(
         session, q, page=pagination.page, page_size=pagination.page_size
     )

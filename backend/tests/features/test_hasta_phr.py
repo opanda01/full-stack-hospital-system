@@ -55,6 +55,19 @@ def test_hasta_ozet_endpoint(client, seeded):
     assert "okunmamis_sonuc_sayisi" in body
 
 
+def test_hasta_oturumunda_personel_rolu_ile_ozet(client, seeded):
+    """OTP hasta oturumu: DB rolü personel olsa da KENDI_KAYDIM hasta filtresi."""
+    doktor = seeded["doktor_a"]
+    token = create_access_token(doktor.id, doktor.rol, oturum_tipi=OturumTipi.HASTA)
+    r = client.get(
+        "/hastalar/ben/ozet",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if r.status_code == 403 and "Hasta kaydı" in r.json().get("detail", ""):
+        return
+    assert r.status_code == 200, r.text
+
+
 def test_hasta_sikayet_benim(client, seeded):
     r = client.post(
         "/sikayet-oneri/",

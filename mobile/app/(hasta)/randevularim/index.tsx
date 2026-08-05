@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { CalendarDays, WifiOff } from "lucide-react-native";
 import { apiFetch } from "@/shared/api";
+import { fetchRandevular } from "@/shared/api/hastaApi";
 import {
   Card,
   type CardStatus,
@@ -252,13 +253,7 @@ export default function RandevularimScreen() {
   const [selectedYmd, setSelectedYmd] = useState<string | null>(null);
 
   const loadPage = useCallback(async (pageNum: number, append: boolean) => {
-    const res = await apiFetch(
-      `/randevular/?page=${pageNum}&page_size=${PAGE_SIZE}`,
-    );
-    if (!res.ok) {
-      throw new Error("Randevular yüklenemedi");
-    }
-    const body = (await res.json()) as Page<Randevu>;
+    const body = await fetchRandevular(pageNum, PAGE_SIZE);
     const chunk = unwrapPage(body);
     setTotal(body.total ?? chunk.length);
     setPage(pageNum);
@@ -269,8 +264,10 @@ export default function RandevularimScreen() {
     setHata(null);
     try {
       await loadPage(1, false);
-    } catch {
-      setHata("Sunucuya bağlanılamadı");
+    } catch (e) {
+      setHata(
+        e instanceof Error ? e.message : "Sunucuya bağlanılamadı",
+      );
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,26 @@
 """Kapsam bazlı query filtreleme yardımcıları."""
 
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from fastapi import HTTPException, status
 
+from app.core.enums import OturumTipi, Rol
 from app.core.permissions import Kapsam
+from app.features.kullanicilar.models import Kullanici
 
 Q = TypeVar("Q")
+
+
+def erisim_rolu(
+    current_user: Kullanici,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> Rol:
+    """KENDI_KAYDIM filtreleri: hasta OTP oturumunda DB rolünden bağımsız HASTA."""
+    if oturum_tipi == OturumTipi.HASTA:
+        return Rol.HASTA
+    rol = current_user.rol
+    return rol if isinstance(rol, Rol) else Rol(rol)
 
 
 def kullanici_kapsamli_filtre_uygula(

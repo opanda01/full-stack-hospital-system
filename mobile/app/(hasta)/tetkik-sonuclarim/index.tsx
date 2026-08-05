@@ -140,8 +140,8 @@ export default function TetkikSonuclarimScreen() {
       setItems(body.items);
       setOpenDate(null);
       setOpenIstek(null);
-    } catch {
-      setHata("Sunucuya bağlanılamadı");
+    } catch (e) {
+      setHata(e instanceof Error ? e.message : "Sunucuya bağlanılamadı");
     } finally {
       setLoading(false);
     }

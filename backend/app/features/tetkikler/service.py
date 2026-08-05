@@ -6,12 +6,12 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.batch_load import batch_by_ids
-from app.core.enums import Rol
+from app.core.enums import OturumTipi, Rol
 from app.core.lookups import doktor_getir, hasta_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import get_by_public_id, hasta_from_public_id, hasta_pk_from_public_id
-from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.core.scope import erisim_rolu, kullanici_kapsamli_filtre_uygula
 from app.features.doktorlar.models import Doktor
 from app.features.hastalar import service as hasta_service
 from app.features.hastalar.models import Hasta
@@ -120,17 +120,20 @@ def _liste_sorgu(
     kapsam: Kapsam,
     *,
     hasta_public_id: UUID | None = None,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ):
     query = select(Tetkik)
     if hasta_public_id is not None:
         hasta_pk = hasta_pk_from_public_id(session, hasta_public_id)
         query = query.where(Tetkik.hasta_id == hasta_pk)
 
+    rol = erisim_rolu(current_user, oturum_tipi)
+
     def kendi(q):
-        if current_user.rol == Rol.DOKTOR:
+        if rol == Rol.DOKTOR:
             doktor = doktor_getir(session, current_user.id)
             return q.where(Tetkik.istek_yapan_doktor_id == doktor.id)
-        if current_user.rol == Rol.HASTA:
+        if rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             return q.where(Tetkik.hasta_id == hasta.id)
         if current_user.rol == Rol.LABORANT:
@@ -165,9 +168,14 @@ def listele(
     hasta_public_id: UUID | None = None,
     page: int = 1,
     page_size: int = 50,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Page[TetkikRead]:
     query = _liste_sorgu(
-        session, current_user, kapsam, hasta_public_id=hasta_public_id
+        session,
+        current_user,
+        kapsam,
+        hasta_public_id=hasta_public_id,
+        oturum_tipi=oturum_tipi,
     )
     rows, total = paginate(session, query, page=page, page_size=page_size)
     hastalar = batch_by_ids(session, Hasta, (t.hasta_id for t in rows))

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
-from app.core.enums import EpikrizDurumu, KlinikOnayDurumu
+from app.core.enums import EpikrizDurumu, KlinikOnayDurumu, OturumTipi
 from app.core.lookups import hasta_getir
 from app.core.pagination import Page, make_page
 from app.core.timezone import as_utc
@@ -125,7 +125,11 @@ def yatis_ozet(session: Session, current_user: Kullanici) -> HastaYatisOzetRead:
     )
 
 
-def hasta_ozet(session: Session, current_user: Kullanici) -> HastaOzetRead:
+def hasta_ozet(
+    session: Session,
+    current_user: Kullanici,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> HastaOzetRead:
     from app.core.permissions import Kapsam
 
     hasta = hasta_getir(session, current_user.id)
@@ -133,7 +137,12 @@ def hasta_ozet(session: Session, current_user: Kullanici) -> HastaOzetRead:
     k = session.get(Kullanici, current_user.id)
     ad_soyad = f"{k.ad} {k.soyad}".strip() if k else "Hasta"
 
-    randevular = randevu_service.listele(session, current_user, Kapsam.KENDI_KAYDIM)
+    randevular = randevu_service.listele(
+        session,
+        current_user,
+        Kapsam.KENDI_KAYDIM,
+        oturum_tipi=oturum_tipi,
+    )
     now = datetime.now(timezone.utc)
     aktif = [r for r in randevular if r.durum != "IPTAL"]
     yaklasanlar = sorted(

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
-from app.core.enums import Rol
+from app.core.enums import OturumTipi, Rol
 from app.core.lookups import hasta_getir
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import get_current_user, require_permission, require_role
@@ -104,10 +104,15 @@ def benim_belgelerim(
 
 @router.get("/ben/ozet", response_model=HastaOzetRead)
 def benim_ozet(
+    request: Request,
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_role(Rol.HASTA)),
 ):
-    return phr_service.hasta_ozet(session, current_user)
+    return phr_service.hasta_ozet(
+        session,
+        current_user,
+        getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
+    )
 
 
 @router.get("/ben/yatis-ozet", response_model=HastaYatisOzetRead)
