@@ -38,9 +38,9 @@ function RandevuAlTabButton(props: BottomTabBarButtonProps) {
       style={styles.fabTab}
     >
       <View style={styles.fabCircle}>
-        <Ionicons name="add" size={26} color={palette.white} />
+        <Ionicons name="add" size={28} color={palette.white} />
       </View>
-      {children}
+      <View style={styles.fabLabelWrap}>{children}</View>
     </Pressable>
   );
 }
@@ -66,9 +66,9 @@ export default function HastaLayout() {
           backgroundColor: palette.white,
           borderTopColor: palette.lineSoft,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 68,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === "ios" ? 24 : 10,
+          height: Platform.OS === "ios" ? 92 : 72,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === "ios" ? 26 : 12,
           ...shadows.tabBar,
         },
       }}
@@ -94,6 +94,12 @@ export default function HastaLayout() {
         options={{
           title: "Randevu Al",
           tabBarLabel: "Randevu Al",
+          tabBarLabelStyle: {
+            fontSize: 9,
+            fontWeight: "700",
+            color: palette.bosphorus500,
+            marginTop: 2,
+          },
           tabBarIcon: () => null,
           tabBarButton: (props) => <RandevuAlTabButton {...props} />,
         }}
@@ -202,16 +208,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
-    top: -4,
+    paddingBottom: Platform.OS === "ios" ? 2 : 4,
   },
   fabCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: palette.navy900,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -16,
+    marginTop: -20,
     ...shadows.fab,
+  },
+  fabLabelWrap: {
+    marginTop: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.enums import OturumTipi
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
@@ -33,6 +34,7 @@ def list_tetkikler(
         hasta_public_id=hasta_id,
         page=pagination.page,
         page_size=pagination.page_size,
+        oturum_tipi=getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
     )
 
 
