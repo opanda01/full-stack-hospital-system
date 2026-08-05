@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 
 from app.core.enums import AmeliyathaneDurumu, AmeliyatPlaniDurumu
+from app.features.ameliyathane.models import Ameliyathane, AmeliyatPlani
+from app.features.doktorlar.models import Doktor
 from app.features.hastalar.models import Hasta
 from app.features.personel.models import Personel
 

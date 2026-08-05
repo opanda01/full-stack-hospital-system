@@ -11,7 +11,7 @@ Müdür / başhekim izin ayrımı regresyonu: [bashekim-izin-envanteri.md](bashe
 - [ ] laborant@hastane.example.com → /laborant
 - [ ] mudur@hastane.example.com → /admin
 - [ ] hasta@hastane.example.com (web) → /hasta
-- [ ] Mobil OTP giriş (TC `10000000006` / tel `05551234567`) → randevularım
+- [ ] Mobil OTP giriş (TC `34917047162` / tel `05551234567`) → randevularım
 
 ## Faz 2–3
 - [ ] Admin departman ekler / listeler

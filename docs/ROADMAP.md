@@ -30,7 +30,7 @@
 - `oturum_tipi=hasta` token: SecureStore + Zustand hydrate; 401’de refresh; logout
 - Özet ana sayfa + kısayollar; randevu liste/iptal/al; tetkik liste+detay+trend; muayene; reçete; onaylı epikriz; profil (`/hastalar/ben` + alerji); şikayet/öneri
 - HASTA: `epikriz:goruntule` (KENDI_KAYDIM, yalnızca ONAYLANDI); `klinik_onay:goruntule` (onaylı belgeler); `GET /hastalar/ben/ozet`, `/ben/belgeler`, `/ben/yatis-ozet`; tetkik `hasta_goruldu_at` okunmamış sayacı
-- Demo: TC `10000000006` / telefon `05551234567` (OTP kodu SMS stub / konsol)
+- Demo: TC `34917047162` (seed `hasta@hastane.example.com`), telefon `05551234567` (OTP kodu SMS stub / konsol)
 - `/auth/register` backend’de deprecated (`X-Deprecated`, `Sunset`); mobil artık OTP kullanır
 
 ## Faz F — Başhekim paneli (uygulandı)
@@ -294,4 +294,8 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
     - Büyüklük: **S**
     - Bağımlılık: `tc_ilk_dokuz_haneden` / `tc_kimlik`
     - Yapıldı: `seed_rbac._demo_tc`, test `conftest` geçerli TC
+
+## Mobil (Expo) uyum özeti
+
+Kod envanteri, uyum tablosu ve hasta odaklı faz planı: [MOBİLE-ROADMAP.md](./MOBİLE-ROADMAP.md) (*Mobil (Expo) uyum bölümü*, son tarama 2026-08-05). **Personel (doktor/hemşire) mobil uygulama bilinçli olarak kapsam dışıdır; personel yalnızca web panelini kullanır.**
 
