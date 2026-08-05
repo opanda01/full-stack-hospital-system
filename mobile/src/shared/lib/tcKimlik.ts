@@ -1,4 +1,5 @@
-/** T.C. kimlik numarası algoritmik doğrulama. */
+/** seed_rbac: hasta@hastane.example.com (_demo_tc email hash) */
+export const DEMO_HASTA_TC = "34917047162";
 
 export const TC_GECERSIZ_MESAJ = "Geçersiz TC kimlik numarası";
 

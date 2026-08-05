@@ -11,6 +11,7 @@ from app.core.scope import kullanici_kapsamli_filtre_uygula
 from app.features.departmanlar.models import Departman
 from app.features.kullanicilar.models import Kullanici
 from app.features.nobet_cizelgesi.models import NobetCizelgesi, NobetDepartmanCizelgesi
+from app.features.nobet_cizelgesi.uyum_service import dogrula_nobet_atamasi
 from app.features.nobet_cizelgesi.schemas import (
     NobetCreate,
     NobetCizelgeEnsure,
@@ -197,6 +198,13 @@ def create_nobet(session: Session, data: NobetCreate) -> NobetRead:
             detail="Bu hücrede zaten nöbet ataması var. Önce taşıyın veya silin.",
         )
 
+    dogrula_nobet_atamasi(
+        session,
+        personel_id=data.personel_id,
+        tarih=data.tarih,
+        vardiya=data.vardiya,
+    )
+
     n = NobetCizelgesi(
         personel_id=data.personel_id,
         tarih=data.tarih,
@@ -235,6 +243,15 @@ def update_nobet(session: Session, nobet_id: int, data: NobetUpdate) -> NobetRea
         ).first()
         if clash:
             raise HTTPException(status_code=409, detail="Hedef hücre dolu")
+
+    pid = payload.get("personel_id", n.personel_id)
+    dogrula_nobet_atamasi(
+        session,
+        personel_id=pid,
+        tarih=new_tarih,
+        vardiya=new_vardiya,
+        exclude_nobet_id=nobet_id,
+    )
 
     for k, v in payload.items():
         setattr(n, k, v)

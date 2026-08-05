@@ -4,19 +4,41 @@ import {
   Text,
   View,
   StyleSheet,
+  SectionList,
   FlatList,
   ActivityIndicator,
   TextInput,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { LucideIcon } from "lucide-react-native";
+import {
+  Activity,
+  Baby,
+  Bone,
+  Brain,
+  Check,
+  Eye,
+  Heart,
+  Hospital,
+  Scissors,
+  Search,
+  Stethoscope,
+} from "lucide-react-native";
 import { apiFetch } from "@/shared/api";
 import { go } from "@/shared/nav";
 import {
-  Card,
-  EmptyText,
+  EmptyState,
   ErrorText,
+  PageHero,
   PrimaryButton,
   Screen,
+  SectionHeader,
   colors,
+  palette,
+  radius,
+  shadows,
+  spacing,
+  typography,
 } from "@/shared/ui";
 
 type Departman = { id: number; ad: string };
@@ -31,6 +53,52 @@ type Doktor = {
 type Hasta = { id: string };
 
 type Step = 1 | 2 | 3;
+
+type DepKategori = "dahili" | "cerrahi" | "acil" | "diger";
+
+const KATEGORI_LABEL: Record<DepKategori, string> = {
+  dahili: "Dahili Birimler",
+  cerrahi: "Cerrahi Birimler",
+  acil: "Acil / Yoğun Bakım",
+  diger: "Diğer",
+};
+
+const KATEGORI_ICON: Record<DepKategori, LucideIcon> = {
+  dahili: Stethoscope,
+  cerrahi: Scissors,
+  acil: Activity,
+  diger: Hospital,
+};
+
+function departmanKategori(ad: string): DepKategori {
+  const q = ad.toLocaleLowerCase("tr-TR");
+  if (/(acil|yoğun|yogun|anestezi|reanimasyon)/.test(q)) return "acil";
+  if (
+    /(cerrahi|ortoped|üroloji|uroloji|kbb|göz|goz|plastik|kalp ve damar|beyin|genel cerrahi|çocuk cerrahi)/.test(
+      q,
+    )
+  )
+    return "cerrahi";
+  if (
+    /(dahili|kardiyo|nöro|noro|gastro|endokrin|göğüs|gogus|hematoloji|onkoloji|enfeksiyon|nefro|romat|dermatoloji|psikiyatri|fizik tedavi|dahiliye|iç hastalık|ic hastalik)/.test(
+      q,
+    )
+  )
+    return "dahili";
+  return "diger";
+}
+
+function departmanIcon(ad: string): LucideIcon {
+  const q = ad.toLocaleLowerCase("tr-TR");
+  if (q.includes("kardiyo")) return Heart;
+  if (q.includes("ortoped") || q.includes("kemik")) return Bone;
+  if (q.includes("göz") || q.includes("goz")) return Eye;
+  if (q.includes("nöro") || q.includes("noro") || q.includes("beyin")) return Brain;
+  if (q.includes("çocuk") || q.includes("cocuk") || q.includes("pediatri"))
+    return Baby;
+  if (q.includes("acil")) return Activity;
+  return Stethoscope;
+}
 
 function tomorrowYmd(): string {
   const tarih = new Date();
@@ -67,29 +135,51 @@ function SelectRow({
   subtitle,
   selected,
   onPress,
+  icon: Icon,
 }: {
   title: string;
   subtitle?: string;
   selected: boolean;
   onPress: () => void;
+  icon?: LucideIcon;
 }) {
   return (
     <Pressable
       onPress={onPress}
       style={[styles.row, selected && styles.rowSelected]}
     >
+      {Icon ? (
+        <View style={[styles.rowIcon, selected && styles.rowIconSelected]}>
+          <Icon
+            size={20}
+            color={selected ? palette.white : palette.navy800}
+            strokeWidth={2}
+          />
+        </View>
+      ) : null}
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={[styles.rowTitle, selected && styles.rowTitleSelected]}>
           {title}
         </Text>
-        {subtitle ? <Text style={styles.rowSub}>{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text style={[styles.rowSub, selected && styles.rowSubSelected]}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
-      <View style={[styles.radio, selected && styles.radioOn]} />
+      {selected ? (
+        <View style={styles.check}>
+          <Check size={14} color={palette.white} strokeWidth={3} />
+        </View>
+      ) : (
+        <View style={styles.checkPlaceholder} />
+      )}
     </Pressable>
   );
 }
 
 export function RandevuOlusturForm() {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>(1);
   const [departmanlar, setDepartmanlar] = useState<Departman[]>([]);
   const [doktorlar, setDoktorlar] = useState<Doktor[]>([]);
@@ -116,6 +206,25 @@ export function RandevuOlusturForm() {
       d.ad.toLocaleLowerCase("tr-TR").includes(q),
     );
   }, [departmanlar, poliklinikAra]);
+
+  const departmanSections = useMemo(() => {
+    const order: DepKategori[] = ["dahili", "cerrahi", "acil", "diger"];
+    const buckets = new Map<DepKategori, Departman[]>();
+    for (const d of filteredDepartmanlar) {
+      const k = departmanKategori(d.ad);
+      const arr = buckets.get(k) ?? [];
+      arr.push(d);
+      buckets.set(k, arr);
+    }
+    return order
+      .filter((k) => (buckets.get(k)?.length ?? 0) > 0)
+      .map((k) => ({
+        key: k,
+        title: KATEGORI_LABEL[k],
+        icon: KATEGORI_ICON[k],
+        data: buckets.get(k) ?? [],
+      }));
+  }, [filteredDepartmanlar]);
   const filteredDoktorlar = useMemo(
     () =>
       doktorlar.filter(
@@ -249,12 +358,25 @@ export function RandevuOlusturForm() {
   }
 
   return (
-    <Screen style={{ paddingTop: 12 }}>
+    <Screen bleed style={{ paddingBottom: 0 }}>
+      <View style={{ paddingTop: insets.top }}>
+        <PageHero
+          title="Randevu al"
+          subtitle={
+            step === 1
+              ? "Bölüm seçin"
+              : step === 2
+                ? "Doktor ve saat seçin"
+                : "Onaylayın"
+          }
+        />
+      </View>
+      <View style={styles.content}>
       <StepDots step={step} />
       <ErrorText>{hata}</ErrorText>
 
       {step > 1 ? (
-        <Card style={styles.summary}>
+        <View style={styles.summary}>
           {selectedDep ? (
             <Text style={styles.summaryLine}>Departman: {selectedDep.ad}</Text>
           ) : null}
@@ -263,38 +385,50 @@ export function RandevuOlusturForm() {
               Doktor: {doktorAdi(selectedDoktor)}
             </Text>
           ) : null}
-        </Card>
+        </View>
       ) : null}
 
       {step === 1 ? (
-        <FlatList
-          data={filteredDepartmanlar}
+        <SectionList
+          sections={departmanSections}
           keyExtractor={(d) => String(d.id)}
           keyboardShouldPersistTaps="handled"
+          stickySectionHeadersEnabled={false}
           ListEmptyComponent={
-            <EmptyText>
-              {poliklinikAra.trim()
-                ? "Aramanızla eşleşen poliklinik yok"
-                : "Departman bulunamadı"}
-            </EmptyText>
+            <EmptyState
+              tone="neutral"
+              icon={Hospital}
+              title={
+                poliklinikAra.trim()
+                  ? "Aramanızla eşleşen poliklinik yok"
+                  : "Departman bulunamadı"
+              }
+            />
           }
           ListHeaderComponent={
             <View style={styles.searchWrap}>
               <Text style={styles.hint}>Polikliniği seçin</Text>
-              <TextInput
-                style={styles.search}
-                value={poliklinikAra}
-                onChangeText={setPoliklinikAra}
-                placeholder="Poliklinik ara (ör. Kardiyoloji)"
-                placeholderTextColor={colors.muted}
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-              />
+              <View style={styles.searchField}>
+                <Search size={18} color={colors.muted} strokeWidth={2} />
+                <TextInput
+                  style={styles.search}
+                  value={poliklinikAra}
+                  onChangeText={setPoliklinikAra}
+                  placeholder="Poliklinik ara (ör. Kardiyoloji)"
+                  placeholderTextColor={colors.muted}
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                />
+              </View>
             </View>
           }
+          renderSectionHeader={({ section }) => (
+            <SectionHeader title={section.title} icon={section.icon} />
+          )}
           renderItem={({ item }) => (
             <SelectRow
               title={item.ad}
+              icon={departmanIcon(item.ad)}
               selected={depId === item.id}
               onPress={() => setDepId(item.id)}
             />
@@ -304,13 +438,20 @@ export function RandevuOlusturForm() {
       ) : null}
 
       {step === 2 ? (
-        <FlatList
-          data={filteredDoktorlar}
+        <SectionList
+          sections={[{ key: "dok", title: "Doktorlar", icon: Stethoscope, data: filteredDoktorlar }]}
           keyExtractor={(d) => String(d.id)}
           ListEmptyComponent={
-            <EmptyText>Bu departmanda uygun doktor yok</EmptyText>
+            <EmptyState
+              tone="neutral"
+              icon={Stethoscope}
+              title="Bu departmanda uygun doktor yok"
+            />
           }
           ListHeaderComponent={<Text style={styles.hint}>Doktoru seçin</Text>}
+          renderSectionHeader={({ section }) => (
+            <SectionHeader title={section.title} icon={section.icon} />
+          )}
           renderItem={({ item }) => (
             <SelectRow
               title={doktorAdi(item)}
@@ -334,7 +475,9 @@ export function RandevuOlusturForm() {
             keyExtractor={(s) => s}
             numColumns={3}
             columnWrapperStyle={styles.slotRow}
-            ListEmptyComponent={<EmptyText>Yarın için müsait saat yok</EmptyText>}
+            ListEmptyComponent={
+              <EmptyState tone="neutral" icon={Activity} title="Yarın için müsait saat yok" />
+            }
             ListHeaderComponent={
               <Text style={styles.hint}>Yarın — {tomorrowYmd()}</Text>
             }
@@ -406,11 +549,13 @@ export function RandevuOlusturForm() {
           />
         )}
       </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { flex: 1, paddingHorizontal: spacing.lg },
   center: {
     flex: 1,
     justifyContent: "center",
@@ -430,63 +575,86 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.border,
   },
-  dotActive: { backgroundColor: colors.primary },
+  dotActive: { backgroundColor: palette.navy900 },
   dotLabel: {
-    marginLeft: 6,
-    color: colors.primary,
+    marginLeft: spacing.xs + 2,
+    color: palette.navy800,
     fontWeight: "700",
     fontSize: 13,
   },
-  summary: { marginBottom: 4, paddingVertical: 10 },
-  summaryLine: { color: colors.muted, fontSize: 13 },
-  hint: {
-    color: colors.muted,
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  searchWrap: { marginBottom: 4 },
-  search: {
+  summary: {
+    marginBottom: spacing.xs,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  },
+  summaryLine: { ...typography.bodySm },
+  hint: {
+    ...typography.bodySm,
+    marginBottom: spacing.sm + 2,
+  },
+  searchWrap: { marginBottom: spacing.xs },
+  searchField: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: palette.line,
+    borderRadius: radius.md + 2,
+    backgroundColor: palette.white,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm + 2,
+    ...shadows.cardSoft,
+  },
+  search: {
+    flex: 1,
+    paddingVertical: spacing.sm + 2,
     color: colors.text,
-    marginBottom: 10,
     fontSize: 15,
   },
   listPad: { paddingBottom: 100 },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    marginBottom: 8,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.md + 2,
+    marginBottom: spacing.sm,
   },
   rowSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.primarySoft,
-  },
-  rowTitle: { fontWeight: "600", color: colors.text, fontSize: 15 },
-  rowTitleSelected: { color: colors.primary },
-  rowSub: { color: colors.muted, fontSize: 12 },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    borderColor: palette.navy900,
     borderWidth: 2,
-    borderColor: colors.border,
+    backgroundColor: palette.bosphorus50,
   },
-  radioOn: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: palette.bosphorus50,
+    alignItems: "center",
+    justifyContent: "center",
   },
+  rowIconSelected: { backgroundColor: palette.navy900 },
+  rowTitle: { fontWeight: "600", color: colors.text, fontSize: 15 },
+  rowTitleSelected: { color: palette.navy900 },
+  rowSub: { color: colors.muted, fontSize: 12 },
+  rowSubSelected: { color: palette.navy800 },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: palette.navy900,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkPlaceholder: { width: 22, height: 22 },
   slotRow: { gap: 8, marginBottom: 8 },
   slot: {
     flex: 1,
@@ -499,11 +667,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   slotSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.primarySoft,
+    borderColor: palette.navy900,
+    backgroundColor: palette.bosphorus50,
   },
   slotText: { fontWeight: "600", color: colors.text },
-  slotTextOn: { color: colors.primary },
+  slotTextOn: { color: palette.navy900 },
   footer: {
     flexDirection: "row",
     gap: 10,

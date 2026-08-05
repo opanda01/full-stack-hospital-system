@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     OTP_GUNLUK_MAX: int = 5
 
     BILDIRIM_BACKEND: str = "console"
+    # Mobil push: console (log) | expo (Expo Push API)
+    PUSH_BACKEND: str = "console"
+    EXPO_ACCESS_TOKEN: str = ""
     TEMP_SIFRE_UZUNLUK: int = 12
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
@@ -79,6 +82,7 @@ class Settings(BaseSettings):
     NO_SHOW_RANDEVU_LIMIT: int = 3
     ENABIZ_OTOMATIK_PAKET: bool = True
     SEVK_KATKI_PAYI_TUTAR: float = 150.0
+    NOBET_HAFTALIK_SAAT_LIMIT: int = 48
 
     ORTHANC_URL: str = "http://localhost:8042"
     ORTHANC_USER: str = "orthanc"

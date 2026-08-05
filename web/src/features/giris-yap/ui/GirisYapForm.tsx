@@ -55,6 +55,10 @@ export function GirisYapForm() {
           setHata(
             "API'ye ulaşılamadı. Proje kökünde `docker compose up -d` ile backend'in ayakta olduğundan emin olun (http://localhost:8000/health).",
           );
+        } else if (err.response?.status === 500) {
+          setHata(
+            "Sunucu hatası. Veritabanı migrasyonu uygulanmamış olabilir: backend dizininde `alembic upgrade head` ve `python -m app.core.seed_cli` çalıştırın.",
+          );
         } else {
           setHata(
             typeof detail === "string" ? detail : "Kimlik veya şifre hatalı",
@@ -84,8 +88,8 @@ export function GirisYapForm() {
                   fillTest(DEV_CREDENTIALS.kimlik, DEV_CREDENTIALS.sifre)
                 }
               >
-                Admin: <strong>{DEV_CREDENTIALS.kimlik}</strong> /{" "}
-                <strong>{DEV_CREDENTIALS.sifre}</strong>
+                Admin: <strong>{DEV_CREDENTIALS.kimlik}</strong> (sicil{" "}
+                {DEV_CREDENTIALS.sicil}) / <strong>{DEV_CREDENTIALS.sifre}</strong>
               </button>
             </li>
             <li>

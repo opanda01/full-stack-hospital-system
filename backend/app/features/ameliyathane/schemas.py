@@ -62,6 +62,9 @@ class AmeliyatPlaniOku(BaseModel):
     durum: str
     ameliyat_adi: str
     iptal_gerekcesi: str | None = None
+    onam_alindi_mi: bool = False
+    onam_zamani: datetime | None = None
+    e_imza_referans: str | None = None
     ekip: list[AmeliyatEkipUyeOku] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
@@ -69,6 +72,10 @@ class AmeliyatPlaniOku(BaseModel):
 
 class AmeliyatIptal(BaseModel):
     gerekce: str = Field(max_length=1000)
+
+
+class AmeliyatOnamIstek(BaseModel):
+    e_imza_referans: str | None = Field(default=None, max_length=128)
 
 
 class AnesteziKaydiOlustur(BaseModel):

@@ -111,6 +111,7 @@ class KvkkMetinTur(str, Enum):
     AYDINLATMA = "AYDINLATMA"
     ACIK_RIZA = "ACIK_RIZA"
     PERSONEL = "PERSONEL"
+    AMELIYAT_ONAM = "AMELIYAT_ONAM"
 
 
 class KvkkOnayKanal(str, Enum):

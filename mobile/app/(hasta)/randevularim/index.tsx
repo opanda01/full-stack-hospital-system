@@ -9,15 +9,25 @@ import {
   RefreshControl,
   Modal,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
+import { CalendarDays, WifiOff } from "lucide-react-native";
 import { apiFetch } from "@/shared/api";
 import {
   Card,
-  EmptyText,
+  type CardStatus,
+  departmanGorsel,
+  EmptyState,
   ErrorText,
   Loading,
+  PageHero,
   Screen,
+  SegmentControl,
   colors,
+  palette,
+  radius,
+  spacing,
+  typography,
 } from "@/shared/ui";
 
 type Randevu = {
@@ -97,6 +107,12 @@ function durumEtiket(durum: string): string {
   if (durum === "TAMAMLANDI") return "Tamamlandı";
   if (durum === "BEKLIYOR" || durum === "PLANLANDI") return "Bekliyor";
   return durum;
+}
+
+function randevuStatus(durum: string, past: boolean): CardStatus {
+  if (durum === "IPTAL") return "critical";
+  if (!past && (durum === "BEKLIYOR" || durum === "PLANLANDI")) return "pending";
+  return "normal";
 }
 
 function monthMatrix(year: number, month: number): (number | null)[][] {
@@ -211,13 +227,14 @@ function RandevuTakvim({
           <Text style={styles.clearDayText}>Tüm günleri göster</Text>
         </Pressable>
       ) : (
-        <Text style={styles.calHint}>Randevulu günler nokta ile işaretli</Text>
+        <View style={styles.dotSpacer} />
       )}
     </View>
   );
 }
 
 export default function RandevularimScreen() {
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Randevu[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -352,61 +369,26 @@ export default function RandevularimScreen() {
     ? formatRandevuTarih(iptalHedef.tarih_saat)
     : null;
 
+  const showConnectionEmpty = Boolean(hata) && items.length === 0;
+
   return (
-    <Screen>
-      <ErrorText>{hata}</ErrorText>
-
-      <View style={styles.tabs}>
-        <Pressable
-          style={[styles.tab, tab === "randevularim" && styles.tabOn]}
-          onPress={() => setTab("randevularim")}
-        >
-          <Text
-            style={[styles.tabText, tab === "randevularim" && styles.tabTextOn]}
-          >
-            Randevularım
-          </Text>
-          <View
-            style={[
-              styles.tabBadge,
-              tab === "randevularim" && styles.tabBadgeOn,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabBadgeText,
-                tab === "randevularim" && styles.tabBadgeTextOn,
-              ]}
-            >
-              {yaklasan.length}
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, tab === "gecmis" && styles.tabOn]}
-          onPress={() => {
-            setTab("gecmis");
-            setSelectedYmd(null);
+    <Screen bleed>
+      {showConnectionEmpty ? (
+        <View style={{ padding: spacing.lg, paddingTop: insets.top + spacing.lg }}>
+        <EmptyState
+          tone="error"
+          icon={WifiOff}
+          title="Sunucuya bağlanılamadı"
+          description="Randevularınız şu an yüklenemiyor."
+          actionLabel="Tekrar Dene"
+          onAction={() => {
+            setLoading(true);
+            void refresh();
           }}
-        >
-          <Text style={[styles.tabText, tab === "gecmis" && styles.tabTextOn]}>
-            Geçmiş
-          </Text>
-          <View
-            style={[styles.tabBadge, tab === "gecmis" && styles.tabBadgeOn]}
-          >
-            <Text
-              style={[
-                styles.tabBadgeText,
-                tab === "gecmis" && styles.tabBadgeTextOn,
-              ]}
-            >
-              {gecmis.length}
-            </Text>
-          </View>
-        </Pressable>
-      </View>
-
+        />
+        </View>
+      ) : (
+        <>
       <FlatList
         data={listData}
         keyExtractor={(i) => String(i.id)}
@@ -415,23 +397,58 @@ export default function RandevularimScreen() {
         }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}
-        contentContainerStyle={{ paddingBottom: 28, flexGrow: 1 }}
+        contentContainerStyle={{
+          paddingBottom: 28,
+          flexGrow: 1,
+          paddingHorizontal: spacing.lg,
+        }}
         ListHeaderComponent={
-          tab === "randevularim" ? (
-            <RandevuTakvim
-              year={viewYear}
-              month={viewMonth}
-              selectedYmd={selectedYmd}
-              marked={marked}
-              onPrev={() => shiftMonth(-1)}
-              onNext={() => shiftMonth(1)}
-              onSelectDay={(key) =>
-                setSelectedYmd((prev) => (!key || prev === key ? null : key))
-              }
+          <>
+            <View style={{ paddingTop: insets.top }}>
+              <PageHero
+                title="Randevularım"
+                subtitle="Aktif ve geçmiş randevularınız"
+              />
+            </View>
+            <ErrorText>{hata && items.length > 0 ? hata : null}</ErrorText>
+            <SegmentControl
+              value={tab}
+              onChange={(key) => {
+                setTab(key);
+                if (key === "gecmis") setSelectedYmd(null);
+              }}
+              segments={[
+                { key: "randevularim", label: "Aktif", count: yaklasan.length },
+                { key: "gecmis", label: "Geçmiş", count: gecmis.length },
+              ]}
             />
-          ) : null
+            {tab === "randevularim" ? (
+              <RandevuTakvim
+                year={viewYear}
+                month={viewMonth}
+                selectedYmd={selectedYmd}
+                marked={marked}
+                onPrev={() => shiftMonth(-1)}
+                onNext={() => shiftMonth(1)}
+                onSelectDay={(key) =>
+                  setSelectedYmd((prev) => (!key || prev === key ? null : key))
+                }
+              />
+            ) : null}
+          </>
         }
-        ListEmptyComponent={<EmptyText>{emptyText}</EmptyText>}
+        ListEmptyComponent={
+          <EmptyState
+            tone="neutral"
+            icon={CalendarDays}
+            title={emptyText}
+            description={
+              tab === "randevularim" && !selectedYmd
+                ? "Yeni randevu almak için Randevu Al menüsünü kullanabilirsiniz."
+                : undefined
+            }
+          />
+        }
         ListFooterComponent={
           loadingMore ? (
             <ActivityIndicator
@@ -445,17 +462,46 @@ export default function RandevularimScreen() {
           const iptalEdilebilir =
             item.durum !== "IPTAL" && item.durum !== "TAMAMLANDI";
           const past = tab === "gecmis";
+          const dep = item.departman_ad
+            ? departmanGorsel(item.departman_ad)
+            : null;
           return (
-            <Card style={past ? styles.cardPast : undefined}>
-              <Text style={styles.gun}>{gun}</Text>
-              <Text style={styles.saat}>{saat || "—"}</Text>
+            <Card
+              style={[
+                past ? styles.cardPast : undefined,
+                !past ? styles.cardUpcoming : undefined,
+              ]}
+              status={randevuStatus(item.durum, past)}
+            >
+              <View style={styles.cardTop}>
+                {dep ? (
+                  <View
+                    style={[
+                      styles.depBadge,
+                      { backgroundColor: `${dep.color}18` },
+                    ]}
+                  >
+                    <Text style={[styles.depAbbr, { color: dep.color }]}>
+                      {dep.abbr}
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.gun}>{gun}</Text>
+                  <Text style={styles.saat}>{saat || "—"}</Text>
+                </View>
+                <View style={styles.statusPill}>
+                  <Text style={styles.statusPillText}>
+                    {past ? "Tamamlandı" : durumEtiket(item.durum)}
+                  </Text>
+                </View>
+              </View>
               {item.departman_ad ? (
                 <Text style={styles.meta}>{item.departman_ad}</Text>
               ) : null}
               {item.doktor_ad_soyad ? (
-                <Text style={styles.meta}>{item.doktor_ad_soyad}</Text>
+                <Text style={styles.metaMuted}>{item.doktor_ad_soyad}</Text>
               ) : null}
-              <Text style={styles.durum}>{durumEtiket(item.durum)}</Text>
               {iptalEdilebilir && !past ? (
                 <Pressable
                   style={styles.btn}
@@ -508,95 +554,47 @@ export default function RandevularimScreen() {
           </View>
         </View>
       </Modal>
+        </>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 4,
-    marginBottom: 12,
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 9,
-  },
-  tabOn: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.muted,
-  },
-  tabTextOn: {
-    color: "#fff",
-  },
-  tabBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.chip,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  tabBadgeOn: {
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
-  tabBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.muted,
-  },
-  tabBadgeTextOn: {
-    color: "#fff",
-  },
   cal: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    marginBottom: 8,
+    padding: spacing.md + 2,
+    marginBottom: spacing.sm,
   },
   calHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   calTitle: {
+    ...typography.titleMd,
+    color: palette.navy800,
     fontSize: 17,
-    fontWeight: "700",
-    color: colors.primary,
   },
   calNav: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: palette.bosphorus50,
     alignItems: "center",
     justifyContent: "center",
   },
   calNavText: {
     fontSize: 22,
-    color: colors.primary,
+    color: palette.navy800,
     fontWeight: "700",
     marginTop: -2,
   },
-  weekRow: { flexDirection: "row", marginBottom: 6 },
+  weekRow: { flexDirection: "row", marginBottom: spacing.xs + 2 },
   weekLabel: {
     flex: 1,
     textAlign: "center",
@@ -616,16 +614,16 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 40,
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   dayToday: {
     borderWidth: 1.5,
-    borderColor: colors.accent,
+    borderColor: palette.bosphorus500,
   },
   daySelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: palette.navy900,
     borderWidth: 0,
   },
   dayNum: {
@@ -633,35 +631,55 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.text,
   },
-  dayNumToday: { color: colors.accent },
-  dayNumSelected: { color: "#fff" },
+  dayNumToday: { color: palette.bosphorus500 },
+  dayNumSelected: { color: palette.white },
   dot: {
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: colors.accent,
+    backgroundColor: palette.poppy600,
     marginTop: 2,
   },
-  dotOnSelected: { backgroundColor: "#bae6fd" },
+  dotOnSelected: { backgroundColor: palette.bosphorus200 },
   dotSpacer: { height: 7 },
-  calHint: {
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 8,
-  },
   clearDay: {
     alignSelf: "center",
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
   },
   clearDayText: {
-    color: colors.accent,
+    color: palette.bosphorus500,
     fontWeight: "600",
     fontSize: 13,
   },
-  cardPast: { opacity: 0.85 },
+  cardPast: { opacity: 0.75 },
+  cardUpcoming: { borderColor: "#BFDBFE" },
+  cardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  depBadge: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  depAbbr: { fontSize: 12, fontWeight: "800" },
+  statusPill: {
+    backgroundColor: palette.bosphorus50,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: palette.bosphorus500,
+  },
   gun: {
     fontWeight: "700",
     color: colors.text,
@@ -669,62 +687,59 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   saat: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.primary,
+    ...typography.dataLg,
+    color: palette.navy800,
     marginTop: 2,
   },
-  durum: { color: colors.muted, fontSize: 13, marginTop: 4 },
-  meta: { color: colors.text, fontSize: 14, fontWeight: "500", marginTop: 2 },
+  meta: { color: colors.text, fontSize: 15, fontWeight: "700", marginTop: 2 },
+  metaMuted: { color: colors.muted, fontSize: 13, marginTop: 2 },
   btn: {
-    marginTop: 12,
-    backgroundColor: "#fee2e2",
-    paddingVertical: 10,
-    borderRadius: 8,
+    marginTop: spacing.md,
+    backgroundColor: palette.poppy100,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.sm,
     alignItems: "center",
   },
-  btnText: { color: "#b91c1c", fontWeight: "600" },
+  btnText: { color: palette.poppy600, fontWeight: "600" },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.45)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: spacing.xl,
   },
   dialog: {
     width: "100%",
     maxWidth: 340,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    gap: 8,
+    backgroundColor: palette.white,
+    borderRadius: radius.lg,
+    padding: spacing.lg + 4,
+    gap: spacing.sm,
   },
   dialogTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
+    ...typography.titleMd,
     textAlign: "center",
   },
   dialogBody: {
     textAlign: "center",
-    color: colors.primary,
+    color: palette.navy800,
     fontWeight: "600",
     fontSize: 15,
     lineHeight: 22,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   dialogHint: {
     textAlign: "center",
     color: colors.muted,
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  dialogActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+  dialogActions: { flexDirection: "row", gap: spacing.sm + 2, marginTop: spacing.xs },
   dialogCancel: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: spacing.md,
+    borderRadius: radius.sm + 2,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
@@ -733,10 +748,10 @@ const styles = StyleSheet.create({
   dialogCancelText: { color: colors.text, fontWeight: "600" },
   dialogConfirm: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: spacing.md,
+    borderRadius: radius.sm + 2,
     alignItems: "center",
-    backgroundColor: "#b91c1c",
+    backgroundColor: palette.poppy600,
   },
-  dialogConfirmText: { color: "#fff", fontWeight: "700" },
+  dialogConfirmText: { color: palette.white, fontWeight: "700" },
 });

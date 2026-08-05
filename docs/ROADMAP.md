@@ -30,7 +30,7 @@
 - `oturum_tipi=hasta` token: SecureStore + Zustand hydrate; 401’de refresh; logout
 - Özet ana sayfa + kısayollar; randevu liste/iptal/al; tetkik liste+detay+trend; muayene; reçete; onaylı epikriz; profil (`/hastalar/ben` + alerji); şikayet/öneri
 - HASTA: `epikriz:goruntule` (KENDI_KAYDIM, yalnızca ONAYLANDI); `klinik_onay:goruntule` (onaylı belgeler); `GET /hastalar/ben/ozet`, `/ben/belgeler`, `/ben/yatis-ozet`; tetkik `hasta_goruldu_at` okunmamış sayacı
-- Demo: TC `10000000006` / telefon `05551234567` (OTP kodu SMS stub / konsol)
+- Demo: TC `34917047162` (seed `hasta@hastane.example.com`), telefon `05551234567` (OTP kodu SMS stub / konsol)
 - `/auth/register` backend’de deprecated (`X-Deprecated`, `Sunset`); mobil artık OTP kullanır
 
 ## Faz F — Başhekim paneli (uygulandı)
@@ -248,23 +248,26 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
 
 ### Faz 3 — İyileştirme (teknik borç / UX)
 
-17. **Export/print denetimi**
+17. **Export/print denetimi** ✅ (minimum)
     - Neden: `KAYIT_GORUNTULEME` var; PDF/export/print aksiyon kodu bulunamadı.
     - Katman: `audit`, web.
     - Büyüklük: **S**
     - Bağımlılık: `denetim_kaydi_yaz`
+    - Yapıldı: `KAYIT_EXPORT` / `KAYIT_YAZDIR`, `POST /denetim/dis-aktarim`, `web/shared/api/denetim.ts`
 
-18. **Ameliyat dijital onam**
+18. **Ameliyat dijital onam** ✅ (minimum)
     - Neden: `KvkkMetinTur` aydınlatma/açık rıza var; ameliyat özel onam + e-imza metadata yok.
     - Katman: `ameliyathane`, `kvkk`, web.
     - Büyüklük: **M**
     - Bağımlılık: `AmeliyatPlani`, KVKK metinleri
+    - Yapıldı: `AMELIYAT_ONAM` metin türü, plan onam alanları, `POST .../onam`, başlatma kapısı; migration `031`
 
-19. **Nöbet uyum kuralları**
+19. **Nöbet uyum kuralları** ✅ (minimum)
     - Neden: Nöbet atama var; haftalık saat üst limiti / çakışma engeli yok.
     - Katman: `nobet_cizelgesi`.
     - Büyüklük: **M**
     - Bağımlılık: `NobetCizelgesi`
+    - Yapıldı: `uyum_service`, `NOBET_HAFTALIK_SAAT_LIMIT`, günlük vardiya çakışması
 
 20. **Cihaz/sterilizasyon takibi**
     - Neden: Temizlik görevleri ≠ CSSD / tıbbi cihaz kalibrasyon.
@@ -278,15 +281,21 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
     - Büyüklük: **L**
     - Bağımlılık: `Hasta.kan_grubu`
 
-22. **Multi-tenant hazırlık**
+22. **Multi-tenant hazırlık** ✅ (iskelet)
     - Neden: `hastane_id` / `kurum_id` yok; tek kurum varsayımı.
     - Katman: çekirdek modeller, RBAC.
     - Büyüklük: **L**
     - Bağımlılık: —
+    - Yapıldı: `Departman.kurum_id` (varsayılan 1), migration `031`
 
-23. **Seed/demo TC uyumu**
+23. **Seed/demo TC uyumu** ✅
     - Neden: API checksum zorunlu; seed/demo TC’leri hâlâ uyumsuz olabilir.
     - Katman: `seed_rbac`, docs, mobil demo.
     - Büyüklük: **S**
     - Bağımlılık: `tc_ilk_dokuz_haneden` / `tc_kimlik`
+    - Yapıldı: `seed_rbac._demo_tc`, test `conftest` geçerli TC
+
+## Mobil (Expo) uyum özeti
+
+Kod envanteri, uyum tablosu ve hasta odaklı faz planı: [MOBİLE-ROADMAP.md](./MOBİLE-ROADMAP.md) (*Mobil (Expo) uyum bölümü*, son tarama 2026-08-05). **Personel (doktor/hemşire) mobil uygulama bilinçli olarak kapsam dışıdır; personel yalnızca web panelini kullanır.**
 

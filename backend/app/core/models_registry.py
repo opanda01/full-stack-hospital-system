@@ -7,6 +7,7 @@ from app.features.departmanlar.models import Birim, Departman  # noqa: F401
 from app.features.personel.models import Personel  # noqa: F401
 from app.features.doktorlar.models import Doktor  # noqa: F401
 from app.features.hastalar.models import Hasta  # noqa: F401
+from app.features.mobil.models import HastaMobilCihaz  # noqa: F401
 from app.features.hastalar.alerji_models import HastaAlerjisi  # noqa: F401
 from app.features.hastalar.mpi_models import HastaMukerrerIstegi  # noqa: F401
 from app.features.hastalar.yasal_temsilci_models import HastaYasalTemsilci  # noqa: F401

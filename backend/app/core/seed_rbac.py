@@ -8,11 +8,25 @@ from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, Rol
 from app.core.security import hash_password
+from app.core.tc_kimlik import gecerli_tc_kimlik_no, tc_ilk_dokuz_haneden
 import app.core.models_registry  # noqa: F401
 from app.features.kullanicilar.models import Kullanici
 from app.features.personel.erisim_service import apply_erisim_durumu
 
 DEMO_SIFRE = "Test1234!"
+
+
+def _demo_tc(raw: str, *, unique_key: str | None = None) -> str:
+    if gecerli_tc_kimlik_no(raw):
+        return raw
+    if unique_key:
+        nine = str(abs(hash(unique_key)) % 900_000_000 + 100_000_000)
+        return tc_ilk_dokuz_haneden(nine)
+    nine = raw[:9].zfill(9) if len(raw) >= 9 else raw.zfill(9)
+    if nine[0] == "0":
+        nine = "1" + nine[1:]
+    return tc_ilk_dokuz_haneden(nine)
+
 
 DEMO_KULLANICILAR: list[dict] = [
     {
@@ -146,47 +160,47 @@ def seed_demo_kullanicilar(session: Session) -> None:
     from app.features.personel.models import Personel
 
     sifre_hash = hash_password(DEMO_SIFRE)
-    for item in DEMO_KULLANICILAR:
-        existing = session.exec(
+    for raw in DEMO_KULLANICILAR:
+        item = {**raw, "tc": _demo_tc(raw["tc"], unique_key=raw["email"])}
+        kullanici = session.exec(
             select(Kullanici).where(Kullanici.email == item["email"])
         ).first()
-        if existing:
-            kullanici = existing
-            # Eksik alanları tamamla (idempotent iyileştirme)
-            if item.get("kullanici_adi") and not kullanici.kullanici_adi:
-                kullanici.kullanici_adi = item["kullanici_adi"]
-                session.add(kullanici)
-            if item.get("telefon") and not kullanici.telefon:
-                kullanici.telefon = item["telefon"]
-                session.add(kullanici)
+        if kullanici is None:
+            tc = item["tc"]
+            if session.exec(
+                select(Kullanici).where(Kullanici.tc_kimlik_no == tc)
+            ).first():
+                nine = str(abs(hash(item["email"] + ":tc")) % 900_000_000 + 100_000_000)
+                tc = tc_ilk_dokuz_haneden(nine)
+            kullanici = Kullanici(
+                tc_kimlik_no=tc,
+                ad=item["ad"],
+                soyad=item["soyad"],
+                email=item["email"],
+                telefon=item.get("telefon"),
+                kullanici_adi=item.get("kullanici_adi"),
+                sifre_hash=sifre_hash,
+                rol=item["rol"],
+                sifre_degistirmeli_mi=False,
+                kvkk_onaylandi_mi=True,
+                aktif_mi=True,
+            )
+            apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
+            session.add(kullanici)
+            session.flush()
         else:
-            tc_existing = session.exec(
-                select(Kullanici).where(Kullanici.tc_kimlik_no == item["tc"])
-            ).first()
-            if tc_existing:
-                kullanici = tc_existing
-                if item.get("telefon") and not kullanici.telefon:
-                    kullanici.telefon = item["telefon"]
-                    session.add(kullanici)
-                if not kullanici.email and item.get("email"):
-                    kullanici.email = item["email"]
-                    session.add(kullanici)
-            else:
-                kullanici = Kullanici(
-                    tc_kimlik_no=item["tc"],
-                    ad=item["ad"],
-                    soyad=item["soyad"],
-                    email=item["email"],
-                    telefon=item.get("telefon"),
-                    kullanici_adi=item.get("kullanici_adi"),
-                    sifre_hash=sifre_hash,
-                    rol=item["rol"],
-                    sifre_degistirmeli_mi=False,
-                    kvkk_onaylandi_mi=True,
-                )
-                apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
-                session.add(kullanici)
-                session.flush()
+            kullanici.sifre_hash = sifre_hash
+            kullanici.rol = item["rol"]
+            kullanici.sifre_degistirmeli_mi = False
+            kullanici.kvkk_onaylandi_mi = True
+            kullanici.aktif_mi = True
+            if item.get("kullanici_adi"):
+                kullanici.kullanici_adi = item["kullanici_adi"]
+            if item.get("telefon"):
+                kullanici.telefon = item["telefon"]
+            apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
+            session.add(kullanici)
+            session.flush()
 
         if item["rol"] == Rol.HASTA:
             hasta = session.exec(
@@ -194,7 +208,7 @@ def seed_demo_kullanicilar(session: Session) -> None:
             ).first()
             if not hasta:
                 session.add(
-                    Hasta(kullanici_id=kullanici.id, tc_kimlik_no=item["tc"])
+                    Hasta(kullanici_id=kullanici.id, tc_kimlik_no=kullanici.tc_kimlik_no)
                 )
 
         if item["rol"] in _PERSONEL_ROLLER:
@@ -216,7 +230,9 @@ def seed_demo_kullanicilar(session: Session) -> None:
                     select(Personel).where(Personel.sicil_no == target_sicil)
                 ).first()
                 if sicil_var and sicil_var.kullanici_id != kullanici.id:
-                    target_sicil = f"DEMO-{item['rol'].value}-{item['tc'][-4:]}"
+                    sicil_var.sicil_no = f"LEGACY-{target_sicil}"
+                    session.add(sicil_var)
+                    session.flush()
                 personel = Personel(
                     kullanici_id=kullanici.id,
                     sicil_no=target_sicil,
@@ -226,16 +242,18 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 session.add(personel)
                 session.flush()
             elif item.get("sicil_no") and personel.sicil_no != item["sicil_no"]:
-                # Eski DEMO-Rol.* sicillerini hedefe güncelle
                 conflict = session.exec(
                     select(Personel).where(
                         Personel.sicil_no == item["sicil_no"],
                         Personel.id != personel.id,
                     )
                 ).first()
-                if not conflict:
-                    personel.sicil_no = item["sicil_no"]
-                    session.add(personel)
+                if conflict:
+                    conflict.sicil_no = f"LEGACY-{item['sicil_no']}"
+                    session.add(conflict)
+                    session.flush()
+                personel.sicil_no = item["sicil_no"]
+                session.add(personel)
             if item["rol"] in (Rol.DOKTOR, Rol.RADYOLOG):
                 doktor = session.exec(
                     select(Doktor).where(Doktor.personel_id == personel.id)

@@ -64,6 +64,33 @@ def phi_goruntuleme_logla(
     )
 
 
+def phi_dis_aktarim_logla(
+    session: Session,
+    *,
+    actor: Kullanici,
+    kaynak: str,
+    kaynak_id: int | str,
+    format: str,
+    request: Request | None = None,
+    detay_extra: dict | None = None,
+) -> None:
+    fmt = (format or "PDF").strip().upper()
+    aksiyon = "KAYIT_YAZDIR" if fmt == "PRINT" else "KAYIT_EXPORT"
+    detay = {"format": fmt}
+    if detay_extra:
+        detay.update(detay_extra)
+    denetim_kaydi_yaz(
+        session,
+        aksiyon=aksiyon,
+        actor_id=actor.id,
+        kaynak=kaynak,
+        kaynak_id=kaynak_id,
+        ip_adresi=istemci_ip_al(request) if request else None,
+        detay=detay,
+        commit=True,
+    )
+
+
 def _build_ozet(session: Session) -> BashekimOzet:
     bekleyen_erisim = session.exec(
         select(func.count())

@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: hastane
       POSTGRES_DB: hastane_db
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -56,7 +56,18 @@ services:
     volumes:
       # Kaynak kod bind-mount; venv /opt/venv'de (Dockerfile) kalır, ezilmez
       - ./backend:/app
-    command: ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command:
+      [
+        "/bin/sh",
+        "/app/scripts/dev-entrypoint.sh",
+        "/opt/venv/bin/uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
     # Prod örneği (reload yok, multi-worker):
     # command: ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
     # PgBouncer eklerseniz yalnız transaction pooling; session mode SET LOCAL app.actor_id ile uyumsuz.

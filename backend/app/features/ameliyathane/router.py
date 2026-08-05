@@ -13,6 +13,7 @@ from app.features.ameliyathane.schemas import (
     AmeliyathaneOku,
     AmeliyathaneTakvim,
     AmeliyatIptal,
+    AmeliyatOnamIstek,
     AmeliyatPlaniGuncelle,
     AmeliyatPlaniOku,
     AmeliyatPlaniOlustur,
@@ -20,9 +21,35 @@ from app.features.ameliyathane.schemas import (
     AnesteziKaydiOku,
     PostOpYatakOnerisi,
 )
+from app.core.request_ip import istemci_ip_al
+from app.features.ameliyathane import onam_service
 from app.features.kullanicilar.models import Kullanici
 
 router = APIRouter()
+
+
+@router.post("/ameliyatlar/{plan_id}/onam", response_model=AmeliyatPlaniOku)
+def post_ameliyat_onam(
+    plan_id: int,
+    body: AmeliyatOnamIstek,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("ameliyat:guncelle")),
+):
+    kapsam: Kapsam = request.state.kapsam
+    plan = ameliyat_service.get_ameliyat_plani_kayit(
+        session, plan_id, kapsam=kapsam, current_user=current_user
+    )
+    onam_service.kaydet_ameliyat_onam(
+        session,
+        plan=plan,
+        actor=current_user,
+        e_imza_referans=body.e_imza_referans,
+        ip=istemci_ip_al(request),
+    )
+    return ameliyat_service.get_ameliyat_plani(
+        session, plan_id, kapsam=kapsam, current_user=current_user
+    )
 
 
 @router.get("/ameliyathaneler", response_model=list[AmeliyathaneOku])

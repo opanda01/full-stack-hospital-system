@@ -1,9 +1,10 @@
 import { Redirect, Tabs } from "expo-router";
-import { Platform } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import type { ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/shared/auth";
-import { colors } from "@/shared/ui";
+import { colors, palette, shadows } from "@/shared/ui";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -17,7 +18,30 @@ function tabIcon(name: IconName, focusedName: IconName) {
     size: number;
     focused: boolean;
   }) => (
-    <Ionicons name={focused ? focusedName : name} size={size} color={color} />
+    <View style={styles.tabIconWrap}>
+      <Ionicons name={focused ? focusedName : name} size={size} color={color} />
+      {focused ? <View style={styles.tabDot} /> : <View style={styles.tabDotSpacer} />}
+    </View>
+  );
+}
+
+function RandevuAlTabButton(props: BottomTabBarButtonProps) {
+  const { children, onPress, onLongPress, accessibilityState, accessibilityLabel, testID } =
+    props;
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+      style={styles.fabTab}
+    >
+      <View style={styles.fabCircle}>
+        <Ionicons name="add" size={26} color={palette.white} />
+      </View>
+      {children}
+    </Pressable>
   );
 }
 
@@ -28,30 +52,24 @@ export default function HastaLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "700" },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.muted,
+        headerShown: false,
+        tabBarActiveTintColor: palette.bosphorus500,
+        tabBarInactiveTintColor: palette.slate400,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: "600",
           marginBottom: Platform.OS === "android" ? 4 : 0,
         },
         tabBarIconStyle: { marginTop: 2 },
         tabBarStyle: {
-          backgroundColor: "#ffffff",
-          borderTopColor: colors.border,
+          backgroundColor: palette.white,
+          borderTopColor: palette.lineSoft,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 64,
-          paddingTop: 4,
-          paddingBottom: Platform.OS === "ios" ? 24 : 8,
-          elevation: 8,
-          shadowColor: "#0f172a",
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: -2 },
+          height: Platform.OS === "ios" ? 88 : 68,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === "ios" ? 24 : 10,
+          ...shadows.tabBar,
         },
       }}
     >
@@ -66,7 +84,7 @@ export default function HastaLayout() {
       <Tabs.Screen
         name="randevularim/index"
         options={{
-          title: "Randevu",
+          title: "Randevularım",
           tabBarLabel: "Randevu",
           tabBarIcon: tabIcon("calendar-outline", "calendar"),
         }}
@@ -75,8 +93,9 @@ export default function HastaLayout() {
         name="randevu-al/index"
         options={{
           title: "Randevu Al",
-          tabBarLabel: "Al",
-          tabBarIcon: tabIcon("add-circle-outline", "add-circle"),
+          tabBarLabel: "Randevu Al",
+          tabBarIcon: () => null,
+          tabBarButton: (props) => <RandevuAlTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -98,32 +117,101 @@ export default function HastaLayout() {
 
       <Tabs.Screen
         name="muayenelerim/index"
-        options={{ href: null, title: "Muayenelerim" }}
+        options={{
+          href: null,
+          title: "Muayenelerim",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="muayenelerim/[id]"
-        options={{ href: null, title: "Muayene" }}
+        options={{
+          href: null,
+          title: "Muayene",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="recetelerim/index"
-        options={{ href: null, title: "Reçetelerim" }}
+        options={{
+          href: null,
+          title: "Reçetelerim",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="tetkik-sonuclarim/[id]"
-        options={{ href: null, title: "Tetkik" }}
+        options={{
+          href: null,
+          title: "Tetkik",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="belgelerim/index"
-        options={{ href: null, title: "Belgelerim" }}
+        options={{
+          href: null,
+          title: "Belgelerim",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="belgelerim/[id]"
-        options={{ href: null, title: "Belge" }}
+        options={{
+          href: null,
+          title: "Belge",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
       <Tabs.Screen
         name="sikayet/index"
-        options={{ href: null, title: "Şikayet" }}
+        options={{
+          href: null,
+          title: "Şikayet",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconWrap: { alignItems: "center", gap: 2 },
+  tabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.bosphorus500,
+  },
+  tabDotSpacer: { height: 4 },
+  fabTab: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    top: -4,
+  },
+  fabCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: palette.navy900,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -16,
+    ...shadows.fab,
+  },
+});

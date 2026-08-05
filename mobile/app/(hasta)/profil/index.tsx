@@ -1,14 +1,27 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  Pressable,
   Text,
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
   TextInput,
+  Switch,
+  Pressable,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
+import {
+  AlertTriangle,
+  Bell,
+  HeartPulse,
+  IdCard,
+  Lock,
+  MessageSquare,
+  Phone,
+  Shield,
+  UserRound,
+} from "lucide-react-native";
 import { fetchMe, logoutApi, type MeResponse } from "@/shared/api";
 import {
   fetchAlerjilerim,
@@ -19,14 +32,24 @@ import {
 import type { AlerjiDto, HastaDto, HastaYatisOzetDto } from "@/shared/api/types";
 import { go, goReplace } from "@/shared/nav";
 import {
+  getAppLockEnabled,
+  setAppLockEnabled,
+} from "@/shared/security/app-lock";
+import {
+  Badge,
   Card,
+  Chip,
   ErrorText,
   Loading,
   MenuRow,
   PrimaryButton,
   Screen,
-  SectionTitle,
+  SectionHeader,
   colors,
+  palette,
+  radius,
+  spacing,
+  typography,
 } from "@/shared/ui";
 
 const CINSIYETLER = ["Erkek", "Kadın", "Belirtilmedi"] as const;
@@ -53,6 +76,7 @@ function bmiLabel(boyCm: number | null, kiloKg: number | null): string | null {
 }
 
 export default function ProfilScreen() {
+  const insets = useSafeAreaInsets();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [hasta, setHasta] = useState<HastaDto | null>(null);
   const [alerjiler, setAlerjiler] = useState<AlerjiDto[]>([]);
@@ -70,6 +94,7 @@ export default function ProfilScreen() {
   const [telefon, setTelefon] = useState("");
   const [adres, setAdres] = useState("");
   const [yatis, setYatis] = useState<HastaYatisOzetDto | null>(null);
+  const [appLock, setAppLock] = useState(false);
 
   const applyHasta = useCallback((h: HastaDto | null) => {
     setHasta(h);
@@ -95,6 +120,9 @@ export default function ProfilScreen() {
       applyHasta(h);
       setAlerjiler(a);
       setYatis(oz?.yatis ?? null);
+      setAppLock(await getAppLockEnabled());
+      const { syncPushRegistration } = await import("@/shared/push");
+      void syncPushRegistration();
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Profil yüklenemedi");
     } finally {
@@ -166,6 +194,9 @@ export default function ProfilScreen() {
   const onLogout = async () => {
     setLoggingOut(true);
     try {
+      const { lastKnownPushToken, unregisterPushTokenWithBackend } =
+        await import("@/shared/push");
+      await unregisterPushTokenWithBackend(lastKnownPushToken());
       await logoutApi();
       goReplace("/(auth)/giris");
     } finally {
@@ -175,8 +206,12 @@ export default function ProfilScreen() {
 
   if (loading) return <Loading />;
 
+  const initials = me
+    ? `${me.ad?.[0] ?? ""}${me.soyad?.[0] ?? ""}`.toLocaleUpperCase("tr-TR")
+    : "?";
+
   return (
-    <Screen>
+    <Screen bleed>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -184,27 +219,38 @@ export default function ProfilScreen() {
         }
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        <ErrorText>{hata}</ErrorText>
-        {ok ? <Text style={styles.ok}>{ok}</Text> : null}
-
-        <View style={styles.hero}>
+        <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
+          <View style={styles.heroOrbLg} />
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
           <Text style={styles.heroName}>
             {me ? `${me.ad} ${me.soyad}` : "Profil"}
           </Text>
           {me?.email ? <Text style={styles.heroMeta}>{me.email}</Text> : null}
-          <Text style={styles.heroMeta}>
-            KVKK: {me?.kvkk_onaylandi_mi ? "Onaylandı" : "Bekliyor"}
-          </Text>
+          <Badge
+            kind={me?.kvkk_onaylandi_mi ? "success" : "warning"}
+            label={me?.kvkk_onaylandi_mi ? "KVKK onaylı" : "KVKK bekliyor"}
+          />
         </View>
 
-        <SectionTitle>Kimlik</SectionTitle>
-        <Card>
-          <Text style={styles.label}>TC Kimlik No</Text>
-          <Text style={styles.value}>{hasta?.tc_kimlik_no ?? "—"}</Text>
-          <Text style={styles.hint}>TC değiştirilemez</Text>
+        <View style={styles.body}>
+        <ErrorText>{hata}</ErrorText>
+        {ok ? <Text style={styles.ok}>{ok}</Text> : null}
+
+        <SectionHeader title="Kimlik" icon={IdCard} />
+        <Card style={styles.tcCard}>
+          <View style={styles.tcRow}>
+            <Shield size={20} color={palette.navy800} strokeWidth={2} />
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <Text style={typography.label}>TC Kimlik No</Text>
+              <Text style={typography.dataMd}>{hasta?.tc_kimlik_no ?? "—"}</Text>
+              <Text style={styles.hint}>TC değiştirilemez</Text>
+            </View>
+          </View>
         </Card>
 
-        <SectionTitle>Sağlık bilgileri</SectionTitle>
+        <SectionHeader title="Sağlık bilgileri" icon={HeartPulse} />
         <Card>
           <Text style={styles.label}>Doğum tarihi (YYYY-AA-GG)</Text>
           <TextInput
@@ -219,30 +265,24 @@ export default function ProfilScreen() {
           <Text style={styles.label}>Cinsiyet</Text>
           <View style={styles.chips}>
             {CINSIYETLER.map((c) => (
-              <Pressable
+              <Chip
                 key={c}
-                style={[styles.chip, cinsiyet === c && styles.chipOn]}
+                label={c}
+                selected={cinsiyet === c}
                 onPress={() => setCinsiyet(c)}
-              >
-                <Text style={[styles.chipText, cinsiyet === c && styles.chipTextOn]}>
-                  {c}
-                </Text>
-              </Pressable>
+              />
             ))}
           </View>
 
           <Text style={styles.label}>Kan grubu</Text>
           <View style={styles.chips}>
             {KAN_GRUPLARI.map((k) => (
-              <Pressable
+              <Chip
                 key={k}
-                style={[styles.chip, kanGrubu === k && styles.chipOn]}
+                label={k}
+                selected={kanGrubu === k}
                 onPress={() => setKanGrubu(k)}
-              >
-                <Text style={[styles.chipText, kanGrubu === k && styles.chipTextOn]}>
-                  {k}
-                </Text>
-              </Pressable>
+              />
             ))}
           </View>
 
@@ -250,7 +290,7 @@ export default function ProfilScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Boy (cm)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, typography.dataMd]}
                 value={boy}
                 onChangeText={setBoy}
                 keyboardType="decimal-pad"
@@ -261,7 +301,7 @@ export default function ProfilScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Kilo (kg)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, typography.dataMd]}
                 value={kilo}
                 onChangeText={setKilo}
                 keyboardType="decimal-pad"
@@ -273,12 +313,12 @@ export default function ProfilScreen() {
           {bmi ? (
             <>
               <Text style={styles.label}>VKİ (BMI)</Text>
-              <Text style={styles.value}>{bmi}</Text>
+              <Text style={typography.dataMd}>{bmi}</Text>
             </>
           ) : null}
         </Card>
 
-        <SectionTitle>İletişim</SectionTitle>
+        <SectionHeader title="İletişim" icon={Phone} />
         <Card>
           <Text style={styles.label}>Telefon</Text>
           <TextInput
@@ -308,7 +348,7 @@ export default function ProfilScreen() {
           onPress={() => void onSave()}
         />
 
-        <SectionTitle>Alerjiler</SectionTitle>
+        <SectionHeader title="Alerjiler" icon={AlertTriangle} />
         {alerjiler.length ? (
           alerjiler.map((a) => (
             <Card key={a.id}>
@@ -329,7 +369,7 @@ export default function ProfilScreen() {
 
         {yatis?.aktif_mi ? (
           <>
-            <SectionTitle>Yatış özeti</SectionTitle>
+            <SectionHeader title="Yatış özeti" icon={UserRound} />
             <Card>
               <Text style={styles.value}>
                 {yatis.servis_adi ?? "Servis"} · Protokol {yatis.protokol_no ?? "—"}
@@ -343,27 +383,47 @@ export default function ProfilScreen() {
           </>
         ) : null}
 
-        <SectionTitle>Bildirimler</SectionTitle>
+        <SectionHeader title="Güvenlik" icon={Lock} />
         <Card>
-          <Text style={styles.meta}>
-            Randevu hatırlatma ve tetkik sonucu bildirimleri SMS (Faz C) ile
-            gönderilecektir. Sonuç hazır olduğunda kayıtlı telefonunuza mesaj
-            gidebilir.
+          <View style={styles.switchRow}>
+            <Text style={styles.value}>Biyometrik uygulama kilidi</Text>
+            <Switch
+              value={appLock}
+              onValueChange={(v) => {
+                void setAppLockEnabled(v).then(() => setAppLock(v));
+              }}
+            />
+          </View>
+          <Text style={styles.hint}>
+            Açıkken uygulama her açılışta ve arka plandan dönüşte doğrulama ister.
           </Text>
         </Card>
 
-        <SectionTitle>İşlemler</SectionTitle>
+        <SectionHeader title="Bildirimler" icon={Bell} />
+        <Card>
+          <Text style={styles.meta}>
+            Tahlil sonucu hazır olduğunda push bildirimi (Faz 1) ve SMS (Faz C)
+            gönderilebilir. Push için cihaz izinlerini onaylayın.
+          </Text>
+        </Card>
+
+        <SectionHeader title="İşlemler" icon={MessageSquare} />
         <MenuRow
           title="Şikayet / öneri gönder"
+          icon={MessageSquare}
           onPress={() => go("/(hasta)/sikayet")}
         />
 
-        <PrimaryButton
-          label={loggingOut ? "Çıkış yapılıyor…" : "Çıkış"}
+        <Pressable
+          style={styles.logoutBtn}
           disabled={loggingOut}
           onPress={() => void onLogout()}
-          style={{ marginTop: 16 }}
-        />
+        >
+          <Text style={styles.logoutText}>
+            {loggingOut ? "Çıkış yapılıyor…" : "Çıkış yap"}
+          </Text>
+        </Pressable>
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -371,45 +431,68 @@ export default function ProfilScreen() {
 
 const styles = StyleSheet.create({
   hero: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 8,
-    gap: 4,
+    backgroundColor: palette.navy900,
+    paddingHorizontal: spacing.lg + 4,
+    paddingBottom: spacing.xl,
+    overflow: "hidden",
+    gap: spacing.sm,
   },
-  heroName: { color: "#fff", fontSize: 20, fontWeight: "700" },
-  heroMeta: { color: "#e0f2fe", fontSize: 13 },
-  label: { color: colors.muted, fontSize: 12, fontWeight: "600", marginTop: 8 },
-  value: { color: colors.text, fontSize: 15 },
-  hint: { color: colors.muted, fontSize: 11, marginTop: 2 },
-  meta: { color: colors.muted, fontSize: 13 },
-  ok: { color: "#15803d", marginBottom: 8, fontWeight: "600" },
+  heroOrbLg: {
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: palette.white, fontSize: 22, fontWeight: "800" },
+  heroName: { color: palette.white, fontSize: 20, fontWeight: "800" },
+  heroMeta: { color: "rgba(255,255,255,0.7)", fontSize: 13 },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  tcCard: { paddingVertical: spacing.md },
+  tcRow: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
+  label: { ...typography.label, marginTop: spacing.sm },
+  value: { ...typography.body },
+  hint: { ...typography.bodySm, fontSize: 11, marginTop: 2 },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  meta: { ...typography.bodySm },
+  ok: { color: palette.green700, marginBottom: spacing.sm, fontWeight: "600" },
   input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: palette.line,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
     fontSize: 15,
     color: colors.text,
-    backgroundColor: "#fff",
-    marginTop: 4,
+    backgroundColor: palette.sand100,
+    marginTop: spacing.xs,
   },
   inputMulti: { minHeight: 72 },
-  row2: { flexDirection: "row", gap: 10 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "#fff",
+  row2: { flexDirection: "row", gap: spacing.sm + 2 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.xs + 2 },
+  logoutBtn: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md + 2,
+    borderRadius: radius.md + 2,
+    backgroundColor: palette.poppy100,
+    alignItems: "center",
   },
-  chipOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  chipTextOn: { color: "#fff" },
+  logoutText: { color: palette.poppy600, fontWeight: "700", fontSize: 14 },
 });

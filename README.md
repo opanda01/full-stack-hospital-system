@@ -45,19 +45,27 @@ cp .env.example .env
 docker compose up -d
 ```
 
-- PostgreSQL: `localhost:5432`
+- PostgreSQL: Docker yayın portu = kök `.env` içinde `POSTGRES_PUBLISH_PORT` (varsayılan **55432**; yerel PG 5432/5433 ile çakışmayı önler)
 - Backend API: `http://localhost:8000`
 - Health check: `http://localhost:8000/health`
 - OpenAPI docs: `http://localhost:8000/docs`
 
 ### 3. Veritabanı migrasyonları
 
-Backend konteyneri ayaktayken veya lokal venv ile:
+Backend konteyneri `dev-entrypoint.sh` ile açılışta `alembic upgrade head` çalıştırır. Elle:
 
 ```bash
 cd backend
 alembic upgrade head
 python -m app.core.seed_cli
+```
+
+Host’tan Alembic için `backend/.env` içindeki `DATABASE_URL`, Docker’daki **yayınlanan** Postgres portuna işaret etmeli (`POSTGRES_PUBLISH_PORT` ile aynı; örn. `55432`).
+
+Docker içinden (host portu önemli değil):
+
+```bash
+docker compose exec backend /opt/venv/bin/alembic upgrade head
 ```
 
 ### 4. Web (host)
@@ -80,7 +88,7 @@ Expo **LAN + port 8081** ile açılır. `dev` start öncesi eski Metro artıklar
 
 Not: Windows’ta “Expo Metro” firewall kuralı genelde yalnızca **8081**’i açar; farklı port kullanırsanız telefonda loading’de kalır (PC’den erişim çalışsa bile). Geliştirmede API Metro proxy: `http://<LAN>:8081/hbys-api`.
 
-Hasta girişi **OTP** ile yapılır (e-posta/şifre yok). Demo: TC `10000000006`, telefon `05551234567` — doğrulama kodu backend SMS stub / konsol çıktısında görünür. İsteğe bağlı doğrudan API: `mobile/.env.example` → `EXPO_PUBLIC_API_URL` (Android emülatör: `http://10.0.2.2:8000`).
+Hasta girişi **OTP** ile yapılır (e-posta/şifre yok). Demo: TC `34917047162`, telefon `05551234567` — doğrulama kodu backend SMS stub / konsol çıktısında görünür. İsteğe bağlı doğrudan API: `mobile/.env.example` → `EXPO_PUBLIC_API_URL` (Android emülatör: `http://10.0.2.2:8000`).
 
 ## Shared types üretimi
 
@@ -124,6 +132,6 @@ alembic upgrade head
 python -m app.core.seed_cli
 ```
 
-Demo şifre: `Test1234!` — örn. `admin@hastane.example.com`, `doktor@hastane.example.com`, `hemsire@hastane.example.com` (`H-001`), `ebe@hastane.example.com` (`E-001`), `guvenlik@hastane.example.com` (`G-001`), `hasta@hastane.example.com`, `laborant@hastane.example.com`, `mudur@hastane.example.com`.
+Demo şifre: `Test1234!` — web giriş: kullanıcı adı `admin`, `doktor`, `hemsire`… veya e-posta (`admin@hastane.example.com`, `doktor@hastane.example.com`, …); sicil `ADM-001`, `D-001`, `H-001` seed sonrası geçerlidir. Seed: `docker compose exec backend /opt/venv/bin/python -m app.core.seed_cli`
 
 Shared types: [`packages/shared-types/README.md`](packages/shared-types/README.md) · Production: [`docs/PRODUCTION.md`](docs/PRODUCTION.md)

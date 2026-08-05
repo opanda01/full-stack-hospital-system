@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "@/shared/auth";
 import { queryClient } from "@/shared/query/client";
+import { AppLockGate } from "@/shared/security/app-lock";
 
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -32,12 +33,14 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: true }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(hasta)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-      </Stack>
+      <AppLockGate>
+        <StatusBar style="auto" />
+        <Stack screenOptions={{ headerShown: true }}>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(hasta)" options={{ headerShown: false }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+        </Stack>
+      </AppLockGate>
     </QueryClientProvider>
   );
 }
