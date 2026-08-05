@@ -48,14 +48,19 @@ Faz 3 dalında (`feature/hbys-faz-3`) hasta mobilde Figma referanslı arayüz ve
 
 ---
 
-### 4. Operasyon notları
+### 4. Pull request
+
+- Dal: `feature/hbys-faz-3` → `main`
+- PR: [#34](https://github.com/opanda01/full-stack-hospital-system/pull/34)
+
+### 5. Operasyon notları
 
 - Backend yeniden başlatılmalı; mobilde **çıkış → OTP ile tekrar giriş** önerilir.
 - Giriş TC’sinin seed’de **hasta** kaydı olması gerekir; yoksa “Hasta kaydı bulunamadı” beklenen davranıştır.
 
 ---
 
-### 5. İlgili dosyalar
+### 6. İlgili dosyalar
 
 | Katman | Dosyalar |
 |--------|----------|
@@ -66,7 +71,7 @@ Faz 3 dalında (`feature/hbys-faz-3`) hasta mobilde Figma referanslı arayüz ve
 
 ---
 
-### 6. Sonraki adımlar (kısa)
+### 7. Sonraki adımlar (kısa)
 
 - `muayeneler`, `epikriz` vb. `KENDI_KAYDIM` erişim kontrollerinde aynı `erisim_rolu` deseninin taranması (gerekirse).
 - `docs/MOBİLE-ROADMAP.md` Faz 1 push / PIN maddelerinin cihazda smoke doğrulaması.
