@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   Text,
@@ -10,18 +10,20 @@ import {
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, WifiOff } from "lucide-react-native";
 import { apiFetch } from "@/shared/api";
 import { fetchRandevular } from "@/shared/api/hastaApi";
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
+import { queryKeys } from "@/shared/query/client";
 import {
   Card,
   type CardStatus,
   departmanGorsel,
   EmptyState,
   ErrorText,
-  Loading,
   PageHero,
+  RandevuScreenSkeleton,
   Screen,
   SegmentControl,
   colors,
@@ -236,10 +238,10 @@ function RandevuTakvim({
 
 export default function RandevularimScreen() {
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<Randevu[]>([]);
+  const queryClient = useQueryClient();
+  const [moreItems, setMoreItems] = useState<Randevu[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -247,52 +249,59 @@ export default function RandevularimScreen() {
   const [tab, setTab] = useState<TabKey>("randevularim");
   const loadingMoreRef = useRef(false);
 
+  const {
+    data: firstPage,
+    error: queryError,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.randevular,
+    queryFn: () => fetchRandevular(1, PAGE_SIZE),
+  });
+
+  useRefetchOnTabFocus(refetch);
+
+  useEffect(() => {
+    if (!firstPage) return;
+    const chunk = unwrapPage(firstPage);
+    setTotal(firstPage.total ?? chunk.length);
+    setPage(1);
+    setMoreItems([]);
+  }, [firstPage]);
+
+  const items = useMemo(() => {
+    if (!firstPage) return [];
+    return [...unwrapPage(firstPage), ...moreItems];
+  }, [firstPage, moreItems]);
+
+  const queryHata =
+    queryError instanceof Error ? queryError.message : null;
+  const gosterilenHata = hata ?? queryHata;
+
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selectedYmd, setSelectedYmd] = useState<string | null>(null);
-
-  const loadPage = useCallback(async (pageNum: number, append: boolean) => {
-    const body = await fetchRandevular(pageNum, PAGE_SIZE);
-    const chunk = unwrapPage(body);
-    setTotal(body.total ?? chunk.length);
-    setPage(pageNum);
-    setItems((prev) => (append ? [...prev, ...chunk] : chunk));
-  }, []);
-
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      await loadPage(1, false);
-    } catch (e) {
-      setHata(
-        e instanceof Error ? e.message : "Sunucuya bağlanılamadı",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [loadPage]);
-
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
 
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current || items.length >= total) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      await loadPage(page + 1, true);
+      const nextPage = page + 1;
+      const body = await fetchRandevular(nextPage, PAGE_SIZE);
+      const chunk = unwrapPage(body);
+      setTotal(body.total ?? total);
+      setPage(nextPage);
+      setMoreItems((prev) => [...prev, ...chunk]);
     } catch {
       setHata("Daha fazla yüklenemedi");
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [items.length, loadPage, page, total]);
+  }, [items.length, page, total]);
 
   const { yaklasan, gecmis } = useMemo(() => {
     const threshold = startOfDay(new Date()).getTime();
@@ -340,15 +349,15 @@ export default function RandevularimScreen() {
     const id = iptalHedef.id;
     setBusyId(id);
     setHata(null);
-    setIptalHedef(null);
+      setIptalHedef(null);
     try {
       const res = await apiFetch(`/randevular/${id}`, { method: "DELETE" });
       if (!res.ok) {
         setHata("İptal başarısız");
         return;
       }
-      setLoading(true);
-      await refresh();
+      setMoreItems([]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.randevular });
     } finally {
       setBusyId(null);
     }
@@ -360,13 +369,13 @@ export default function RandevularimScreen() {
     setViewMonth(d.getMonth());
   };
 
-  if (loading) return <Loading />;
+  if (isLoading && !firstPage) return <RandevuScreenSkeleton />;
 
   const iptalTarih = iptalHedef
     ? formatRandevuTarih(iptalHedef.tarih_saat)
     : null;
 
-  const showConnectionEmpty = Boolean(hata) && items.length === 0;
+  const showConnectionEmpty = Boolean(gosterilenHata) && items.length === 0;
 
   return (
     <Screen bleed>
@@ -378,10 +387,7 @@ export default function RandevularimScreen() {
           title="Sunucuya bağlanılamadı"
           description="Randevularınız şu an yüklenemiyor."
           actionLabel="Tekrar Dene"
-          onAction={() => {
-            setLoading(true);
-            void refresh();
-          }}
+          onAction={() => void refetch()}
         />
         </View>
       ) : (
@@ -390,7 +396,10 @@ export default function RandevularimScreen() {
         data={listData}
         keyExtractor={(i) => String(i.id)}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => void refetch()}
+          />
         }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}

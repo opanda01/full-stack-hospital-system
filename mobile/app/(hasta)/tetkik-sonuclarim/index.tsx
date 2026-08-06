@@ -8,7 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Calendar,
   ChevronDown,
@@ -19,13 +19,15 @@ import {
 import { fetchTetkikler } from "@/shared/api/hastaApi";
 import type { TetkikDto, TetkikSonucKalemDto } from "@/shared/api/types";
 import { go } from "@/shared/nav";
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
+import { queryKeys } from "@/shared/query/client";
 import {
   Card,
   type CardStatus,
   EmptyState,
-  Loading,
   PageHero,
   Screen,
+  TetkikScreenSkeleton,
   colors,
   palette,
   radius,
@@ -125,36 +127,35 @@ function groupTetkikler(items: TetkikDto[]): TarihGrubu[] {
 
 export default function TetkikSonuclarimScreen() {
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<TetkikDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hata, setHata] = useState<string | null>(null);
   const [openDate, setOpenDate] = useState<string | null>(null);
   const [openIstek, setOpenIstek] = useState<string | null>(null);
 
+  const {
+    data: items = [],
+    error,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.tetkikler,
+    queryFn: async () => {
+      const body = await fetchTetkikler(1, 100);
+      return body.items;
+    },
+  });
+
+  useRefetchOnTabFocus(refetch);
+
+  const hata = error instanceof Error ? error.message : null;
   const groups = useMemo(() => groupTetkikler(items), [items]);
 
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      const body = await fetchTetkikler(1, 100);
-      setItems(body.items);
-      setOpenDate(null);
-      setOpenIstek(null);
-    } catch (e) {
-      setHata(e instanceof Error ? e.message : "Sunucuya bağlanılamadı");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const onRefresh = useCallback(() => {
+    setOpenDate(null);
+    setOpenIstek(null);
+    void refetch();
+  }, [refetch]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
-
-  if (loading) return <Loading />;
+  if (isLoading && items.length === 0) return <TetkikScreenSkeleton />;
 
   if (hata && groups.length === 0) {
     return (
@@ -165,10 +166,7 @@ export default function TetkikSonuclarimScreen() {
           title="Sunucuya bağlanılamadı"
           description="Tetkik sonuçları şu an yüklenemiyor. İnternet bağlantınızı kontrol edip tekrar deneyin."
           actionLabel="Tekrar Dene"
-          onAction={() => {
-            setLoading(true);
-            void refresh();
-          }}
+          onAction={() => void refetch()}
         />
       </Screen>
     );
@@ -180,7 +178,7 @@ export default function TetkikSonuclarimScreen() {
         data={groups}
         keyExtractor={(g) => g.key}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
         }
         ListHeaderComponent={
           <>
@@ -198,7 +196,7 @@ export default function TetkikSonuclarimScreen() {
                   title="Bağlantı sorunu"
                   description={hata}
                   actionLabel="Tekrar Dene"
-                  onAction={() => void refresh()}
+                  onAction={() => void refetch()}
                 />
               </View>
             ) : null}

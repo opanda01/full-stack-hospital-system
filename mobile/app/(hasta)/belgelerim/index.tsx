@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -7,72 +7,87 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { fetchBelgeler } from "@/shared/api/hastaApi";
 import type { HastaBelgeDto } from "@/shared/api/types";
 import { go } from "@/shared/nav";
-import { Card, EmptyText, ErrorText, Loading, Screen, colors } from "@/shared/ui";
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
+import { queryKeys } from "@/shared/query/client";
+import {
+  Card,
+  EmptyText,
+  ErrorText,
+  Screen,
+  SimpleListScreenSkeleton,
+  colors,
+} from "@/shared/ui";
 
 const PAGE_SIZE = 20;
 
 export default function BelgelerimScreen() {
-  const [items, setItems] = useState<HastaBelgeDto[]>([]);
+  const [moreItems, setMoreItems] = useState<HastaBelgeDto[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
 
-  const loadPage = useCallback(async (pageNum: number, append: boolean) => {
-    const body = await fetchBelgeler(pageNum, PAGE_SIZE);
-    setTotal(body.total);
-    setPage(pageNum);
-    setItems((prev) => (append ? [...prev, ...body.items] : body.items));
-  }, []);
+  const {
+    data: firstPage,
+    error,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.belgelerIlkSayfa,
+    queryFn: () => fetchBelgeler(1, PAGE_SIZE),
+  });
 
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      await loadPage(1, false);
-    } catch {
-      setHata("Belgeler yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  }, [loadPage]);
+  useRefetchOnTabFocus(refetch);
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
+  useEffect(() => {
+    if (!firstPage) return;
+    setTotal(firstPage.total);
+    setPage(1);
+    setMoreItems([]);
+  }, [firstPage]);
+
+  const items = firstPage
+    ? [...firstPage.items, ...moreItems]
+    : [];
+
+  const queryHata = error instanceof Error ? error.message : null;
 
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current || items.length >= total) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      await loadPage(page + 1, true);
+      const nextPage = page + 1;
+      const body = await fetchBelgeler(nextPage, PAGE_SIZE);
+      setTotal(body.total);
+      setPage(nextPage);
+      setMoreItems((prev) => [...prev, ...body.items]);
     } catch {
       setHata("Daha fazla yüklenemedi");
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [items.length, loadPage, page, total]);
+  }, [items.length, page, total]);
 
-  if (loading) return <Loading />;
+  if (isLoading && !firstPage) {
+    return <SimpleListScreenSkeleton withHero={false} />;
+  }
 
   return (
     <Screen>
-      <ErrorText>{hata}</ErrorText>
+      <ErrorText>{hata ?? queryHata}</ErrorText>
       <FlatList
         data={items}
         keyExtractor={(i) => `${i.kaynak}-${i.id}`}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />
         }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}

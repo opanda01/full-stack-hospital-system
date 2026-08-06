@@ -1,39 +1,34 @@
-import { useCallback, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollView, Text, StyleSheet } from "react-native";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { fetchMuayeneById } from "@/shared/api/hastaApi";
-import type { MuayeneDto } from "@/shared/api/types";
-import { Card, ErrorText, Loading, Screen, SectionTitle, colors } from "@/shared/ui";
+import { queryKeys } from "@/shared/query/client";
+import {
+  Card,
+  DetailScreenSkeleton,
+  ErrorText,
+  Screen,
+  SectionTitle,
+  colors,
+} from "@/shared/ui";
 
 export default function MuayeneDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [item, setItem] = useState<MuayeneDto | null>(null);
-  const [hata, setHata] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const mid = Number(id);
 
-  useFocusEffect(
-    useCallback(() => {
-      const mid = Number(id);
-      if (!mid) {
-        setHata("Geçersiz muayene");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setHata(null);
-      (async () => {
-        try {
-          setItem(await fetchMuayeneById(mid));
-        } catch (e) {
-          setHata(e instanceof Error ? e.message : "Yüklenemedi");
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, [id]),
-  );
+  const { data: item, error, isLoading } = useQuery({
+    queryKey: queryKeys.muayene(mid),
+    queryFn: () => fetchMuayeneById(mid),
+    enabled: Number.isFinite(mid) && mid > 0,
+  });
 
-  if (loading) return <Loading />;
+  const hata = !mid
+    ? "Geçersiz muayene"
+    : error instanceof Error
+      ? error.message
+      : null;
+
+  if (isLoading && !item) return <DetailScreenSkeleton />;
 
   return (
     <Screen>

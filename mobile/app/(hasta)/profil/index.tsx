@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Text,
   View,
@@ -10,7 +10,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Bell,
@@ -22,15 +22,15 @@ import {
   Shield,
   UserRound,
 } from "lucide-react-native";
-import { fetchMe, logoutApi, type MeResponse } from "@/shared/api";
+import { logoutApi, type MeResponse } from "@/shared/api";
 import {
-  fetchAlerjilerim,
-  fetchHastaBen,
+  fetchProfilBundle,
   updateHastaProfil,
-  fetchHastaOzet,
 } from "@/shared/api/hastaApi";
 import type { AlerjiDto, HastaDto, HastaYatisOzetDto } from "@/shared/api/types";
 import { go, goReplace } from "@/shared/nav";
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
+import { queryKeys } from "@/shared/query/client";
 import {
   getAppLockEnabled,
   setAppLockEnabled,
@@ -40,9 +40,9 @@ import {
   Card,
   Chip,
   ErrorText,
-  Loading,
   MenuRow,
   PrimaryButton,
+  ProfilScreenSkeleton,
   Screen,
   SectionHeader,
   colors,
@@ -77,12 +77,12 @@ function bmiLabel(boyCm: number | null, kiloKg: number | null): string | null {
 
 export default function ProfilScreen() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [hasta, setHasta] = useState<HastaDto | null>(null);
   const [alerjiler, setAlerjiler] = useState<AlerjiDto[]>([]);
   const [hata, setHata] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -107,35 +107,34 @@ export default function ProfilScreen() {
     setAdres(h?.adres ?? "");
   }, []);
 
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      const [m, h, a, oz] = await Promise.all([
-        fetchMe(),
-        fetchHastaBen().catch(() => null),
-        fetchAlerjilerim().catch(() => [] as AlerjiDto[]),
-        fetchHastaOzet().catch(() => null),
-      ]);
-      setMe(m);
-      applyHasta(h);
-      setAlerjiler(a);
-      setYatis(oz?.yatis ?? null);
-      setAppLock(await getAppLockEnabled());
-      const { syncPushRegistration } = await import("@/shared/push");
-      void syncPushRegistration();
-    } catch (e) {
-      setHata(e instanceof Error ? e.message : "Profil yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  }, [applyHasta]);
+  const {
+    data: profilData,
+    error: profilError,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.profil,
+    queryFn: fetchProfilBundle,
+  });
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
+  useRefetchOnTabFocus(refetch);
+
+  useEffect(() => {
+    if (!profilData) return;
+    setMe(profilData.me);
+    applyHasta(profilData.hasta);
+    setAlerjiler(profilData.alerjiler);
+    setYatis(profilData.yatis);
+    void getAppLockEnabled().then(setAppLock);
+    void import("@/shared/push").then((m) => m.syncPushRegistration());
+  }, [profilData, applyHasta]);
+
+  useEffect(() => {
+    if (profilError instanceof Error) {
+      setHata(profilError.message);
+    }
+  }, [profilError]);
 
   const bmi = useMemo(() => {
     const b = parseNum(boy);
@@ -184,6 +183,7 @@ export default function ProfilScreen() {
       });
       applyHasta(updated);
       setOk("Bilgileriniz kaydedildi");
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profil });
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Kaydedilemedi");
     } finally {
@@ -204,7 +204,7 @@ export default function ProfilScreen() {
     }
   };
 
-  if (loading) return <Loading />;
+  if (isLoading && !profilData) return <ProfilScreenSkeleton />;
 
   const initials = me
     ? `${me.ad?.[0] ?? ""}${me.soyad?.[0] ?? ""}`.toLocaleUpperCase("tr-TR")
@@ -215,7 +215,10 @@ export default function ProfilScreen() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => void refetch()}
+          />
         }
         contentContainerStyle={{ paddingBottom: 32 }}
       >
