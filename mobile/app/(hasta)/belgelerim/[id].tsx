@@ -1,53 +1,38 @@
-import { useCallback, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollView, Text, StyleSheet } from "react-native";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { apiFetch } from "@/shared/api";
-import { fetchEpikriz } from "@/shared/api/hastaApi";
-import type { EpikrizDto, KlinikOnayDto } from "@/shared/api/types";
-import { Card, ErrorText, Loading, Screen, SectionTitle, colors } from "@/shared/ui";
-
-async function fetchKlinikOnay(id: number): Promise<KlinikOnayDto> {
-  const res = await apiFetch(`/klinik-onay/${id}`);
-  if (!res.ok) throw new Error("Belge yüklenemedi");
-  return res.json();
-}
+import { fetchBelgeDetay } from "@/shared/api/hastaApi";
+import { queryKeys } from "@/shared/query/client";
+import {
+  Card,
+  DetailScreenSkeleton,
+  ErrorText,
+  Screen,
+  SectionTitle,
+  colors,
+} from "@/shared/ui";
 
 export default function BelgeDetayScreen() {
   const { id, kaynak } = useLocalSearchParams<{ id: string; kaynak?: string }>();
-  const [epikriz, setEpikriz] = useState<EpikrizDto | null>(null);
-  const [klinik, setKlinik] = useState<KlinikOnayDto | null>(null);
-  const [hata, setHata] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const eid = Number(id);
+  const kaynakKey = kaynak ?? "EPIKRIZ";
 
-  useFocusEffect(
-    useCallback(() => {
-      const eid = Number(id);
-      if (!eid) {
-        setHata("Geçersiz belge");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setHata(null);
-      (async () => {
-        try {
-          if (kaynak === "KLINIK_ONAY") {
-            setKlinik(await fetchKlinikOnay(eid));
-            setEpikriz(null);
-          } else {
-            setEpikriz(await fetchEpikriz(eid));
-            setKlinik(null);
-          }
-        } catch (e) {
-          setHata(e instanceof Error ? e.message : "Yüklenemedi");
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, [id, kaynak]),
-  );
+  const { data, error, isLoading } = useQuery({
+    queryKey: queryKeys.belge(kaynakKey, eid),
+    queryFn: () => fetchBelgeDetay(eid, kaynak),
+    enabled: Number.isFinite(eid) && eid > 0,
+  });
 
-  if (loading) return <Loading />;
+  const hata = !eid
+    ? "Geçersiz belge"
+    : error instanceof Error
+      ? error.message
+      : null;
+
+  if (isLoading && !data) return <DetailScreenSkeleton />;
+
+  const klinik = data?.klinik ?? null;
+  const epikriz = data?.epikriz ?? null;
 
   return (
     <Screen>

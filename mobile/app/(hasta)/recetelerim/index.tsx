@@ -1,4 +1,3 @@
-import { useCallback, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -6,87 +5,39 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
-import { fetchKlinikOnaylar, fetchMuayeneler } from "@/shared/api/hastaApi";
-import type { ReceteKalemDto } from "@/shared/api/types";
+import { useQuery } from "@tanstack/react-query";
+import { fetchRecetelerimSatirlari } from "@/shared/api/hastaApi";
 import { go } from "@/shared/nav";
-import { Card, EmptyText, ErrorText, Loading, Screen, colors } from "@/shared/ui";
-
-type ReceteSatir = {
-  key: string;
-  muayeneId: number | null;
-  klinikId: number | null;
-  baslik: string;
-  tani: string | null;
-  kalem: ReceteKalemDto | null;
-  receteMetin: string | null;
-};
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
+import { queryKeys } from "@/shared/query/client";
+import {
+  Card,
+  EmptyText,
+  ErrorText,
+  Screen,
+  SimpleListScreenSkeleton,
+  colors,
+} from "@/shared/ui";
 
 export default function RecetelerimScreen() {
-  const [items, setItems] = useState<ReceteSatir[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hata, setHata] = useState<string | null>(null);
+  const {
+    data: items = [],
+    error,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.receteler,
+    queryFn: fetchRecetelerimSatirlari,
+  });
 
-  const refresh = useCallback(async () => {
-    setHata(null);
-    try {
-      const [muayenePage, klinikPage] = await Promise.all([
-        fetchMuayeneler(1, 100),
-        fetchKlinikOnaylar(1, 50),
-      ]);
-      const rows: ReceteSatir[] = [];
-      for (const k of klinikPage.items.filter((x) => x.tur === "RECETE")) {
-        rows.push({
-          key: `ko-${k.id}`,
-          muayeneId: k.muayene_id,
-          klinikId: k.id,
-          baslik: "Onaylı reçete",
-          tani: null,
-          kalem: null,
-          receteMetin: k.icerik,
-        });
-      }
-      for (const m of muayenePage.items) {
-        if (m.recete_kalemleri?.length) {
-          for (const k of m.recete_kalemleri) {
-            rows.push({
-              key: `k-${k.id}`,
-              muayeneId: m.id,
-              klinikId: null,
-              baslik: k.urun_adi,
-              tani: m.tani,
-              kalem: k,
-              receteMetin: null,
-            });
-          }
-        } else if (m.receteler?.trim()) {
-          rows.push({
-            key: `m-${m.id}`,
-            muayeneId: m.id,
-            klinikId: null,
-            baslik: "Reçete (muayene)",
-            tani: m.tani,
-            kalem: null,
-            receteMetin: m.receteler,
-          });
-        }
-      }
-      setItems(rows);
-    } catch {
-      setHata("Reçeteler yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useRefetchOnTabFocus(refetch);
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      void refresh();
-    }, [refresh]),
-  );
+  const hata = error instanceof Error ? error.message : null;
 
-  if (loading) return <Loading />;
+  if (isLoading && items.length === 0) {
+    return <SimpleListScreenSkeleton withHero={false} />;
+  }
 
   return (
     <Screen>
@@ -95,7 +46,7 @@ export default function RecetelerimScreen() {
         data={items}
         keyExtractor={(i) => i.key}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void refresh()} />
+          <RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />
         }
         ListEmptyComponent={<EmptyText>Reçete kaydı yok</EmptyText>}
         renderItem={({ item }) => (

@@ -20,14 +20,15 @@ import {
 } from "lucide-react-native";
 import { fetchOzetSnapshot } from "@/shared/api/hastaApi";
 import { go } from "@/shared/nav";
+import { useRefetchOnTabFocus } from "@/shared/query/focus";
 import { queryKeys } from "@/shared/query/client";
 import {
   Badge,
   Card,
   departmanGorsel,
   ErrorText,
-  Loading,
   MenuRow,
+  OzetScreenSkeleton,
   QuickActionTile,
   Screen,
   palette,
@@ -75,7 +76,9 @@ export default function OzetScreen() {
     queryFn: fetchOzetSnapshot,
   });
 
-  if (isLoading && !data) return <Loading />;
+  useRefetchOnTabFocus(refetch);
+
+  if (isLoading && !data) return <OzetScreenSkeleton />;
 
   const ozet = data?.ozet;
   const adSoyad =
@@ -211,8 +214,8 @@ export default function OzetScreen() {
           <Text style={[typography.section, styles.quickTitle]}>Hızlı işlemler</Text>
           <View style={styles.quickGrid}>
             <QuickActionTile
-              label="Randevu al"
-              sub="Doktor ve klinik seç"
+              label="Randevu Al"
+              sub="Doktor & klinik seç"
               bg={palette.bosphorus50}
               accent={palette.bosphorus500}
               icon={Calendar}

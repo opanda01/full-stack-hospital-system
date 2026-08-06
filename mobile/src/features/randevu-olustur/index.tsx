@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pressable,
   Text,
@@ -25,12 +26,15 @@ import {
   Stethoscope,
 } from "lucide-react-native";
 import { apiFetch } from "@/shared/api";
+import { fetchRandevuAlBootstrap } from "@/shared/api/hastaApi";
 import { go } from "@/shared/nav";
+import { queryKeys } from "@/shared/query/client";
 import {
   EmptyState,
   ErrorText,
   PageHero,
   PrimaryButton,
+  RandevuAlScreenSkeleton,
   Screen,
   SectionHeader,
   colors,
@@ -180,6 +184,7 @@ function SelectRow({
 
 export function RandevuOlusturForm() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>(1);
   const [departmanlar, setDepartmanlar] = useState<Departman[]>([]);
   const [doktorlar, setDoktorlar] = useState<Doktor[]>([]);
@@ -190,7 +195,6 @@ export function RandevuOlusturForm() {
   const [hastaId, setHastaId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [poliklinikAra, setPoliklinikAra] = useState("");
@@ -237,31 +241,27 @@ export function RandevuOlusturForm() {
     [filteredDoktorlar, doktorId],
   );
 
+  const {
+    data: bootstrap,
+    error: bootstrapError,
+    isLoading: bootstrapLoading,
+  } = useQuery({
+    queryKey: queryKeys.randevuAlBootstrap,
+    queryFn: fetchRandevuAlBootstrap,
+  });
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setHata(null);
-      try {
-        const [hRes, dRes, dokRes] = await Promise.all([
-          apiFetch("/hastalar/ben"),
-          apiFetch("/departmanlar/"),
-          apiFetch("/doktorlar/?page_size=200"),
-        ]);
-        if (!hRes.ok) throw new Error("Hasta kaydı alınamadı");
-        if (!dRes.ok) throw new Error("Departmanlar yüklenemedi");
-        if (!dokRes.ok) throw new Error("Doktorlar yüklenemedi");
-        const mine = (await hRes.json()) as Hasta;
-        setHastaId(mine.id);
-        setDepartmanlar(await dRes.json());
-        const dokBody = await dokRes.json();
-        setDoktorlar(Array.isArray(dokBody) ? dokBody : (dokBody.items ?? []));
-      } catch (e) {
-        setHata(e instanceof Error ? e.message : "Veriler yüklenemedi");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    if (!bootstrap) return;
+    setHastaId(bootstrap.hastaId);
+    setDepartmanlar(bootstrap.departmanlar);
+    setDoktorlar(bootstrap.doktorlar);
+  }, [bootstrap]);
+
+  useEffect(() => {
+    if (bootstrapError instanceof Error) {
+      setHata(bootstrapError.message);
+    }
+  }, [bootstrapError]);
 
   useEffect(() => {
     if (!doktorId) {
@@ -329,6 +329,8 @@ export function RandevuOlusturForm() {
         return;
       }
       setMsg("Randevu oluşturuldu");
+      void queryClient.invalidateQueries({ queryKey: queryKeys.randevular });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ozet });
       setTimeout(() => {
         resetAll();
         go("/(hasta)/randevularim");
@@ -340,12 +342,8 @@ export function RandevuOlusturForm() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
+  if (bootstrapLoading && !bootstrap) {
+    return <RandevuAlScreenSkeleton />;
   }
 
   if (msg) {

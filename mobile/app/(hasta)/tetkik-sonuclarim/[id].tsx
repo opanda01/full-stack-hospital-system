@@ -1,50 +1,36 @@
-import { useCallback, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollView, Text, StyleSheet } from "react-native";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { fetchTetkik, fetchTetkikTrend } from "@/shared/api/hastaApi";
-import type { TetkikDto, TetkikTrendNoktaDto } from "@/shared/api/types";
-import { Card, ErrorText, Loading, Screen, SectionTitle, colors } from "@/shared/ui";
+import { fetchTetkikDetayBundle } from "@/shared/api/hastaApi";
+import { queryKeys } from "@/shared/query/client";
+import {
+  Card,
+  DetailScreenSkeleton,
+  ErrorText,
+  Screen,
+  SectionTitle,
+  colors,
+} from "@/shared/ui";
 
 export default function TetkikDetayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [item, setItem] = useState<TetkikDto | null>(null);
-  const [trend, setTrend] = useState<TetkikTrendNoktaDto[]>([]);
-  const [hata, setHata] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!id) {
-        setHata("Geçersiz tetkik");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setHata(null);
-      (async () => {
-        try {
-          const t = await fetchTetkik(id);
-          setItem(t);
-          const firstParam = t.sonuc_kalemleri?.find((k) => k.parametre_adi)?.parametre_adi;
-          if (firstParam && t.hasta_id) {
-            try {
-              setTrend(await fetchTetkikTrend(t.hasta_id, firstParam));
-            } catch {
-              setTrend([]);
-            }
-          } else {
-            setTrend([]);
-          }
-        } catch (e) {
-          setHata(e instanceof Error ? e.message : "Yüklenemedi");
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, [id]),
-  );
+  const { data, error, isLoading } = useQuery({
+    queryKey: queryKeys.tetkik(id ?? ""),
+    queryFn: () => fetchTetkikDetayBundle(id!),
+    enabled: Boolean(id),
+  });
 
-  if (loading) return <Loading />;
+  const hata = !id
+    ? "Geçersiz tetkik"
+    : error instanceof Error
+      ? error.message
+      : null;
+
+  if (isLoading && !data) return <DetailScreenSkeleton />;
+
+  const item = data?.item;
+  const trend = data?.trend ?? [];
 
   return (
     <Screen>
