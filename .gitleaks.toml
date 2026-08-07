@@ -1,0 +1,12 @@
+title = "hastane-sistemi"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Env örnek dosyaları; gerçek anahtar içermez"
+paths = [
+  '''(?:^|/)\.env\.example$''',
+  '''(?:^|/)backend/\.env\.example$''',
+  '''(?:^|/)mobile/\.env\.example$''',
+]
