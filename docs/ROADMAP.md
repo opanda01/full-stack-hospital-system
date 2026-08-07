@@ -20,9 +20,9 @@
 ## Faz C — Bildirim production
 
 - [x] E-posta: `BILDIRIM_BACKEND=smtp` + `SMTP_*` (`smtplib`)
-- [ ] Gerçek SMS gateway adaptörü (SMTP yalnızca e-posta)
-- [ ] Import için **batch / rate-limited kuyruk** (2000 satır × ayrı API call riski)
-- [ ] Retry / DLQ
+- [x] SMS gateway adaptörü (`BILDIRIM_BACKEND=sms` + `SMS_GATEWAY_URL`)
+- [x] Import için **batch kuyruk** (`PERSONEL_IMPORT_BATCH_SIZE`, Celery zincir)
+- [x] Retry / DLQ (`bildirim_dlq_kayitlari`, Celery `bildirim.dlq_isle`)
 
 ## Faz D — Hasta mobil istemci (uygulandı + e-Nabız benzeri genişleme)
 
@@ -269,17 +269,19 @@ Kod tabanı taramasına dayalı gap analizi. Durum özeti: **MEVCUT** / **KISMEN
     - Bağımlılık: `NobetCizelgesi`
     - Yapıldı: `uyum_service`, `NOBET_HAFTALIK_SAAT_LIMIT`, günlük vardiya çakışması
 
-20. **Cihaz/sterilizasyon takibi**
+20. **Cihaz/sterilizasyon takibi** ✅ (minimum)
     - Neden: Temizlik görevleri ≠ CSSD / tıbbi cihaz kalibrasyon.
     - Katman: yeni feature veya genişletilmiş ops.
     - Büyüklük: **L**
     - Bağımlılık: —
+    - Yapıldı: `sterilizasyon_cihazlari`, `/sterilizasyon/cihazlar`
 
-21. **Transfüzyon güvenlik**
+21. **Transfüzyon güvenlik** ✅ (minimum)
     - Neden: `kan_grubu` profil alanı var; çapraz eşleşme / çift imza yok.
     - Katman: `tetkikler` / `yatis`, web.
     - Büyüklük: **L**
     - Bağımlılık: `Hasta.kan_grubu`
+    - Yapıldı: `transfuzyon_kayitlari`, ABO uyum + çift imza, `/transfuzyon/kayitlar`
 
 22. **Multi-tenant hazırlık** ✅ (iskelet)
     - Neden: `hastane_id` / `kurum_id` yok; tek kurum varsayımı.

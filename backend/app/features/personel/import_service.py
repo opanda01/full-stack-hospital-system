@@ -320,7 +320,14 @@ def _notify_credentials(
         bildirim.email_gonder(email, "Geçici giriş şifreniz", mesaj)
 
 
-def run_import_job(session: Session, isi_id: int, rows: list[dict[str, str]]) -> None:
+def run_import_job(
+    session: Session,
+    isi_id: int,
+    rows: list[dict[str, str]],
+    *,
+    row_offset: int = 2,
+    finalize: bool = True,
+) -> None:
     isi = session.get(PersonelImportIsi, isi_id)
     if isi is None:
         return
@@ -333,7 +340,8 @@ def run_import_job(session: Session, isi_id: int, rows: list[dict[str, str]]) ->
     basarili = isi.basarili
     basarisiz = isi.basarisiz
 
-    for idx, row in enumerate(rows, start=2):  # 1=header varsayımı
+    for i, row in enumerate(rows):
+        idx = row_offset + i
         try:
             process_import_row(session, row, idx)
             basarili += 1
@@ -351,7 +359,7 @@ def run_import_job(session: Session, isi_id: int, rows: list[dict[str, str]]) ->
             session.commit()
 
     isi = session.get(PersonelImportIsi, isi_id)
-    if isi:
+    if isi and finalize:
         isi.durum = ImportDurum.TAMAMLANDI
         isi.updated_at = utc_now()
         session.add(isi)

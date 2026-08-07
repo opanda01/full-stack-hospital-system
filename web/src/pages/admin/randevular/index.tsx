@@ -13,6 +13,7 @@ import {
 } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { RandevuIptalEtButton } from "@/features/randevu-iptal-et";
+import { RandevuOperasyonActions } from "@/features/randevu-operasyon";
 import type { Randevu } from "@/entities/randevu";
 import { randevuHastaAdi } from "@/entities/randevu";
 import type { Doktor } from "@/entities/doktor";
@@ -20,7 +21,7 @@ import { AdminRandevuOlusturForm } from "./AdminRandevuOlusturForm";
 
 type Departman = { id: number; ad: string };
 
-const DURUMLAR = ["BEKLEMEDE", "TAMAMLANDI", "IPTAL"] as const;
+const DURUMLAR = ["BEKLEMEDE", "TAMAMLANDI", "IPTAL", "GELMEDI"] as const;
 const PAGE_SIZE = 50;
 
 type ZamanDilimi =
@@ -290,13 +291,16 @@ export function AdminRandevularPage() {
         <td>{departmanById.get(r.departman_id) ?? `#${r.departman_id}`}</td>
         <td>{r.durum}</td>
         <td>
-          {r.durum !== "IPTAL" && (
-            <RandevuIptalEtButton
-              randevuId={r.id}
-              tarihSaat={r.tarih_saat}
-              durum={r.durum}
-            />
-          )}
+          <div className="flex flex-col gap-1">
+            <RandevuOperasyonActions randevu={r} compact />
+            {r.durum !== "IPTAL" && (
+              <RandevuIptalEtButton
+                randevuId={r.id}
+                tarihSaat={r.tarih_saat}
+                durum={r.durum}
+              />
+            )}
+          </div>
         </td>
       </tr>
     );

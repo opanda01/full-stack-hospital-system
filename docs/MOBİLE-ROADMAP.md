@@ -12,8 +12,8 @@ Personel (doktor, hemşire, idari) **mobil uygulama kapsamı dışındadır** �
 | Alan | Özet |
 |------|------|
 | Hasta ekranları | MEVCUT — özet, randevu, tetkik, muayene, reçete, belge, şikayet, profil (`mobile/app/(hasta)/**`, `shared/api/hastaApi.ts`) |
-| Push (expo-notifications, push-token API) | YOK |
-| PanelBildirim → hasta push | YOK (personel bildirimleri web `GET /yatis/bildirimler`) |
+| Push (expo-notifications, push-token API) | MEVCUT |
+| PanelBildirim → hasta push | KISMEN (tetkik sonucu + randevu oluşturma) |
 | Token | MEVCUT — `expo-secure-store` (`shared/auth/storage.ts`) |
 | Biyometrik / PIN | YOK |
 | Offline kuyruk | YOK |

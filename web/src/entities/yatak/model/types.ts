@@ -20,6 +20,7 @@ export type YatakOzet = {
   servis_id: number | null;
   yatak_no: string;
   durum: YatakDurumu | string;
+  izolasyon_tipi?: string;
 };
 
 export type ServisDolulukOzet = {

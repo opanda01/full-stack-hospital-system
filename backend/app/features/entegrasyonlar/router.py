@@ -9,6 +9,7 @@ from app.core.db import get_session
 from app.core.enums import EntegrasyonDurumKod, EntegrasyonSistem
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
+from app.features.entegrasyonlar import outbox_service
 from app.features.entegrasyonlar.models import EntegrasyonDurum
 from app.features.kullanicilar.models import Kullanici
 from app.integrations.factory import get_enabiz, get_kps, get_medula
@@ -22,6 +23,20 @@ class EntegrasyonDurumRead(BaseModel):
     durum: str
     son_senkron: datetime | None
     hata_ozeti: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class OutboxRead(BaseModel):
+    id: int
+    sistem: str
+    kaynak: str
+    kaynak_id: str
+    durum: str
+    dis_referans: str | None
+    son_hata: str | None
+    deneme: int
+    son_deneme: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -57,6 +72,49 @@ def list_entegrasyonlar(
 ):
     _ensure_defaults(session)
     return [_to_read(r) for r in session.exec(select(EntegrasyonDurum)).all()]
+
+
+@router.get("/outbox", response_model=list[OutboxRead])
+def list_outbox(
+    durum: str | None = None,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("entegrasyon:goruntule")),
+):
+    rows = outbox_service.list_outbox(session, durum=durum)
+    return [
+        OutboxRead(
+            id=r.id,  # type: ignore[arg-type]
+            sistem=r.sistem,
+            kaynak=r.kaynak,
+            kaynak_id=r.kaynak_id,
+            durum=r.durum,
+            dis_referans=r.dis_referans,
+            son_hata=r.son_hata,
+            deneme=r.deneme,
+            son_deneme=r.son_deneme,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/outbox/{gonderim_id}/retry", response_model=OutboxRead)
+def retry_outbox(
+    gonderim_id: int,
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("entegrasyon:goruntule")),
+):
+    row = outbox_service.retry_gonderim(session, gonderim_id)
+    return OutboxRead(
+        id=row.id,  # type: ignore[arg-type]
+        sistem=row.sistem,
+        kaynak=row.kaynak,
+        kaynak_id=row.kaynak_id,
+        durum=row.durum,
+        dis_referans=row.dis_referans,
+        son_hata=row.son_hata,
+        deneme=row.deneme,
+        son_deneme=row.son_deneme,
+    )
 
 
 @router.post("/{sistem}/senkron", response_model=EntegrasyonDurumRead)

@@ -18,7 +18,9 @@ Live sınıflar `NotImplementedError` fırlatır (kimlik/WSDL yok).
 
 ## Canlıya geçiş checklist
 
+Detaylı adımlar: [LIVE-CHECKLIST.md](./LIVE-CHECKLIST.md)
+
 1. Kurum kodu, sertifika, WSDL/endpoint
 2. Sandbox test + `ENTEGRASYON_BACKEND=live`
-3. Outbox (`entegrasyon_gonderimleri`) retry/DLQ izleme
+3. Outbox (`entegrasyon_gonderimleri`) — `GET /entegrasyonlar/outbox`, `POST .../retry`
 4. Başhekim entegrasyon paneli hata özetleri

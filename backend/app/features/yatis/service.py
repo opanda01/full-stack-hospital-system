@@ -337,7 +337,33 @@ def get_detay(session: Session, yatis_id: int) -> YatisDetay:
         refakatci_ad_soyad=ref.ad_soyad if ref else None,
         refakatci_yakinlik=ref.yakinlik if ref else None,
         refakatci_telefon=ref.telefon if ref else None,
+        izolasyon_gerekli=y.izolasyon_gerekli,
     )
+
+
+def patch_izolasyon_gerekli(
+    session: Session,
+    yatis_id: int,
+    *,
+    izolasyon_gerekli: str | None,
+    yapan: Kullanici,
+) -> YatisDetay:
+    y = session.get(YatisKaydi, yatis_id)
+    if y is None:
+        raise HTTPException(status_code=404, detail="Yatış kaydı bulunamadı")
+    if not y.aktif_mi:
+        raise HTTPException(status_code=400, detail="Yalnızca aktif yatış güncellenebilir")
+    y.izolasyon_gerekli = izolasyon_gerekli or None
+    session.add(y)
+    _log(
+        session,
+        yatis_id,
+        yapan.id,  # type: ignore[arg-type]
+        "IZOLASYON_GUNCELLE",
+        izolasyon_gerekli or "YOK",
+    )
+    session.commit()
+    return get_detay(session, yatis_id)
 
 
 def list_servis_hareketleri(session: Session, yatis_id: int) -> list[ServisHareketRead]:

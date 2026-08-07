@@ -44,6 +44,8 @@ from app.features.ilac_talep.router import router as ilac_talep_router
 from app.features.epikriz.router import router as epikriz_router
 from app.features.dashboard.router import router as dashboard_router
 from app.features.guvenlik.router import router as guvenlik_router
+from app.features.sterilizasyon.router import router as sterilizasyon_router
+from app.features.transfuzyon.router import router as transfuzyon_router
 
 settings = get_settings()
 
@@ -131,4 +133,6 @@ app.include_router(radyoloji_router, prefix="/radyoloji", tags=["radyoloji"])
 app.include_router(ilac_talep_router, prefix="/ilac-talepleri", tags=["ilac_talep"])
 app.include_router(epikriz_router, prefix="/epikriz", tags=["epikriz"])
 app.include_router(guvenlik_router, prefix="/guvenlik", tags=["guvenlik"])
+app.include_router(sterilizasyon_router, prefix="/sterilizasyon", tags=["sterilizasyon"])
+app.include_router(transfuzyon_router, prefix="/transfuzyon", tags=["transfuzyon"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])

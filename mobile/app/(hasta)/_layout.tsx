@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
+import { useEffect } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import type { ComponentProps } from "react";
@@ -52,6 +53,13 @@ export default function HastaLayout() {
   const token = useAuthStore((s) => s.token);
   const rol = useAuthStore((s) => s.rol);
   const hydrated = useAuthStore((s) => s.hydrated);
+
+  useEffect(() => {
+    if (token && rol === "HASTA") {
+      void import("@/shared/push").then((m) => m.syncPushRegistration());
+    }
+  }, [token, rol]);
+
   if (!hydrated) {
     return null;
   }

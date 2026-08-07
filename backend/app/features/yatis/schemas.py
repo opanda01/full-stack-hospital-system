@@ -83,6 +83,15 @@ class YatisDetay(BaseModel):
     refakatci_ad_soyad: str | None = None
     refakatci_yakinlik: str | None = None
     refakatci_telefon: str | None = None
+    izolasyon_gerekli: str | None = None
+
+
+class YatisIzolasyonPatch(BaseModel):
+    izolasyon_gerekli: str | None = Field(
+        default=None,
+        max_length=32,
+        description="IzolasyonTipi değeri veya null/YOK",
+    )
 
 
 class ServisHareketRead(BaseModel):
