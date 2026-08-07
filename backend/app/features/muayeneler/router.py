@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.enums import OturumTipi
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.request_ip import istemci_ip_al
 from app.core.security import require_permission
@@ -61,6 +62,7 @@ def list_muayeneler(
         request.state.kapsam,
         page=pagination.page,
         page_size=pagination.page_size,
+        oturum_tipi=getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
     )
 
 
@@ -76,5 +78,6 @@ def get_muayene(
         current_user,
         muayene_id,
         request.state.kapsam,
+        oturum_tipi=getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
     )
     return muayene_service.muayene_to_read(session, kayit)

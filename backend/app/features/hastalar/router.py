@@ -188,12 +188,14 @@ def list_benim_hastalar(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return hasta_service.list_benim_hastalar(
         session,
         current_user,
         request.state.kapsam,
         page=pagination.page,
         page_size=pagination.page_size,
+        oturum_tipi=oturum,
     )
 
 
@@ -356,8 +358,13 @@ def list_alerjiler(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return alerji_service.list_alerjiler(
-        session, current_user, public_id, request.state.kapsam
+        session,
+        current_user,
+        public_id,
+        request.state.kapsam,
+        oturum_tipi=oturum,
     )
 
 
@@ -373,8 +380,14 @@ def create_alerji(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:guncelle")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return alerji_service.create_alerji(
-        session, current_user, public_id, body, request.state.kapsam
+        session,
+        current_user,
+        public_id,
+        body,
+        request.state.kapsam,
+        oturum_tipi=oturum,
     )
 
 
@@ -386,8 +399,14 @@ def delete_alerji(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:guncelle")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     alerji_service.soft_delete_alerji(
-        session, current_user, public_id, alerji_id, request.state.kapsam
+        session,
+        current_user,
+        public_id,
+        alerji_id,
+        request.state.kapsam,
+        oturum_tipi=oturum,
     )
 
 
@@ -398,8 +417,13 @@ def get_hasta(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("hasta:goruntule")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     hasta = hasta_service.get_hasta_scoped(
-        session, current_user, public_id, request.state.kapsam
+        session,
+        current_user,
+        public_id,
+        request.state.kapsam,
+        oturum_tipi=oturum,
     )
     h = hasta_service.get_hasta_by_public_id(session, public_id)
     phi_goruntuleme_logla(

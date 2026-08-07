@@ -5,6 +5,10 @@ import { isAxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Input } from "@/shared/ui";
+import {
+  DEMO_HASTA_TC,
+  DEMO_HASTA_TELEFON,
+} from "@/shared/lib";
 import { postLoginPath, useAuthStore, USE_MOCK_AUTH } from "@/shared/auth";
 import {
   DEV_BASHEKIM_CREDENTIALS,
@@ -166,6 +170,13 @@ export function GirisYapForm() {
                 Güvenlik: <strong>{DEV_GUVENLIK_CREDENTIALS.kimlik}</strong> /{" "}
                 <strong>{DEV_GUVENLIK_CREDENTIALS.sifre}</strong>
               </button>
+            </li>
+            <li className="border-t border-border pt-2 text-muted-foreground">
+              Hasta (OTP, şifre ile değil):{" "}
+              <Link to="/hasta" className="text-primary hover:underline">
+                /hasta
+              </Link>{" "}
+              — TC {DEMO_HASTA_TC}, tel {DEMO_HASTA_TELEFON}
             </li>
           </ul>
         </details>

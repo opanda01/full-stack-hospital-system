@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.enums import OturumTipi
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.bashekim.router import phi_goruntuleme_logla
@@ -23,6 +24,7 @@ def list_epikriz(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return epikriz_service.list_epikriz(
         session,
         current_user=current_user,
@@ -31,6 +33,7 @@ def list_epikriz(
         hasta_id=hasta_id,
         page=pagination.page,
         page_size=pagination.page_size,
+        oturum_tipi=oturum,
     )
 
 
@@ -41,11 +44,13 @@ def get_epikriz(
     session: Session = Depends(get_session),
     current_user: Kullanici = Depends(require_permission("epikriz:goruntule")),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     row = epikriz_service.get_epikriz(
         session,
         epikriz_id,
         current_user=current_user,
         kapsam=request.state.kapsam,
+        oturum_tipi=oturum,
     )
     phi_goruntuleme_logla(
         session,

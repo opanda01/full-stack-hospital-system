@@ -17,7 +17,7 @@ export type MockUser = {
 export const MOCK_USERS: MockUser[] = [
   {
     id: "1",
-    email: "admin@hastane.test",
+    email: "admin@hastane.example.com",
     sifre: "Test1234!",
     ad: "Sistem",
     soyad: "Admin",
@@ -28,7 +28,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "2",
-    email: "bashekim@hastane.test",
+    email: "bashekim@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Başhekim",
@@ -39,7 +39,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "3",
-    email: "doktor@hastane.test",
+    email: "doktor@hastane.example.com",
     sifre: "Test1234!",
     ad: "Ufuk",
     soyad: "Öztürk",
@@ -61,7 +61,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "5",
-    email: "laborant@hastane.test",
+    email: "laborant@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Laborant",
@@ -72,7 +72,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "6",
-    email: "temizlik@hastane.test",
+    email: "temizlik@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Temizlik",
@@ -83,7 +83,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "7",
-    email: "mudur@hastane.test",
+    email: "mudur@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Müdür",
@@ -116,7 +116,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "10",
-    email: "idari@hastane.test",
+    email: "idari@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "İdari",
@@ -127,7 +127,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "11",
-    email: "hasta@hastane.test",
+    email: "hasta@hastane.example.com",
     sifre: "Test1234!",
     ad: "Test",
     soyad: "Hasta",
@@ -136,7 +136,7 @@ export const MOCK_USERS: MockUser[] = [
   },
   {
     id: "12",
-    email: "yeni@hastane.test",
+    email: "yeni@hastane.example.com",
     sifre: "Temp1234!",
     ad: "Yeni",
     soyad: "Personel",

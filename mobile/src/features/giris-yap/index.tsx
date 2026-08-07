@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Text, TextInput, Pressable, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import { getApiUrl, otpDogrula, otpGonder } from "@/shared/api";
-import { gecerliTcKimlikNo, TC_GECERSIZ_MESAJ, DEMO_HASTA_TC } from "@/shared/lib/tcKimlik";
+import {
+  gecerliTcKimlikNo,
+  TC_GECERSIZ_MESAJ,
+  DEMO_HASTA_TC,
+  DEMO_HASTA_TELEFON,
+  DEMO_HASTA_ETIKET,
+} from "@/shared/lib/tcKimlik";
 import { useAuthStore } from "@/shared/auth";
 import { goReplace } from "@/shared/nav";
 import { palette, radius, spacing } from "@/shared/ui";
@@ -25,8 +31,8 @@ function metroGosterim(): string | null {
 export function GirisYapForm() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [step, setStep] = useState<Step>("bilgi");
-  const [telefon, setTelefon] = useState("05551234567");
-  const [tc, setTc] = useState(DEMO_HASTA_TC);
+  const [telefon, setTelefon] = useState(__DEV__ ? DEMO_HASTA_TELEFON : "");
+  const [tc, setTc] = useState(__DEV__ ? DEMO_HASTA_TC : "");
   const [kod, setKod] = useState("");
   const [hata, setHata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -88,7 +94,7 @@ export function GirisYapForm() {
         kod: kod.trim(),
         amac: "GIRIS",
       });
-      if (data.oturum_tipi !== "hasta" && data.rol !== "HASTA") {
+      if (data.oturum_tipi !== "hasta") {
         setHata("Mobil uygulama yalnızca hasta oturumu içindir");
         return;
       }
@@ -111,6 +117,17 @@ export function GirisYapForm() {
     <View style={styles.form}>
       {__DEV__ ? (
         <View style={styles.devBox}>
+          <View style={styles.demoHastaKutu}>
+            <Text style={styles.demoHastaBaslik}>Test hasta (seed)</Text>
+            <Text style={styles.demoHastaSatir}>
+              {DEMO_HASTA_ETIKET} — TC {DEMO_HASTA_TC}
+            </Text>
+            <Text style={styles.demoHastaSatir}>Telefon {DEMO_HASTA_TELEFON}</Text>
+            <Text style={styles.demoHastaIpucu}>
+              Alanlar otomatik doldurulur. OTP kodu backend konsol / SMS stub çıktısında
+              (veya yanıtta geliştirme_kodu).
+            </Text>
+          </View>
           <Text style={styles.devApi} numberOfLines={2}>
             Metro (uygulama kodu): {metroGosterim() ?? "—"}
           </Text>
@@ -206,6 +223,21 @@ const styles = StyleSheet.create({
   error: { color: palette.poppy600, fontSize: 12 },
   hint: { color: palette.slate600, fontSize: 13, marginBottom: spacing.xs },
   devBox: { marginBottom: spacing.sm, gap: spacing.xs },
+  demoHastaKutu: {
+    backgroundColor: palette.bosphorus50,
+    borderWidth: 1,
+    borderColor: palette.bosphorus200,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  demoHastaBaslik: {
+    color: palette.navy900,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  demoHastaSatir: { color: palette.navy900, fontSize: 13 },
+  demoHastaIpucu: { color: palette.slate600, fontSize: 11, marginTop: spacing.xs },
   devApi: { color: palette.slate400, fontSize: 11 },
   link: { color: palette.bosphorus500, textAlign: "center", marginTop: spacing.xs },
 });

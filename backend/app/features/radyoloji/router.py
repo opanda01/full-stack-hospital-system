@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
+from app.core.enums import OturumTipi
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import require_permission
 from app.features.kullanicilar.models import Kullanici
@@ -34,6 +35,7 @@ def list_istemler(
     current_user: Kullanici = Depends(require_permission("radyoloji:goruntule")),
     session: Session = Depends(get_session),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return radyoloji_service.listele(
         session,
         current_user,
@@ -41,6 +43,7 @@ def list_istemler(
         hasta_public_id=hasta_id,
         page=pagination.page,
         page_size=pagination.page_size,
+        oturum_tipi=oturum,
     )
 
 
@@ -53,7 +56,8 @@ def get_istem(
 ):
     from app.features.bashekim.router import phi_goruntuleme_logla
 
-    row = radyoloji_service.getir(session, current_user, istem_id)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    row = radyoloji_service.getir(session, current_user, istem_id, oturum_tipi=oturum)
     phi_goruntuleme_logla(
         session,
         actor=current_user,
@@ -94,7 +98,11 @@ def post_rapor(
 @router.get("/istemler/{istem_id}/goruntu-linki", response_model=RadyolojiGoruntuLink)
 def get_goruntu_linki(
     istem_id: int,
+    request: Request,
     current_user: Kullanici = Depends(require_permission("radyoloji:goruntule")),
     session: Session = Depends(get_session),
 ):
-    return radyoloji_service.goruntu_linki(session, current_user, istem_id)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    return radyoloji_service.goruntu_linki(
+        session, current_user, istem_id, oturum_tipi=oturum
+    )

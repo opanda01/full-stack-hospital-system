@@ -4,11 +4,12 @@ from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlmodel import Session, select
 
-from app.core.enums import ErisimDurumu, KonsultasyonDurumu, Rol
-from app.core.lookups import doktor_getir, personel_getir
+from app.core.enums import ErisimDurumu, KonsultasyonDurumu, OturumTipi, Rol
+from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_from_public_id
+from app.core.scope import erisim_rolu
 from app.core.security import hash_password
 from app.features.hastalar.models import Hasta
 from app.features.hastalar.schemas import (
@@ -284,6 +285,7 @@ def list_benim_hastalar(
     *,
     page: int = 1,
     page_size: int = 50,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Page[HastaRead]:
     if kapsam == Kapsam.GLOBAL:
         return list_hastalar(session, page=page, page_size=page_size)
@@ -301,7 +303,7 @@ def list_benim_hastalar(
         )
     if kapsam != Kapsam.KENDI_KAYDIM:
         raise HTTPException(status_code=403, detail="Hasta listesi için yetkiniz yok")
-    if current_user.rol != Rol.DOKTOR:
+    if erisim_rolu(current_user, oturum_tipi) != Rol.DOKTOR:
         raise HTTPException(
             status_code=403, detail="Kendi hasta kapsamı yalnızca doktor içindir"
         )
@@ -323,13 +325,22 @@ def get_hasta_scoped(
     current_user: Kullanici,
     public_id: UUID,
     kapsam: Kapsam,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> HastaRead:
     h = get_hasta_by_public_id(session, public_id)
     assert h.id is not None
     if kapsam == Kapsam.GLOBAL:
         return _hasta_to_read(session, h)
     if kapsam == Kapsam.KENDI_KAYDIM:
-        if not doktor_hasta_erisim_var_mi(session, current_user, h.id):
+        rol = erisim_rolu(current_user, oturum_tipi)
+        if rol == Rol.HASTA:
+            kendi = hasta_getir(session, current_user.id)
+            if h.id != kendi.id:
+                raise HTTPException(
+                    status_code=403, detail="Bu hastaya erişim yetkiniz yok"
+                )
+        elif not doktor_hasta_erisim_var_mi(session, current_user, h.id):
             raise HTTPException(
                 status_code=403, detail="Bu hastaya erişim yetkiniz yok"
             )

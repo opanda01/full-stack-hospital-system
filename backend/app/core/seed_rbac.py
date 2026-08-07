@@ -14,6 +14,9 @@ from app.features.kullanicilar.models import Kullanici
 from app.features.personel.erisim_service import apply_erisim_durumu
 
 DEMO_SIFRE = "Test1234!"
+DEMO_HASTA_EMAIL = "hasta@hastane.example.com"
+DEMO_HASTA_TC = "34917047162"
+DEMO_HASTA_TELEFON = "05551234567"
 
 
 def _demo_tc(raw: str, *, unique_key: str | None = None) -> str:
@@ -129,12 +132,12 @@ DEMO_KULLANICILAR: list[dict] = [
         "sicil_no": "I-001",
     },
     {
-        "email": "hasta@hastane.example.com",
+        "email": DEMO_HASTA_EMAIL,
         "ad": "Test",
         "soyad": "Hasta",
         "rol": Rol.HASTA,
-        "tc": "10000000006",
-        "telefon": "05551234567",
+        "tc": DEMO_HASTA_TC,
+        "telefon": DEMO_HASTA_TELEFON,
     },
 ]
 
@@ -198,6 +201,8 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 kullanici.kullanici_adi = item["kullanici_adi"]
             if item.get("telefon"):
                 kullanici.telefon = item["telefon"]
+            if item["email"] == DEMO_HASTA_EMAIL and kullanici.tc_kimlik_no != item["tc"]:
+                kullanici.tc_kimlik_no = item["tc"]
             apply_erisim_durumu(kullanici, ErisimDurumu.ONAYLANDI)
             session.add(kullanici)
             session.flush()
@@ -210,6 +215,9 @@ def seed_demo_kullanicilar(session: Session) -> None:
                 session.add(
                     Hasta(kullanici_id=kullanici.id, tc_kimlik_no=kullanici.tc_kimlik_no)
                 )
+            elif hasta.tc_kimlik_no != kullanici.tc_kimlik_no:
+                hasta.tc_kimlik_no = kullanici.tc_kimlik_no
+                session.add(hasta)
 
         if item["rol"] in _PERSONEL_ROLLER:
             dep = session.exec(
@@ -278,3 +286,13 @@ def seed_demo_kullanicilar(session: Session) -> None:
 def seed_rbac(session: Session, *, demo_admin: bool = True) -> None:
     """Geriye uyum — demo kullanıcıları oluşturur."""
     seed_demo_kullanicilar(session)
+
+
+if __name__ == "__main__":
+    from app.core.db import engine
+
+    with Session(engine) as session:
+        seed_demo_kullanicilar(session)
+    print(
+        f"Demo RBAC seed tamamlandı (hasta OTP: TC {DEMO_HASTA_TC}, tel {DEMO_HASTA_TELEFON})."
+    )

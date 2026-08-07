@@ -132,3 +132,39 @@ export async function sifreSifirlaOnay(
     yeni_sifre,
   });
 }
+
+export type OtpAmac = "GIRIS" | "KAYIT";
+
+export type OtpGonderResponse = {
+  mesaj: string;
+  son_kullanma_saniye: number;
+  gelistirme_kodu?: string | null;
+};
+
+export async function otpGonder(body: {
+  telefon: string;
+  tc_kimlik_no: string;
+  amac: OtpAmac;
+}): Promise<OtpGonderResponse> {
+  const { data } = await authClient.post<OtpGonderResponse>(
+    "/auth/otp/gonder",
+    body,
+  );
+  return data;
+}
+
+export async function otpDogrula(body: {
+  telefon: string;
+  tc_kimlik_no: string;
+  kod: string;
+  amac: OtpAmac;
+  ad?: string;
+  soyad?: string;
+  kvkk_onay?: boolean;
+}): Promise<TokenResponse> {
+  const { data } = await authClient.post<TokenResponse>(
+    "/auth/otp/dogrula",
+    body,
+  );
+  return data;
+}

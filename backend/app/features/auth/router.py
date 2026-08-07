@@ -177,8 +177,16 @@ def register_hasta(
 
 
 @router.get("/me", response_model=MeResponse)
-def me(current_user: Kullanici = Depends(get_current_user)) -> Kullanici:
-    return current_user
+def me(
+    request: Request,
+    current_user: Kullanici = Depends(get_current_user),
+) -> MeResponse:
+    from app.core.enums import OturumTipi
+    from app.core.scope import erisim_rolu
+
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    base = MeResponse.model_validate(current_user)
+    return base.model_copy(update={"rol": erisim_rolu(current_user, oturum)})
 
 
 @router.patch("/me", response_model=MeResponse)

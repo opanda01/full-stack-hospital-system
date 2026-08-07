@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.enums import (
+    OturumTipi,
     RadyolojiAciliyet,
     RadyolojiIstemDurumu,
     RadyolojiTetkikTuru,
@@ -14,7 +15,7 @@ from app.core.lookups import doktor_getir, hasta_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_from_public_id, hasta_pk_from_public_id, hasta_public_id_from_pk
-from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.core.scope import erisim_rolu, kullanici_kapsamli_filtre_uygula
 from app.features.doktorlar.models import Doktor
 from app.features.hastalar import service as hasta_service
 from app.features.hastalar.models import Hasta
@@ -117,23 +118,26 @@ def _liste_sorgu(
     kapsam: Kapsam,
     *,
     hasta_public_id: UUID | None = None,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ):
     query = select(RadyolojiIstemi)
     if hasta_public_id is not None:
         hasta_pk = hasta_pk_from_public_id(session, hasta_public_id)
         query = query.where(RadyolojiIstemi.hasta_id == hasta_pk)
 
+    rol = erisim_rolu(current_user, oturum_tipi)
+
     def kendi(q):
-        if current_user.rol == Rol.DOKTOR:
+        if rol == Rol.DOKTOR:
             doktor = doktor_getir(session, current_user.id)
             return q.where(RadyolojiIstemi.isteyen_doktor_id == doktor.id)
-        if current_user.rol == Rol.HASTA:
+        if rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             q = q.where(RadyolojiIstemi.hasta_id == hasta.id)
             return q.where(
                 RadyolojiIstemi.durum == RadyolojiIstemDurumu.RAPORLANDI
             )
-        if current_user.rol == Rol.RADYOLOG:
+        if rol == Rol.RADYOLOG:
             return q
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -158,17 +162,22 @@ def _liste_sorgu(
 
 
 def istem_erisim_kontrolu(
-    session: Session, istem: RadyolojiIstemi, current_user: Kullanici
+    session: Session,
+    istem: RadyolojiIstemi,
+    current_user: Kullanici,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> None:
-    if current_user.rol == Rol.ADMIN:
+    rol = erisim_rolu(current_user, oturum_tipi)
+    if rol == Rol.ADMIN:
         return
-    if current_user.rol in (Rol.BASHEKIM, Rol.MUDUR):
+    if rol in (Rol.BASHEKIM, Rol.MUDUR):
         return
-    if current_user.rol == Rol.DOKTOR:
+    if rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if istem.isteyen_doktor_id == doktor.id:
             return
-    elif current_user.rol == Rol.HASTA:
+    elif rol == Rol.HASTA:
         hasta = hasta_getir(session, current_user.id)
         if istem.hasta_id == hasta.id:
             if _enum_val(istem.durum) == RadyolojiIstemDurumu.RAPORLANDI.value:
@@ -177,9 +186,9 @@ def istem_erisim_kontrolu(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Radyoloji sonucu bulunamadı",
             )
-    elif current_user.rol == Rol.RADYOLOG:
+    elif rol == Rol.RADYOLOG:
         return
-    elif current_user.rol in (Rol.HEMSIRE, Rol.EBE):
+    elif rol in (Rol.HEMSIRE, Rol.EBE):
         ids = hasta_service.hemsire_erisebilir_hasta_idler(session, current_user)
         if istem.hasta_id in ids:
             return
@@ -197,20 +206,31 @@ def listele(
     hasta_public_id: UUID | None = None,
     page: int = 1,
     page_size: int = 50,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Page[RadyolojiIstemOku]:
     query = _liste_sorgu(
-        session, current_user, kapsam, hasta_public_id=hasta_public_id
+        session,
+        current_user,
+        kapsam,
+        hasta_public_id=hasta_public_id,
+        oturum_tipi=oturum_tipi,
     )
     rows, total = paginate(session, query, page=page, page_size=page_size)
     items = [_istem_oku(session, r) for r in rows]
     return make_page(items, total=total, page=page, page_size=page_size)
 
 
-def getir(session: Session, current_user: Kullanici, istem_id: int) -> RadyolojiIstemOku:
+def getir(
+    session: Session,
+    current_user: Kullanici,
+    istem_id: int,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> RadyolojiIstemOku:
     istem = session.get(RadyolojiIstemi, istem_id)
     if istem is None:
         raise HTTPException(status_code=404, detail="Radyoloji istemi bulunamadı")
-    istem_erisim_kontrolu(session, istem, current_user)
+    istem_erisim_kontrolu(session, istem, current_user, oturum_tipi=oturum_tipi)
     return _istem_oku(session, istem)
 
 
@@ -220,7 +240,8 @@ def radyoloji_istem_olustur(
     veri: RadyolojiIstemOlustur,
     kapsam: Kapsam,
 ) -> RadyolojiIstemOku:
-    if current_user.rol == Rol.DOKTOR:
+    rol = erisim_rolu(current_user, OturumTipi.PERSONEL)
+    if rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if veri.isteyen_doktor_id != doktor.id:
             raise HTTPException(
@@ -302,11 +323,13 @@ def goruntu_linki(
     session: Session,
     current_user: Kullanici,
     istem_id: int,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> RadyolojiGoruntuLink:
     istem = session.get(RadyolojiIstemi, istem_id)
     if istem is None:
         raise HTTPException(status_code=404, detail="Radyoloji istemi bulunamadı")
-    istem_erisim_kontrolu(session, istem, current_user)
+    istem_erisim_kontrolu(session, istem, current_user, oturum_tipi=oturum_tipi)
 
     sonuc = session.exec(
         select(RadyolojiSonucu).where(RadyolojiSonucu.istem_id == istem_id)

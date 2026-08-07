@@ -32,6 +32,11 @@ type AuthState = {
     currentUser?: CurrentUser | null,
   ) => void;
   login: (kimlik: string, sifre: string) => Promise<CurrentUser>;
+  loginWithOtp: (input: {
+    telefon: string;
+    tc_kimlik_no: string;
+    kod: string;
+  }) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<CurrentUser>;
   sifreDegistir: (eski: string, yeni: string) => Promise<void>;
@@ -88,6 +93,22 @@ export const useAuthStore = create<AuthState>()(
         const me = await get().fetchMe();
         return me;
       },
+      loginWithOtp: async (input) => {
+        const res = await authService.loginWithOtp(input);
+        get().setAuth(
+          res.access_token,
+          [res.rol],
+          res.permissions,
+          res.refresh_token,
+          {
+            ...res.user,
+            sifre_degistirmeli_mi: res.sifre_degistirmeli_mi,
+            kvkk_onaylandi_mi: res.kvkk_onaylandi_mi,
+          },
+        );
+        const me = await get().fetchMe();
+        return me;
+      },
       logout: async () => {
         const { accessToken, refreshToken } = get();
         try {
@@ -101,9 +122,11 @@ export const useAuthStore = create<AuthState>()(
       },
       fetchMe: async () => {
         const me = await authService.me();
+        const prev = get().permissions;
         set({
           currentUser: me,
           roles: [me.rol],
+          permissions: prev,
         });
         return me;
       },
@@ -150,8 +173,14 @@ export const useAuthStore = create<AuthState>()(
             u.sifre_degistirmeli_mi = false;
           }
           if (u.kvkk_onaylandi_mi === undefined) {
-            u.kvkk_onaylandi_mi = true;
+            u.kvkk_onaylandi_mi = false;
           }
+        }
+        if (state?.accessToken ?? state?.token) {
+          void useAuthStore
+            .getState()
+            .fetchMe()
+            .catch(() => undefined);
         }
       },
     },

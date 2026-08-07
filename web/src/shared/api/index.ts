@@ -31,11 +31,23 @@ async function refreshAccessToken(): Promise<string | null> {
   try {
     const res = await authService.refresh(refreshToken);
     setTokens(res.access_token, res.refresh_token);
-    if (res.rol) {
-      useAuthStore.setState({
-        roles: [res.rol],
-        permissions: res.permissions ?? [],
-      });
+    const prevUser = useAuthStore.getState().currentUser;
+    useAuthStore.setState({
+      roles: [res.rol],
+      permissions: res.permissions ?? [],
+      currentUser: prevUser
+        ? {
+            ...prevUser,
+            rol: res.rol,
+            sifre_degistirmeli_mi: res.sifre_degistirmeli_mi,
+            kvkk_onaylandi_mi: res.kvkk_onaylandi_mi,
+          }
+        : prevUser,
+    });
+    try {
+      await useAuthStore.getState().fetchMe();
+    } catch {
+      /* profil senkronu isteğe bağlı */
     }
     return res.access_token;
   } catch {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GirisYapForm } from "@/features/giris-yap";
 import {
   MOCK_USERS,
@@ -8,6 +8,10 @@ import {
   useAuthStore,
 } from "@/shared/auth";
 import { AuthLayout, Button } from "@/shared/ui";
+import {
+  DEMO_HASTA_TC,
+  DEMO_HASTA_TELEFON,
+} from "@/shared/lib";
 
 export function GirisPage() {
   const navigate = useNavigate();
@@ -79,6 +83,18 @@ export function GirisPage() {
         </div>
       )}
       <GirisYapForm />
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Hasta hesabı için{" "}
+        <Link to="/hasta" className="text-primary underline-offset-4 hover:underline">
+          OTP ile hasta girişi
+        </Link>
+        {import.meta.env.DEV ? (
+          <>
+            {" "}
+            (test: TC {DEMO_HASTA_TC}, tel {DEMO_HASTA_TELEFON})
+          </>
+        ) : null}
+      </p>
     </AuthLayout>
   );
 }

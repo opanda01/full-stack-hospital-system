@@ -64,7 +64,8 @@ def get_tetkik(
 ):
     from app.features.bashekim.router import phi_goruntuleme_logla
 
-    row = tetkik_service.getir(session, current_user, public_id)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    row = tetkik_service.getir(session, current_user, public_id, oturum_tipi=oturum)
     phi_goruntuleme_logla(
         session,
         actor=current_user,
@@ -73,7 +74,9 @@ def get_tetkik(
         request=request,
         detay_extra={"tetkik_public_id": str(row.public_id)},
     )
-    tetkik_service.hasta_goruldu_isaretle(session, current_user, row)
+    tetkik_service.hasta_goruldu_isaretle(
+        session, current_user, row, oturum_tipi=oturum
+    )
     return tetkik_service._to_read(session, row)
 
 

@@ -127,11 +127,13 @@ def randevu_listele(
 @router.get("/{public_id}", response_model=RandevuRead)
 def randevu_getir(
     public_id: UUID,
+    request: Request,
     current_user: Kullanici = Depends(require_permission("randevu:goruntule")),
     session: Session = Depends(get_session),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return _to_read(
-        session, randevu_service.getir(session, current_user, public_id)
+        session, randevu_service.getir(session, current_user, public_id, oturum_tipi=oturum)
     )
 
 
@@ -142,7 +144,10 @@ def randevu_olustur(
     current_user: Kullanici = Depends(require_permission("randevu:olustur")),
     session: Session = Depends(get_session),
 ):
-    r = randevu_service.olustur(session, current_user, veri, request.state.kapsam)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    r = randevu_service.olustur(
+        session, current_user, veri, request.state.kapsam, oturum_tipi=oturum
+    )
     return _to_read(session, r)
 
 
@@ -155,7 +160,10 @@ def randevu_provizyon(
 ):
     from app.features.faturalandirma.provizyon_service import provizyon_al_randevu
 
-    randevu = randevu_service.getir(session, current_user, public_id)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    randevu = randevu_service.getir(
+        session, current_user, public_id, oturum_tipi=oturum
+    )
     randevu = provizyon_al_randevu(
         session,
         randevu=randevu,
@@ -174,7 +182,10 @@ def randevu_mhrs_kaydet(
 ):
     from app.features.mhrs.randevu_service import mhrs_randevu_olustur
 
-    randevu = randevu_service.getir(session, current_user, public_id)
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
+    randevu = randevu_service.getir(
+        session, current_user, public_id, oturum_tipi=oturum
+    )
     randevu = mhrs_randevu_olustur(
         session,
         randevu=randevu,
@@ -187,12 +198,16 @@ def randevu_mhrs_kaydet(
 @router.post("/{public_id}/gelmedi", response_model=RandevuRead)
 def randevu_gelmedi(
     public_id: UUID,
+    request: Request,
     current_user: Kullanici = Depends(require_permission("randevu:olustur")),
     session: Session = Depends(get_session),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return _to_read(
         session,
-        randevu_service.gelmedi_isaretle(session, current_user, public_id),
+        randevu_service.gelmedi_isaretle(
+            session, current_user, public_id, oturum_tipi=oturum
+        ),
     )
 
 
@@ -200,9 +215,12 @@ def randevu_gelmedi(
 def randevu_iptal(
 
     public_id: UUID,
+    request: Request,
     current_user: Kullanici = Depends(require_permission("randevu:iptal")),
     session: Session = Depends(get_session),
 ):
+    oturum = getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL)
     return _to_read(
-        session, randevu_service.iptal_et(session, current_user, public_id)
+        session,
+        randevu_service.iptal_et(session, current_user, public_id, oturum_tipi=oturum),
     )

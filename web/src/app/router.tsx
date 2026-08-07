@@ -4,6 +4,7 @@ import { ProtectedRoute, RoleGuard, RoleLayoutRoute, OnboardingGuard } from "@/s
 import { GirisPage } from "@/pages/ortak/giris";
 import { ForbiddenPage } from "@/pages/ortak/forbidden";
 import { HastaMobilPage } from "@/pages/ortak/hasta-mobil";
+import { HastaGirisPage } from "@/pages/ortak/hasta-giris";
 import { ProfilPage } from "@/pages/ortak/profil";
 import { AyarlarPage } from "@/pages/ortak/ayarlar";
 import { NobetYonetimiPage } from "@/pages/ortak/nobet";
@@ -115,7 +116,10 @@ function Guard({
 function AyarlarRedirect() {
   const rol = useAuthStore((s) => s.primaryRole());
   const home = homeForRole(rol);
-  if (home === "/giris" || home === "/hasta-mobil") {
+  if (home === "/hasta-mobil") {
+    return <Navigate to="/hasta-mobil" replace />;
+  }
+  if (home === "/giris") {
     return <Navigate to="/giris" replace />;
   }
   return <Navigate to={`${home}/ayarlar`} replace />;
@@ -130,6 +134,7 @@ export function AppRouter() {
         <Route path="/sifre-sifirla" element={<SifreSifirlaPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/hasta-mobil" element={<HastaMobilPage />} />
+        <Route path="/hasta" element={<HastaGirisPage />} />
         <Route path="/profil" element={<ProfilPage />} />
         <Route
           path="/ayarlar"
@@ -352,8 +357,7 @@ export function AppRouter() {
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
-        {/* HASTA — web yok */}
-        <Route path="/hasta" element={<Navigate to="/hasta-mobil" replace />} />
+        {/* HASTA — web yalnızca OTP giriş + mobil yönlendirme */}
         <Route path="/hasta/randevu" element={<Navigate to="/hasta-mobil" replace />} />
 
         {/* Eski düz path'ler — geriye uyumluluk */}
