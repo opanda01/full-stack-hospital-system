@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useServisDoluluk,
   useServisler,
@@ -10,7 +10,10 @@ import { useYatakAta, useYatakBosalt } from "@/features/yatak-ata";
 import { YatakHaritasi } from "@/widgets/yatak-haritasi";
 import { Button } from "@/shared/ui";
 import { fetchAllPages, getApiErrorMessage } from "@/shared/lib";
+import { api } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
+
+const IZOLASYON_TIPLERI = ["YOK", "DAMLACIK", "HAVA", "KONTAK"] as const;
 
 type YatisKayit = {
   id: number;
@@ -20,6 +23,7 @@ type YatisKayit = {
 };
 
 export function YatakYonetimiPage() {
+  const qc = useQueryClient();
   const canAta = useAuthStore((s) =>
     s.hasPermission("yatak:ata") || s.hasRole("ADMIN", "BASHEKIM", "MUDUR"),
   );
@@ -44,7 +48,35 @@ export function YatakYonetimiPage() {
 
   const [seciliYatak, setSeciliYatak] = useState<YatakOzet | null>(null);
   const [yatisId, setYatisId] = useState("");
+  const [yatisIzolasyon, setYatisIzolasyon] = useState("");
+  const [yatakIzolasyon, setYatakIzolasyon] = useState("YOK");
+
+  const patchYatakIzolasyon = useMutation({
+    mutationFn: (payload: { yatakId: number; izolasyon: string }) =>
+      api.patch(`/yatak-yonetimi/yataklar/${payload.yatakId}`, {
+        izolasyon_tipi: payload.izolasyon,
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["yatak-yonetimi-yataklar"] });
+    },
+  });
+
+  const patchYatisIzolasyon = useMutation({
+    mutationFn: (payload: { yatisId: number; izolasyon: string | null }) =>
+      api.patch(`/yatis/kayitlar/${payload.yatisId}/izolasyon`, {
+        izolasyon_gerekli: payload.izolasyon,
+      }),
+  });
+
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (seciliYatak?.izolasyon_tipi) {
+      setYatakIzolasyon(seciliYatak.izolasyon_tipi);
+    } else {
+      setYatakIzolasyon("YOK");
+    }
+  }, [seciliYatak?.id, seciliYatak?.izolasyon_tipi]);
 
   const ata = useYatakAta();
   const bosalt = useYatakBosalt();
@@ -155,6 +187,83 @@ export function YatakYonetimiPage() {
             <Button variant="secondary" onClick={handleBosalt} disabled={bosalt.isPending}>
               Yatağı boşalt (temizlik)
             </Button>
+          )}
+          {canBosalt && (
+            <div className="flex flex-wrap items-end gap-2 border-t border-[color:var(--border-subtle)] pt-3">
+              <label className="flex flex-col gap-1 text-sm">
+                Yatak izolasyon tipi
+                <select
+                  className="rounded-lg border border-[color:var(--border-subtle)] px-3 py-2"
+                  value={yatakIzolasyon}
+                  onChange={(e) => setYatakIzolasyon(e.target.value)}
+                >
+                  {IZOLASYON_TIPLERI.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={patchYatakIzolasyon.isPending}
+                onClick={() => {
+                  setErr(null);
+                  patchYatakIzolasyon.mutate(
+                    { yatakId: seciliYatak.id, izolasyon: yatakIzolasyon },
+                    { onError: (e) => setErr(getApiErrorMessage(e)) },
+                  );
+                }}
+              >
+                İzolasyon kaydet
+              </Button>
+            </div>
+          )}
+          {canAta && (
+            <div className="flex flex-wrap items-end gap-2 border-t border-[color:var(--border-subtle)] pt-3">
+              <label className="flex flex-col gap-1 text-sm">
+                Yatış izolasyon gereksinimi
+                <select
+                  className="rounded-lg border border-[color:var(--border-subtle)] px-3 py-2"
+                  value={yatisIzolasyon}
+                  onChange={(e) => setYatisIzolasyon(e.target.value)}
+                >
+                  <option value="">YOK</option>
+                  {IZOLASYON_TIPLERI.filter((t) => t !== "YOK").map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                Yatış kayıt ID
+                <input
+                  className="w-28 rounded-lg border border-[color:var(--border-subtle)] px-3 py-2"
+                  value={yatisId}
+                  onChange={(e) => setYatisId(e.target.value)}
+                  placeholder="ID"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!yatisId || patchYatisIzolasyon.isPending}
+                onClick={() => {
+                  setErr(null);
+                  patchYatisIzolasyon.mutate(
+                    {
+                      yatisId: Number(yatisId),
+                      izolasyon: yatisIzolasyon || null,
+                    },
+                    { onError: (e) => setErr(getApiErrorMessage(e)) },
+                  );
+                }}
+              >
+                Yatış izolasyonu
+              </Button>
+            </div>
           )}
         </div>
       )}

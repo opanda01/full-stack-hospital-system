@@ -209,6 +209,15 @@ def olustur(
             detail="Bu saatte doktorun başka randevusu var",
         ) from exc
     session.refresh(randevu)
+    from app.features.mobil import service as mobil_service
+
+    mobil_service.hasta_push_gonder(
+        session,
+        hasta.kullanici_id,
+        baslik="Randevu oluşturuldu",
+        mesaj="Randevunuz kaydedildi. Mobil uygulamadan detayları görüntüleyebilirsiniz.",
+        data={"tip": "RANDEVU", "randevu_id": str(randevu.public_id)},
+    )
     return randevu
 
 

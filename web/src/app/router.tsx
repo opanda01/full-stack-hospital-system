@@ -14,6 +14,9 @@ import { AdminHastalarPage } from "@/pages/admin/hastalar";
 import { TemizlikAtaPage } from "@/pages/ortak/temizlik-ata";
 import { YatakYonetimiPage } from "@/pages/ortak/yatak-yonetimi";
 import { AmeliyathanePage } from "@/pages/ortak/ameliyathane";
+import { AcilTriyajPage } from "@/pages/ortak/acil-triyaj";
+import { HastaMukerrerPage } from "@/pages/ortak/hasta-mukerrer";
+import { OzelKimlikKayitPage } from "@/pages/ortak/ozel-kimlik-kayit";
 import { RadyolojiPage } from "@/pages/ortak/radyoloji";
 import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
 import { SifreSifirlaPage } from "@/pages/ortak/sifre-sifirla";
@@ -158,6 +161,9 @@ export function AppRouter() {
           <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="randevular" element={<AdminRandevularPage />} />
           <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route path="hasta-mukerrer" element={<HastaMukerrerPage />} />
+          <Route path="ozel-kimlik-kayit" element={<OzelKimlikKayitPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route
             path="hasta-kayit"
             element={<Navigate to="/admin/hastalar" replace />}
@@ -187,6 +193,8 @@ export function AppRouter() {
           </Route>
           <Route path="randevular" element={<AdminRandevularPage />} />
           <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route path="hasta-mukerrer" element={<HastaMukerrerPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route path="muayeneler" element={<AdminMuayenelerPage />} />
           <Route path="tetkikler" element={<AdminTetkiklerPage />} />
           <Route path="klinik-onaylar" element={<BashekimKlinikOnaylarPage />} />
@@ -219,6 +227,8 @@ export function AppRouter() {
           </Route>
           <Route path="randevular" element={<AdminRandevularPage />} />
           <Route path="hastalar" element={<AdminHastalarPage />} />
+          <Route path="hasta-mukerrer" element={<HastaMukerrerPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route path="muayeneler" element={<AdminMuayenelerPage />} />
           <Route path="tetkikler" element={<AdminTetkiklerPage />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
@@ -235,6 +245,7 @@ export function AppRouter() {
         <Route path="/doktor" element={<RoleLayoutRoute rol="DOKTOR" />}>
           <Route index element={<DoktorDashboardPage />} />
           <Route path="randevularim" element={<DoktorRandevularimPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route path="muayene" element={<DoktorMuayeneEkraniPage />} />
           <Route path="tetkiklerim" element={<DoktorTetkiklerimPage />} />
           <Route path="tetkik-iste" element={<Navigate to="/doktor/tetkiklerim" replace />} />
@@ -259,6 +270,7 @@ export function AppRouter() {
         <Route path="/hemsire" element={<RoleLayoutRoute rol="HEMSIRE" />}>
           <Route index element={<HemsireDashboardPage />} />
           <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
           <Route path="ameliyathane" element={<AmeliyathanePage />} />
           <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
@@ -282,6 +294,7 @@ export function AppRouter() {
         <Route path="/ebe" element={<RoleLayoutRoute rol="EBE" />}>
           <Route index element={<EbeDashboardPage />} />
           <Route path="servis-takip" element={<HemsireServisTakipPage />} />
+          <Route path="acil-triyaj" element={<AcilTriyajPage />} />
           <Route path="yatak-yonetimi" element={<YatakYonetimiPage />} />
           <Route path="ameliyathane" element={<AmeliyathanePage />} />
           <Route path="hasta-arama" element={<HemsireHastaAramaPage />} />
@@ -354,6 +367,8 @@ export function AppRouter() {
         </Route>
         <Route path="/idari" element={<RoleLayoutRoute rol="IDARI_PERSONEL" />}>
           <Route index element={<IdariDashboardPage />} />
+          <Route path="ozel-kimlik-kayit" element={<OzelKimlikKayitPage />} />
+          <Route path="hasta-kayit" element={<HastaKayitPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 

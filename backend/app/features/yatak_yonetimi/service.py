@@ -337,6 +337,37 @@ def yatak_cikis_hazirligi(session: Session, yatak_id: int) -> None:
             otomatik_oda_temizlik_gorevi(session, servis.ad, oda.oda_no)
 
 
+def yatak_guncelle(
+    session: Session,
+    yatak_id: int,
+    *,
+    yatak_no: str | None = None,
+    durum: YatakDurumu | None = None,
+    izolasyon_tipi: IzolasyonTipi | None = None,
+    kapsam: Kapsam,
+    current_user: Kullanici,
+) -> YatakOku:
+    yatak = session.get(Yatak, yatak_id)
+    if yatak is None:
+        raise HTTPException(status_code=404, detail="Yatak bulunamadı")
+    oda = session.get(Oda, yatak.oda_id)
+    if oda is None:
+        raise HTTPException(status_code=404, detail="Oda bulunamadı")
+    _servis_erisim(
+        session, oda.servis_id, kapsam=kapsam, current_user=current_user
+    )
+    if yatak_no is not None:
+        yatak.yatak_no = yatak_no
+    if durum is not None:
+        yatak.durum = durum
+    if izolasyon_tipi is not None:
+        yatak.izolasyon_tipi = izolasyon_tipi
+    session.add(yatak)
+    session.commit()
+    session.refresh(yatak)
+    return _yatak_oku(yatak, oda=oda)
+
+
 def yatak_bosalt(
     session: Session,
     yatak_id: int,

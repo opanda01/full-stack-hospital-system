@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     OTP_GUNLUK_MAX: int = 5
 
     BILDIRIM_BACKEND: str = "console"
+    # sms: HTTP gateway (SMS_GATEWAY_URL); smtp: e-posta + SMS log
+    SMS_GATEWAY_URL: str = ""
+    SMS_GATEWAY_API_KEY: str = ""
+    BILDIRIM_DLQ_MAX_RETRY: int = 5
+    PERSONEL_IMPORT_BATCH_SIZE: int = 50
     # Mobil push: console (log) | expo (Expo Push API)
     PUSH_BACKEND: str = "console"
     EXPO_ACCESS_TOKEN: str = ""

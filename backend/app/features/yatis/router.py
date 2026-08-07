@@ -33,6 +33,7 @@ from app.features.yatis.schemas import (
     YatakRead,
     YatisDetay,
     YatisIslemRequest,
+    YatisIzolasyonPatch,
     YatisListeItem,
 )
 
@@ -91,6 +92,21 @@ def get_kayit(
     _user: Kullanici = Depends(require_permission("yatis:goruntule")),
 ):
     return yatis_service.get_detay(session, yatis_id)
+
+
+@router.patch("/kayitlar/{yatis_id}/izolasyon", response_model=YatisDetay)
+def patch_kayit_izolasyon(
+    yatis_id: int,
+    body: YatisIzolasyonPatch,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("yatis:islem")),
+):
+    return yatis_service.patch_izolasyon_gerekli(
+        session,
+        yatis_id,
+        izolasyon_gerekli=body.izolasyon_gerekli,
+        yapan=current_user,
+    )
 
 
 @router.get(

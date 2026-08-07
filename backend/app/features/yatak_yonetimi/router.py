@@ -10,6 +10,7 @@ from app.features.yatak_yonetimi.schemas import (
     ServisDolulukOzet,
     ServisOku,
     YatakAtaIstek,
+    YatakGuncelle,
     YatakOku,
 )
 
@@ -62,6 +63,26 @@ def get_yatak(
     kapsam: Kapsam = request.state.kapsam
     return yatak_service.get_yatak(
         session, yatak_id, kapsam=kapsam, current_user=current_user
+    )
+
+
+@router.patch("/yataklar/{yatak_id}", response_model=YatakOku)
+def patch_yatak(
+    yatak_id: int,
+    body: YatakGuncelle,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_permission("yatak:durum_guncelle")),
+):
+    kapsam: Kapsam = request.state.kapsam
+    return yatak_service.yatak_guncelle(
+        session,
+        yatak_id,
+        yatak_no=body.yatak_no,
+        durum=body.durum,
+        izolasyon_tipi=body.izolasyon_tipi,
+        kapsam=kapsam,
+        current_user=current_user,
     )
 
 

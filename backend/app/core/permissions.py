@@ -72,6 +72,11 @@ def _mudur_izinleri() -> dict[str, Kapsam]:
         "guvenlik_devriye:goruntule": Kapsam.GLOBAL,
         "mhrs:yonet": Kapsam.GLOBAL,
         "acil:triyaj": Kapsam.GLOBAL,
+        "sterilizasyon:goruntule": Kapsam.GLOBAL,
+        "sterilizasyon:olustur": Kapsam.GLOBAL,
+        "sterilizasyon:guncelle": Kapsam.GLOBAL,
+        "transfuzyon:goruntule": Kapsam.GLOBAL,
+        "transfuzyon:olustur": Kapsam.GLOBAL,
     }
 
 
@@ -188,6 +193,8 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "panel_bildirim:guncelle": Kapsam.GLOBAL,
         "ameliyat:goruntule": Kapsam.DEPARTMANIM,
         "acil:triyaj": Kapsam.GLOBAL,
+        "transfuzyon:goruntule": Kapsam.GLOBAL,
+        "transfuzyon:olustur": Kapsam.GLOBAL,
     },
     Rol.EBE: {
         "departman:goruntule": Kapsam.GLOBAL,
@@ -226,6 +233,8 @@ IZIN_MATRISI: dict[Rol, dict[str, Kapsam]] = {
         "panel_bildirim:goruntule": Kapsam.GLOBAL,
         "panel_bildirim:guncelle": Kapsam.GLOBAL,
         "acil:triyaj": Kapsam.GLOBAL,
+        "transfuzyon:goruntule": Kapsam.GLOBAL,
+        "transfuzyon:olustur": Kapsam.GLOBAL,
     },
     Rol.LABORANT: {
         "departman:goruntule": Kapsam.GLOBAL,

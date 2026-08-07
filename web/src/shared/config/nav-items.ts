@@ -82,6 +82,9 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: "Departmanlar", path: "/admin/departmanlar", icon: Building2 },
   { label: "Randevular", path: "/admin/randevular", icon: CalendarClock },
   { label: "Hastalar", path: "/admin/hastalar", icon: HeartPulse },
+  { label: "Mükerrer hasta", path: "/admin/hasta-mukerrer", icon: Users },
+  { label: "Özel kimlik kayıt", path: "/admin/ozel-kimlik-kayit", icon: IdCard },
+  { label: "Acil triyaj", path: "/admin/acil-triyaj", icon: AlertTriangle },
   { label: "Muayeneler", path: "/admin/muayeneler", icon: ClipboardList },
   { label: "Tetkikler", path: "/admin/tetkikler", icon: FlaskConical },
   { label: "Nöbet Çizelgesi", path: "/admin/nobet", icon: CalendarDays },
@@ -106,6 +109,8 @@ function mudurItems(root: "/mudur"): NavItem[] {
     { label: "Departmanlar", path: `${root}/departmanlar`, icon: Building2 },
     { label: "Randevular", path: `${root}/randevular`, icon: CalendarClock },
     { label: "Hastalar", path: `${root}/hastalar`, icon: HeartPulse },
+    { label: "Mükerrer hasta", path: `${root}/hasta-mukerrer`, icon: Users },
+    { label: "Acil triyaj", path: `${root}/acil-triyaj`, icon: AlertTriangle },
     { label: "Muayeneler", path: `${root}/muayeneler`, icon: ClipboardList },
     { label: "Tetkikler", path: `${root}/tetkikler`, icon: FlaskConical },
     { label: "Nöbet Çizelgesi", path: `${root}/nobet`, icon: CalendarDays },
@@ -135,6 +140,8 @@ function bashekimGroups(): NavGroup[] {
         { label: "Departmanlar", path: `${root}/departmanlar`, icon: Building2 },
         { label: "Randevular", path: `${root}/randevular`, icon: CalendarClock },
         { label: "Hastalar", path: `${root}/hastalar`, icon: HeartPulse },
+        { label: "Mükerrer hasta", path: `${root}/hasta-mukerrer`, icon: Users },
+        { label: "Acil triyaj", path: `${root}/acil-triyaj`, icon: AlertTriangle },
         { label: "Muayeneler", path: `${root}/muayeneler`, icon: ClipboardList },
         { label: "Tetkikler", path: `${root}/tetkikler`, icon: FlaskConical },
         { label: "Klinik onaylar", path: `${root}/klinik-onaylar`, icon: Activity },
@@ -168,6 +175,7 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       label: "Günlük iş",
       items: [
         { label: "Randevularım", path: "/doktor/randevularim", icon: CalendarClock },
+        { label: "Acil triyaj", path: "/doktor/acil-triyaj", icon: AlertTriangle },
         { label: "Muayene", path: "/doktor/muayene", icon: HeartPulse },
         { label: "Servisim", path: "/doktor/servisim", icon: BedDouble },
         { label: "Ameliyathane", path: "/doktor/ameliyathane", icon: Scissors },
@@ -206,6 +214,7 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   HEMSIRE: asSingleGroup([
     { label: "Dashboard", path: "/hemsire", icon: LayoutDashboard },
     { label: "Servis Hasta Takip", path: "/hemsire/servis-takip", icon: HeartPulse },
+    { label: "Acil triyaj", path: "/hemsire/acil-triyaj", icon: AlertTriangle },
     { label: "Yatak Yönetimi", path: "/hemsire/yatak-yonetimi", icon: BedDouble },
     { label: "Ameliyathane", path: "/hemsire/ameliyathane", icon: Scissors },
     { label: "Hasta Arama", path: "/hemsire/hasta-arama", icon: Search },
@@ -237,6 +246,7 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
       path: "/ebe/servis-takip",
       icon: HeartPulse,
     },
+    { label: "Acil triyaj", path: "/ebe/acil-triyaj", icon: AlertTriangle },
     { label: "Yatak Yönetimi", path: "/ebe/yatak-yonetimi", icon: BedDouble },
     { label: "Ameliyathane", path: "/ebe/ameliyathane", icon: Scissors },
     { label: "Hasta Arama", path: "/ebe/hasta-arama", icon: Search },
@@ -298,6 +308,8 @@ export const NAV_GROUPS: Record<Rol, NavGroup[]> = {
   ]),
   IDARI_PERSONEL: asSingleGroup([
     { label: "Dashboard", path: "/idari", icon: LayoutDashboard },
+    { label: "Hasta kayıt", path: "/idari/hasta-kayit", icon: HeartPulse },
+    { label: "Özel kimlik", path: "/idari/ozel-kimlik-kayit", icon: IdCard },
   ]),
 };
 

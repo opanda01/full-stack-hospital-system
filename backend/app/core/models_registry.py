@@ -21,6 +21,9 @@ from app.features.muayeneler.recete_models import (  # noqa: F401
 from app.features.tetkikler.models import Tetkik  # noqa: F401
 from app.features.kvkk.models import KvkkMetni, KvkkOnayKaydi  # noqa: F401
 from app.features.entegrasyonlar.outbox_models import EntegrasyonGonderim  # noqa: F401
+from app.core.bildirim_dlq import BildirimDlqKaydi  # noqa: F401
+from app.features.sterilizasyon.models import SterilizasyonCihaz  # noqa: F401
+from app.features.transfuzyon.models import TransfuzyonKaydi  # noqa: F401
 from app.features.klinik_kodlar.models import (  # noqa: F401
     Icd10Kodu,
     MuayeneTaniKodu,

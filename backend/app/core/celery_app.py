@@ -10,7 +10,7 @@ celery_app = Celery(
     "hastane",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.features.personel.tasks", "app.features.kvkk.tasks"],
+    include=["app.features.personel.tasks", "app.features.kvkk.tasks", "app.core.bildirim_tasks"],
 )
 
 celery_app.conf.update(
@@ -24,6 +24,10 @@ celery_app.conf.update(
         "phi-anonimlestir-gunluk": {
             "task": "phi_retention.anonimlestir",
             "schedule": 86400.0,
+        },
+        "bildirim-dlq-5dk": {
+            "task": "bildirim.dlq_isle",
+            "schedule": 300.0,
         },
     },
 )
