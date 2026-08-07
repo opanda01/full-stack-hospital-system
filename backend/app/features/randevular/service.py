@@ -94,19 +94,24 @@ def listele(
 
 
 def randevu_erisim_kontrolu(
-    session: Session, randevu: Randevu, current_user: Kullanici
+    session: Session,
+    randevu: Randevu,
+    current_user: Kullanici,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> None:
-    if current_user.rol in (Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR):
+    rol = erisim_rolu(current_user, oturum_tipi)
+    if rol in (Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR):
         return
-    if current_user.rol == Rol.DOKTOR:
+    if rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if randevu.doktor_id == doktor.id:
             return
-    elif current_user.rol == Rol.HASTA:
+    elif rol == Rol.HASTA:
         hasta = hasta_getir(session, current_user.id)
         if randevu.hasta_id == hasta.id:
             return
-    elif current_user.rol in (Rol.HEMSIRE, Rol.EBE):
+    elif rol in (Rol.HEMSIRE, Rol.EBE):
         personel = personel_getir(session, current_user.id)
         if (
             personel.departman_id is not None
@@ -120,7 +125,12 @@ def randevu_erisim_kontrolu(
 
 
 def olustur(
-    session: Session, current_user: Kullanici, veri: RandevuCreate, kapsam: Kapsam
+    session: Session,
+    current_user: Kullanici,
+    veri: RandevuCreate,
+    kapsam: Kapsam,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Randevu:
     hasta = hasta_from_public_id(session, veri.hasta_id)
     assert hasta.id is not None
@@ -135,7 +145,8 @@ def olustur(
             ),
         )
 
-    if kapsam == Kapsam.KENDI_KAYDIM and current_user.rol == Rol.HASTA:
+    rol = erisim_rolu(current_user, oturum_tipi)
+    if kapsam == Kapsam.KENDI_KAYDIM and rol == Rol.HASTA:
         kendi = hasta_getir(session, current_user.id)
         if hasta.id != kendi.id:
             raise HTTPException(
@@ -201,9 +212,15 @@ def olustur(
     return randevu
 
 
-def iptal_et(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu:
+def iptal_et(
+    session: Session,
+    current_user: Kullanici,
+    public_id: UUID,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> Randevu:
     randevu = get_by_public_id(session, Randevu, public_id)
-    randevu_erisim_kontrolu(session, randevu, current_user)
+    randevu_erisim_kontrolu(session, randevu, current_user, oturum_tipi=oturum_tipi)
     if randevu.durum == "IPTAL":
         raise HTTPException(status_code=400, detail="Randevu zaten iptal edilmiş")
     if randevu.tarih_saat <= datetime.now(timezone.utc):
@@ -229,10 +246,14 @@ def iptal_et(session: Session, current_user: Kullanici, public_id: UUID) -> Rand
 
 
 def gelmedi_isaretle(
-    session: Session, current_user: Kullanici, public_id: UUID
+    session: Session,
+    current_user: Kullanici,
+    public_id: UUID,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Randevu:
     randevu = get_by_public_id(session, Randevu, public_id)
-    randevu_erisim_kontrolu(session, randevu, current_user)
+    randevu_erisim_kontrolu(session, randevu, current_user, oturum_tipi=oturum_tipi)
     if randevu.durum == "IPTAL":
         raise HTTPException(status_code=400, detail="İptal randevu gelmedi işaretlenemez")
     if randevu.durum == "GELMEDI":
@@ -256,9 +277,15 @@ def gelmedi_isaretle(
     return randevu
 
 
-def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Randevu:
+def getir(
+    session: Session,
+    current_user: Kullanici,
+    public_id: UUID,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> Randevu:
     randevu = get_by_public_id(session, Randevu, public_id)
-    randevu_erisim_kontrolu(session, randevu, current_user)
+    randevu_erisim_kontrolu(session, randevu, current_user, oturum_tipi=oturum_tipi)
     return randevu
 
 

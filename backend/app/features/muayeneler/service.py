@@ -5,13 +5,13 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.core.audit import denetim_kaydi_yaz
-from app.core.enums import Rol
+from app.core.enums import OturumTipi, Rol
 from app.core.config import get_settings
 from app.core.lookups import doktor_getir, hasta_getir, personel_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_public_id_from_pk
-from app.core.scope import kullanici_kapsamli_filtre_uygula
+from app.core.scope import erisim_rolu, kullanici_kapsamli_filtre_uygula
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler.models import MuayeneKaydi
 from app.features.muayeneler.recete_guvenlik import (
@@ -330,14 +330,16 @@ def list_muayeneler(
     *,
     page: int = 1,
     page_size: int = 50,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Page[MuayeneRead]:
     query = select(MuayeneKaydi).join(Randevu, MuayeneKaydi.randevu_id == Randevu.id)
+    rol = erisim_rolu(current_user, oturum_tipi)
 
     def kendi(q):
-        if current_user.rol == Rol.DOKTOR:
+        if rol == Rol.DOKTOR:
             doktor = doktor_getir(session, current_user.id)
             return q.where(Randevu.doktor_id == doktor.id)
-        if current_user.rol == Rol.HASTA:
+        if rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             return q.where(Randevu.hasta_id == hasta.id)
         raise HTTPException(
@@ -395,6 +397,8 @@ def get_muayene(
     current_user: Kullanici,
     muayene_id: int,
     kapsam: Kapsam,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> MuayeneKaydi:
     kayit = session.get(MuayeneKaydi, muayene_id)
     if kayit is None:
@@ -402,12 +406,13 @@ def get_muayene(
     randevu = session.get(Randevu, kayit.randevu_id)
     if randevu is None:
         raise HTTPException(status_code=404, detail="Randevu bulunamadı")
+    rol = erisim_rolu(current_user, oturum_tipi)
     if kapsam == Kapsam.KENDI_KAYDIM:
-        if current_user.rol == Rol.DOKTOR:
+        if rol == Rol.DOKTOR:
             doktor = doktor_getir(session, current_user.id)
             if randevu.doktor_id != doktor.id:
                 raise HTTPException(status_code=403, detail="Bu muayeneye erişim yetkiniz yok")
-        elif current_user.rol == Rol.HASTA:
+        elif rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             if randevu.hasta_id != hasta.id:
                 raise HTTPException(status_code=403, detail="Bu muayeneye erişim yetkiniz yok")

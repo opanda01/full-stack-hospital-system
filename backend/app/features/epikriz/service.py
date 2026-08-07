@@ -4,11 +4,12 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.enums import EpikrizDurumu, Rol
+from app.core.enums import EpikrizDurumu, OturumTipi, Rol
 from app.core.lookups import doktor_getir, hasta_getir
 from app.core.pagination import Page, make_page, paginate
 from app.core.permissions import Kapsam
 from app.core.public_id import hasta_pk_from_public_id, hasta_public_id_from_pk
+from app.core.scope import erisim_rolu
 from app.features.epikriz.models import Epikriz
 from app.features.epikriz.schemas import EpikrizCreate, EpikrizRead, EpikrizUpdate
 from app.features.kullanicilar.models import Kullanici
@@ -34,8 +35,13 @@ def _to_read(session: Session, row: Epikriz) -> EpikrizRead:
     )
 
 
-def _hasta_pk_for_kendi(session: Session, current_user: Kullanici) -> int:
-    if current_user.rol != Rol.HASTA:
+def _hasta_pk_for_kendi(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> int:
+    if erisim_rolu(current_user, oturum_tipi) != Rol.HASTA:
         raise HTTPException(
             status_code=403, detail="Kendi kaydı kapsamı bu rol için tanımlı değil"
         )
@@ -53,14 +59,17 @@ def list_epikriz(
     hasta_id: UUID | None = None,
     page: int = 1,
     page_size: int = 50,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> Page[EpikrizRead]:
     q = select(Epikriz).order_by(Epikriz.id.desc())
     if kapsam == Kapsam.KENDI_KAYDIM:
         if current_user is None:
             raise HTTPException(status_code=403, detail="Kapsam için kullanıcı gerekli")
-        kendi_pk = _hasta_pk_for_kendi(session, current_user)
+        kendi_pk = _hasta_pk_for_kendi(
+            session, current_user, oturum_tipi=oturum_tipi
+        )
         q = q.where(Epikriz.hasta_id == kendi_pk)
-        if current_user.rol == Rol.HASTA:
+        if erisim_rolu(current_user, oturum_tipi) == Rol.HASTA:
             q = q.where(Epikriz.durum == EpikrizDurumu.ONAYLANDI.value)
     else:
         if yatis_id is not None:
@@ -82,6 +91,7 @@ def get_epikriz(
     *,
     current_user: Kullanici | None = None,
     kapsam: Kapsam | None = None,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> EpikrizRead:
     row = session.get(Epikriz, epikriz_id)
     if row is None:
@@ -89,11 +99,13 @@ def get_epikriz(
     if kapsam == Kapsam.KENDI_KAYDIM:
         if current_user is None:
             raise HTTPException(status_code=403, detail="Kapsam için kullanıcı gerekli")
-        kendi_pk = _hasta_pk_for_kendi(session, current_user)
+        kendi_pk = _hasta_pk_for_kendi(
+            session, current_user, oturum_tipi=oturum_tipi
+        )
         if row.hasta_id != kendi_pk:
             raise HTTPException(status_code=403, detail="Bu epikrize erişim yetkiniz yok")
         if (
-            current_user.rol == Rol.HASTA
+            erisim_rolu(current_user, oturum_tipi) == Rol.HASTA
             and row.durum != EpikrizDurumu.ONAYLANDI.value
         ):
             raise HTTPException(status_code=404, detail="Epikriz bulunamadı")

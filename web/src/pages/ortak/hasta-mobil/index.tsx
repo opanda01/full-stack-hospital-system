@@ -19,14 +19,14 @@ export function HastaMobilPage() {
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button asChild variant="outline">
-            <Link to="/giris">Giriş sayfasına dön</Link>
+            <Link to="/hasta">Hasta girişine dön</Link>
           </Button>
           <Button
             type="button"
             variant="ghost"
             onClick={() => {
               void logout().finally(() => {
-                window.location.href = "/giris";
+                window.location.href = "/hasta";
               });
             }}
           >

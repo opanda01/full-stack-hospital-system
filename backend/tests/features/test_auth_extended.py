@@ -19,9 +19,10 @@ def _tc(n: int) -> str:
 
 
 def _auth(user: Kullanici, *, oturum_tipi: OturumTipi = OturumTipi.PERSONEL) -> dict:
+    rol = Rol.HASTA if oturum_tipi == OturumTipi.HASTA else user.rol
     return {
         "Authorization": (
-            f"Bearer {create_access_token(user.id, user.rol, oturum_tipi=oturum_tipi)}"
+            f"Bearer {create_access_token(user.id, rol, oturum_tipi=oturum_tipi)}"
         )
     }
 
@@ -265,6 +266,7 @@ def test_cift_profil_personel_sonra_otp_hasta(client, session, monkeypatch):
     )
     assert r.status_code == 200
     assert r.json()["oturum_tipi"] == "hasta"
+    assert r.json()["rol"] == "HASTA"
     # Stored rol demote edilmez
     session.refresh(user)
     assert user.rol == Rol.HEMSIRE
@@ -425,3 +427,11 @@ def test_sifre_sifirla_rate_limit(client, session, monkeypatch):
     assert client.post("/auth/sifre-sifirla/istek", json=payload).status_code == 200
     r2 = client.post("/auth/sifre-sifirla/istek", json=payload)
     assert r2.status_code == 429
+
+
+def test_telefon_normalize():
+    from app.core.telefon import telefon_normalize
+
+    assert telefon_normalize("5551234567") == "05551234567"
+    assert telefon_normalize("05551234567") == "05551234567"
+    assert telefon_normalize("+90 555 123 45 67") == "05551234567"

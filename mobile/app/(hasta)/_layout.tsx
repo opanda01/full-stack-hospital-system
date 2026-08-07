@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import type { ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,28 +26,38 @@ function tabIcon(name: IconName, focusedName: IconName) {
 }
 
 function RandevuAlTabButton(props: BottomTabBarButtonProps) {
-  const { children, onPress, onLongPress, accessibilityState, accessibilityLabel, testID } =
+  const { onPress, onLongPress, accessibilityState, accessibilityLabel, testID } =
     props;
+  const focused = accessibilityState?.selected;
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       accessibilityState={accessibilityState}
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? "Randevu Al"}
       testID={testID}
-      style={styles.fabTab}
+      style={({ pressed }) => [styles.fabTab, pressed && styles.fabTabPressed]}
     >
-      <View style={styles.fabCircle}>
-        <Ionicons name="add" size={28} color={palette.white} />
+      <View style={[styles.fabCircle, focused && styles.fabCircleFocused]}>
+        <Ionicons name="add" size={34} color={palette.white} />
       </View>
-      <View style={styles.fabLabelWrap}>{children}</View>
+      <Text style={[styles.fabLabel, focused && styles.fabLabelFocused]}>
+        Randevu Al
+      </Text>
     </Pressable>
   );
 }
 
 export default function HastaLayout() {
   const token = useAuthStore((s) => s.token);
-  if (!token) return <Redirect href="/(auth)/giris" />;
+  const rol = useAuthStore((s) => s.rol);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  if (!hydrated) {
+    return null;
+  }
+  if (!token || rol !== "HASTA") {
+    return <Redirect href="/(auth)/giris" />;
+  }
 
   return (
     <Tabs
@@ -66,9 +76,9 @@ export default function HastaLayout() {
           backgroundColor: palette.white,
           borderTopColor: palette.lineSoft,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 92 : 72,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 26 : 12,
+          height: Platform.OS === "ios" ? 88 : 70,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === "ios" ? 24 : 10,
           ...shadows.tabBar,
         },
       }}
@@ -93,13 +103,7 @@ export default function HastaLayout() {
         name="randevu-al/index"
         options={{
           title: "Randevu Al",
-          tabBarLabel: "Randevu Al",
-          tabBarLabelStyle: {
-            fontSize: 9,
-            fontWeight: "700",
-            color: palette.bosphorus500,
-            marginTop: 2,
-          },
+          tabBarLabel: () => null,
           tabBarIcon: () => null,
           tabBarButton: (props) => <RandevuAlTabButton {...props} />,
         }}
@@ -208,21 +212,33 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
-    paddingBottom: Platform.OS === "ios" ? 2 : 4,
+    top: Platform.OS === "ios" ? -2 : 0,
   },
+  fabTabPressed: { opacity: 0.92 },
   fabCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: palette.navy900,
+    borderWidth: 4,
+    borderColor: palette.white,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -20,
+    marginTop: -30,
     ...shadows.fab,
   },
-  fabLabelWrap: {
-    marginTop: 2,
-    alignItems: "center",
-    justifyContent: "center",
+  fabCircleFocused: {
+    backgroundColor: palette.navy800,
+    transform: [{ scale: 1.02 }],
+  },
+  fabLabel: {
+    marginTop: 4,
+    fontSize: 10,
+    fontWeight: "700",
+    color: palette.bosphorus500,
+    letterSpacing: 0.1,
+  },
+  fabLabelFocused: {
+    color: palette.bosphorus500,
   },
 });

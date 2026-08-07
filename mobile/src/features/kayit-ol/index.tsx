@@ -71,6 +71,10 @@ export function KayitOlForm() {
         soyad: soyad.trim(),
         kvkk_onay: true,
       });
+      if (data.oturum_tipi !== "hasta") {
+        setHata("Kayıt yalnızca hasta oturumu oluşturur");
+        return;
+      }
       await setAuth(
         data.access_token,
         data.refresh_token,

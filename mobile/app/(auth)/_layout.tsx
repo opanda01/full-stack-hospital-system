@@ -3,7 +3,7 @@ import { useAuthStore } from "@/shared/auth";
 
 export default function AuthLayout() {
   const token = useAuthStore((s) => s.token);
-  if (token) return <Redirect href="/(hasta)/randevularim" />;
+  if (token) return <Redirect href="/(hasta)/ozet" />;
 
   return (
     <Stack>

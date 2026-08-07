@@ -17,6 +17,8 @@ _RATE_LIMITED_SUFFIXES = (
     "/auth/login",
     "/auth/otp/gonder",
     "/auth/otp/dogrula",
+    "/auth/sifre-sifirla/istek",
+    "/auth/sifre-sifirla/onay",
 )
 
 

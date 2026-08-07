@@ -136,7 +136,7 @@ def _liste_sorgu(
         if rol == Rol.HASTA:
             hasta = hasta_getir(session, current_user.id)
             return q.where(Tetkik.hasta_id == hasta.id)
-        if current_user.rol == Rol.LABORANT:
+        if rol == Rol.LABORANT:
             return q
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -217,23 +217,28 @@ def listele(
 
 
 def tetkik_erisim_kontrolu(
-    session: Session, tetkik: Tetkik, current_user: Kullanici
+    session: Session,
+    tetkik: Tetkik,
+    current_user: Kullanici,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> None:
-    if current_user.rol == Rol.ADMIN:
+    rol = erisim_rolu(current_user, oturum_tipi)
+    if rol == Rol.ADMIN:
         return
-    if current_user.rol in (Rol.BASHEKIM, Rol.MUDUR):
+    if rol in (Rol.BASHEKIM, Rol.MUDUR):
         return
-    if current_user.rol == Rol.DOKTOR:
+    if rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if tetkik.istek_yapan_doktor_id == doktor.id:
             return
-    elif current_user.rol == Rol.HASTA:
+    elif rol == Rol.HASTA:
         hasta = hasta_getir(session, current_user.id)
         if tetkik.hasta_id == hasta.id:
             return
-    elif current_user.rol == Rol.LABORANT:
+    elif rol == Rol.LABORANT:
         return
-    elif current_user.rol in (Rol.HEMSIRE, Rol.EBE):
+    elif rol in (Rol.HEMSIRE, Rol.EBE):
         ids = hasta_service.hemsire_erisebilir_hasta_idler(session, current_user)
         if tetkik.hasta_id in ids:
             return
@@ -243,16 +248,26 @@ def tetkik_erisim_kontrolu(
     )
 
 
-def getir(session: Session, current_user: Kullanici, public_id: UUID) -> Tetkik:
+def getir(
+    session: Session,
+    current_user: Kullanici,
+    public_id: UUID,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
+) -> Tetkik:
     tetkik = get_by_public_id(session, Tetkik, public_id)
-    tetkik_erisim_kontrolu(session, tetkik, current_user)
+    tetkik_erisim_kontrolu(session, tetkik, current_user, oturum_tipi=oturum_tipi)
     return tetkik
 
 
 def hasta_goruldu_isaretle(
-    session: Session, current_user: Kullanici, tetkik: Tetkik
+    session: Session,
+    current_user: Kullanici,
+    tetkik: Tetkik,
+    *,
+    oturum_tipi: OturumTipi = OturumTipi.PERSONEL,
 ) -> None:
-    if current_user.rol != Rol.HASTA:
+    if erisim_rolu(current_user, oturum_tipi) != Rol.HASTA:
         return
     if tetkik.durum != "SONUCLANDI":
         return
@@ -278,7 +293,8 @@ def okunmamis_sonuclanmis_sayisi(session: Session, hasta_pk: int) -> int:
 def olustur(
     session: Session, current_user: Kullanici, veri: TetkikCreate, kapsam: Kapsam
 ) -> TetkikRead:
-    if current_user.rol == Rol.DOKTOR:
+    rol = erisim_rolu(current_user, OturumTipi.PERSONEL)
+    if rol == Rol.DOKTOR:
         doktor = doktor_getir(session, current_user.id)
         if veri.istek_yapan_doktor_id != doktor.id:
             raise HTTPException(

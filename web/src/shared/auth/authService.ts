@@ -58,6 +58,46 @@ async function readAccessToken(): Promise<string | null> {
   return useAuthStore.getState().accessToken ?? useAuthStore.getState().token;
 }
 
+export async function loginWithOtp(input: {
+  telefon: string;
+  tc_kimlik_no: string;
+  kod: string;
+}): Promise<AuthLoginResult> {
+  if (USE_MOCK_AUTH) {
+    throw new Error(
+      "Hasta OTP girişi mock modda desteklenmiyor. VITE_USE_MOCK_AUTH=false ve backend kullanın.",
+    );
+  }
+  const data = await authApi.otpDogrula({
+    ...input,
+    amac: "GIRIS",
+  });
+  const rol = data.rol;
+  if (data.oturum_tipi !== "hasta") {
+    throw new Error("Bu ekran yalnızca hasta oturumu içindir");
+  }
+  return {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    token_type: data.token_type,
+    rol: rol ?? "HASTA",
+    permissions: data.permissions ?? [],
+    sifre_degistirmeli_mi: Boolean(data.sifre_degistirmeli_mi),
+    kvkk_onaylandi_mi: data.kvkk_onaylandi_mi !== false,
+    user: {
+      id: 0,
+      email: null,
+      ad: "",
+      soyad: "",
+      rol: rol ?? "HASTA",
+      aktif_mi: true,
+      telefon: input.telefon,
+      sifre_degistirmeli_mi: Boolean(data.sifre_degistirmeli_mi),
+      kvkk_onaylandi_mi: data.kvkk_onaylandi_mi !== false,
+    },
+  };
+}
+
 export async function login(kimlik: string, sifre: string): Promise<AuthLoginResult> {
   if (USE_MOCK_AUTH) {
     await delay(300);

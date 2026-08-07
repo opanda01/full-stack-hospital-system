@@ -308,3 +308,15 @@ def seed_hastane_referans(session: Session) -> None:
                 sifre=sifre,
             )
     session.commit()
+
+
+if __name__ == "__main__":
+    import app.core.models_registry  # noqa: F401
+    from app.core.db import engine
+
+    with Session(engine) as session:
+        seed_hastane_referans(session)
+    print(
+        f"Hastane referans seed tamamlandı "
+        f"({len(BIRIMLER)} üst birim, {len(DEPARTMANLAR)} poliklinik)."
+    )

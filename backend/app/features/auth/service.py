@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from app.core.audit import denetim_kaydi_yaz
 from app.core.base_model import utc_now
 from app.core.config import get_settings
+from app.core.telefon import telefon_normalize
 from app.core.enums import OtpAmac, OturumTipi, Rol
 from app.core.notifications import get_bildirim
 from app.core.permissions import rol_izin_kodlari
@@ -48,8 +49,9 @@ def _issue_tokens(
 ) -> TokenResponse:
     rol = _rol_value(kullanici)
     izin_rol = Rol.HASTA if oturum_tipi == OturumTipi.HASTA else rol
+    jwt_rol = izin_rol if oturum_tipi == OturumTipi.HASTA else rol
     access = create_access_token(
-        kullanici.id, rol, oturum_tipi=oturum_tipi
+        kullanici.id, jwt_rol, oturum_tipi=oturum_tipi
     )
     raw_refresh = create_refresh_token()
     now = datetime.now(timezone.utc)
@@ -426,6 +428,12 @@ def otp_gonder(
     amac: OtpAmac,
     ip_adresi: str | None = None,
 ) -> OtpGonderResponse:
+    telefon = telefon_normalize(telefon)
+    if not telefon:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçerli telefon numarası girin",
+        )
     _otp_rate_limit_check(session, telefon)
 
     if amac == OtpAmac.KAYIT:
@@ -450,11 +458,13 @@ def otp_gonder(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Hasta profili yok; önce kayıt (OTP KAYIT) yapın",
             )
-        if kullanici.telefon and kullanici.telefon != telefon:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Telefon numarası kayıtlı bilgilere uymuyor",
-            )
+        if kullanici.telefon:
+            kayitli = telefon_normalize(kullanici.telefon)
+            if kayitli != telefon:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Telefon numarası kayıtlı bilgilere uymuyor",
+                )
 
     kod = "".join(secrets.choice(string.digits) for _ in range(6))
     now = datetime.now(timezone.utc)
@@ -503,6 +513,12 @@ def otp_dogrula(
     kvkk_onay: bool | None = None,
     ip_adresi: str | None = None,
 ) -> TokenResponse:
+    telefon = telefon_normalize(telefon)
+    if not telefon:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçerli telefon numarası girin",
+        )
     now = datetime.now(timezone.utc)
     otps = list(
         session.exec(
@@ -612,6 +628,14 @@ def otp_dogrula(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Hasta profili bulunamadı",
+            )
+        if not kullanici.telefon:
+            kullanici.telefon = telefon
+            session.add(kullanici)
+        elif telefon_normalize(kullanici.telefon) != telefon:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Telefon numarası kayıtlı bilgilere uymuyor",
             )
 
     denetim_kaydi_yaz(
