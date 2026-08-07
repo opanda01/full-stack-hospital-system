@@ -82,7 +82,6 @@ def _bashekim_izinleri() -> dict[str, Kapsam]:
         {
             "personel:onayla": Kapsam.GLOBAL,
             "denetim:goruntule": Kapsam.GLOBAL,
-            "denetim:detay": Kapsam.GLOBAL,
             "bashekim:ozet": Kapsam.GLOBAL,
             "mhrs:yonet": Kapsam.GLOBAL,
             "acil:triyaj": Kapsam.GLOBAL,
