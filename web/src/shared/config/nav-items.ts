@@ -74,7 +74,7 @@ function asSingleGroup(items: NavItem[]): NavGroup[] {
 }
 
 const ADMIN_ITEMS: NavItem[] = [
-  { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+  { label: "Dashboard", path: "/admin/ozet", icon: LayoutDashboard },
   { label: "Kullanıcılar", path: "/admin/kullanicilar", icon: Users },
   { label: "Erişim onayları", path: "/admin/erisim-onaylari", icon: UserCheck },
   { label: "Personel", path: "/admin/personel", icon: IdCard },
@@ -103,7 +103,7 @@ const ADMIN_ITEMS: NavItem[] = [
 
 function mudurItems(root: "/mudur"): NavItem[] {
   return [
-    { label: "Dashboard", path: root, icon: LayoutDashboard },
+    { label: "Dashboard", path: `${root}/ozet`, icon: LayoutDashboard },
     { label: "Personel", path: `${root}/personel`, icon: IdCard },
     { label: "Doktorlar", path: `${root}/doktorlar`, icon: Stethoscope },
     { label: "Departmanlar", path: `${root}/departmanlar`, icon: Building2 },
@@ -133,7 +133,7 @@ function bashekimGroups(): NavGroup[] {
   return [
     {
       items: [
-        { label: "Dashboard", path: root, icon: LayoutDashboard },
+        { label: "Dashboard", path: `${root}/ozet`, icon: LayoutDashboard },
         { label: "Erişim onayları", path: `${root}/erisim-onaylari`, icon: UserCheck },
         { label: "Personel", path: `${root}/personel`, icon: IdCard },
         { label: "Doktorlar", path: `${root}/doktorlar`, icon: Stethoscope },

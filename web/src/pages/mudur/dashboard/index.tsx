@@ -1,5 +1,8 @@
-import { YonetimDashboardPage } from "@/pages/ortak/yonetim-dashboard";
+/** @deprecated Use MudurDashboardLayout + tab routes */
+import { YonetimDashboardOzetTab } from "@/pages/ortak/yonetim-dashboard/tabs/OzetTab";
 
 export function MudurDashboardPage() {
-  return <YonetimDashboardPage root="/mudur" />;
+  return <YonetimDashboardOzetTab root="/mudur" />;
 }
+
+export { MudurDashboardLayout } from "./MudurDashboardLayout";

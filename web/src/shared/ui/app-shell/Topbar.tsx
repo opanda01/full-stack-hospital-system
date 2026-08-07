@@ -9,6 +9,7 @@ import { ROL_ETIKET } from "@/shared/config/nav-items";
 import { api } from "@/shared/api";
 import { LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
+import { InstitutionEmblem } from "@/shared/ui/InstitutionEmblem";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -22,6 +23,8 @@ import {
 type TopbarProps = {
   navItems: NavItem[];
   currentUser: CurrentUser;
+  domainLabel?: string;
+  showBrand?: boolean;
 };
 
 type Bildirim = {
@@ -51,7 +54,7 @@ function vardiyaEtiketi(d: Date) {
   return "Gece Vardiyası";
 }
 
-export function Topbar({ navItems, currentUser }: TopbarProps) {
+export function Topbar({ navItems, currentUser, showBrand }: TopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
@@ -119,38 +122,61 @@ export function Topbar({ navItems, currentUser }: TopbarProps) {
   });
 
   return (
-    <header className="flex shrink-0 flex-col gap-2 border-b pb-3 sm:flex-row sm:items-center sm:justify-between"
-      style={{ borderColor: "color-mix(in srgb, var(--text-secondary) 15%, transparent)" }}
+    <header
+      className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      aria-label={showBrand ? pageTitle : undefined}
     >
-      <div className="min-w-0">
-        {breadcrumbs.length > 1 ? (
-          <nav
-            className="mb-1 flex flex-wrap items-center gap-1 text-[11px] uppercase tracking-wide"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="Konum"
-          >
-            {breadcrumbs.map((c, i) => (
-              <span key={c.path} className="flex items-center gap-1">
-                {i > 0 ? (
-                  <ChevronRight className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
-                ) : null}
-                {i < breadcrumbs.length - 1 ? (
-                  <Link
-                    to={c.path}
-                    className="hover:text-[color:var(--text-primary)]"
-                  >
-                    {c.label}
-                  </Link>
-                ) : (
-                  <span className="text-[color:var(--text-primary)]">{c.label}</span>
-                )}
-              </span>
-            ))}
-          </nav>
-        ) : (
-          <p className="page-eyebrow mb-0.5">Bilgi Yönetim Sistemi</p>
-        )}
-        <h1 className="page-title truncate">{pageTitle}</h1>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {showBrand ? (
+          <div className="flex shrink-0 items-center gap-2.5">
+            <div
+              className="brand-header-panel-subtle flex h-9 w-9 items-center justify-center rounded-lg"
+              aria-hidden
+            >
+              <InstitutionEmblem className="h-5 w-5 text-white" />
+            </div>
+            <div className="hidden leading-tight md:block">
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">
+                T.C. Sağlık Bakanlığı
+              </p>
+              <p className="text-xs font-semibold text-[color:var(--text-primary)]">
+                Devlet Hastanesi
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {!showBrand ? (
+          <div className="min-w-0 flex-1">
+            {breadcrumbs.length > 1 ? (
+              <nav
+                className="mb-1 flex flex-wrap items-center gap-1 text-[11px] uppercase tracking-wide"
+                style={{ color: "var(--text-secondary)" }}
+                aria-label="Konum"
+              >
+                {breadcrumbs.map((c, i) => (
+                  <span key={c.path} className="flex items-center gap-1">
+                    {i > 0 ? (
+                      <ChevronRight className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                    ) : null}
+                    {i < breadcrumbs.length - 1 ? (
+                      <Link
+                        to={c.path}
+                        className="hover:text-[color:var(--text-primary)]"
+                      >
+                        {c.label}
+                      </Link>
+                    ) : (
+                      <span className="text-[color:var(--text-primary)]">{c.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            ) : (
+              <p className="page-eyebrow mb-0.5">Bilgi Yönetim Sistemi</p>
+            )}
+            <h1 className="page-title truncate text-lg sm:text-xl">{pageTitle}</h1>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
