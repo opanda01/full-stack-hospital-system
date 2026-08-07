@@ -25,7 +25,7 @@ export function QuickLinkGrid({ items }: QuickLinkGridProps) {
           <Link
             key={item.to}
             to={item.to}
-            className="group flex items-start gap-3 rounded-lg border p-4 transition-colors corporate-panel hover:border-[color:var(--nav-active-bg)]"
+            className="group flex items-start gap-3 rounded-lg border p-4 transition-colors corporate-panel hover:border-[color:var(--nav-active-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--border-accent)] focus-visible:ring-offset-2"
             style={{
               background: "var(--panel-inset-bg)",
               borderColor:

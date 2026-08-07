@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import not_
-from sqlmodel import Session, select
+from fastapi import HTTPException
+from sqlalchemy import func, not_
+from sqlmodel import Session, col, select
 
 from app.core.batch_load import batch_by_ids
 from app.core.enums import Rol
@@ -9,11 +10,17 @@ from app.core.pagination import Page, make_page, paginate
 from app.features.kullanicilar.models import Kullanici
 from app.features.sikayet_oneri.models import SikayetOneri
 from app.features.sikayet_oneri.schemas import (
+    SikayetDurum,
+    SikayetDurumGuncelle,
     SikayetKaynak,
     SikayetOneriCreate,
     SikayetOneriRead,
+    SikayetOzet,
     SikayetSiralama,
 )
+
+BEKLEYEN_DURUMLAR = frozenset({SikayetDurum.ACIK.value, SikayetDurum.INCELENIYOR.value})
+COZULEN_DURUMLAR = frozenset({SikayetDurum.COZULDU.value, SikayetDurum.REDDEDILDI.value})
 
 
 def kaynak_grubu_for_rol(rol: Rol | str) -> SikayetKaynak:
@@ -119,10 +126,48 @@ def create_sikayet(
         gonderen_kullanici_id=current_user.id,
         tur=data.tur.upper(),
         icerik=data.icerik,
-        durum="ACIK",
+        durum=SikayetDurum.ACIK.value,
     )
     session.add(kayit)
     session.commit()
     session.refresh(kayit)
     kullanicilar = batch_by_ids(session, Kullanici, {current_user.id})
     return _to_read(kayit, kullanicilar)
+
+
+def update_durum(
+    session: Session,
+    sikayet_id: int,
+    body: SikayetDurumGuncelle,
+    current_user: Kullanici,
+) -> SikayetOneriRead:
+    del current_user  # not persisted yet; reserved for audit trail
+    del body.durum_notu
+    kayit = session.get(SikayetOneri, sikayet_id)
+    if kayit is None:
+        raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
+    kayit.durum = body.durum.value
+    session.add(kayit)
+    session.commit()
+    session.refresh(kayit)
+    kullanicilar = batch_by_ids(session, Kullanici, {kayit.gonderen_kullanici_id})
+    return _to_read(kayit, kullanicilar)
+
+
+def get_ozet(session: Session) -> SikayetOzet:
+    toplam = session.exec(select(func.count()).select_from(SikayetOneri)).one()
+    bekleyen = session.exec(
+        select(func.count())
+        .select_from(SikayetOneri)
+        .where(col(SikayetOneri.durum).in_(tuple(BEKLEYEN_DURUMLAR)))
+    ).one()
+    cozulen = session.exec(
+        select(func.count())
+        .select_from(SikayetOneri)
+        .where(col(SikayetOneri.durum).in_(tuple(COZULEN_DURUMLAR)))
+    ).one()
+    return SikayetOzet(
+        toplam=int(toplam or 0),
+        bekleyen=int(bekleyen or 0),
+        cozulen=int(cozulen or 0),
+    )

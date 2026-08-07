@@ -15,8 +15,6 @@ export type DashboardMetric = {
   statusBadge?: { label: string; variant?: "kritik" | "acil" | "beklemede" | "tamamlandi" | "iptal" };
 };
 
-const RENK_SIRASI: MetricCardRenk[] = ["success", "accent", "warning", "notr"];
-
 type RoleDashboardProps = {
   metrics: DashboardMetric[];
   /** Özel alt panel; verilmezse kurumsal placeholder gösterilir */
@@ -82,13 +80,13 @@ export function RoleDashboard({ metrics, altPanel }: RoleDashboardProps) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-        {metrics.map((m, i) => (
+        {metrics.map((m) => (
           <MetricCard
             key={m.label}
             label={m.label}
             value={m.value}
             icon={m.icon}
-            renk={m.renk ?? RENK_SIRASI[i % RENK_SIRASI.length]}
+            renk={m.renk ?? "notr"}
             to={m.to}
             trend={m.trend}
             statusBadge={m.statusBadge}

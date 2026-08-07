@@ -5,14 +5,17 @@ import {
 } from "lucide-react";
 import { DashboardGrid, DashboardSection } from "@/shared/ui/dashboard";
 import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { renkKuyrukSayaci } from "@/shared/ui/app-shell/metricCardSemantics";
 import { useYonetimDashboardData } from "@/features/dashboard/hooks/useYonetimDashboardData";
-import { pageTotal } from "@/shared/lib";
 
 type Props = { root: "/mudur" | "/bashekim" };
 
 export function YonetimDashboardBekleyenlerTab({ root }: Props) {
-  const { loading, bugunRandevu, acikTemizlik, sikayetPage } =
+  const { loading, bugunRandevu, acikTemizlik, sikayetOzet } =
     useYonetimDashboardData(root);
+
+  const bekleyenSikayet = sikayetOzet.data?.bekleyen;
+  const sikayetKartYukleniyor = loading || sikayetOzet.isLoading;
 
   return (
     <div className="space-y-6">
@@ -33,9 +36,10 @@ export function YonetimDashboardBekleyenlerTab({ root }: Props) {
         />
         <MetricCard
           label="Şikayet / öneri"
-          value={loading ? "…" : pageTotal(sikayetPage.data ?? [])}
+          value={sikayetKartYukleniyor ? "…" : (bekleyenSikayet ?? 0)}
           icon={MessageSquareWarning}
-          renk="warning"
+          renk={renkKuyrukSayaci(bekleyenSikayet ?? 0, sikayetKartYukleniyor)}
+          emptyHint="Bekleyen şikayet yok"
           to={`${root}/sikayet`}
         />
       </DashboardGrid>

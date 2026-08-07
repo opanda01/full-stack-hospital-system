@@ -4,6 +4,12 @@ import { AppShell, Badge, Button, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
 import { useAuthStore } from "@/shared/auth";
 import {
+  SIKAYET_DURUM_OPTIONS,
+  sikayetDurumBadgeVariant,
+  sikayetDurumLabel,
+  type SikayetDurum,
+} from "@/features/sikayet-oneri/types";
+import {
   formatIstanbulDateTime,
   pageTotal,
   unwrapPage,
@@ -38,9 +44,15 @@ const KAYNAK_SIRASI: SikayetKaynak[] = ["HASTA", "DOKTOR", "PERSONEL"];
 function SikayetListe({
   items,
   siralama,
+  canEdit,
+  onDurumDegistir,
+  durumGuncelleniyorId,
 }: {
   items: Sikayet[];
   siralama: SikayetSiralama;
+  canEdit: boolean;
+  onDurumDegistir?: (id: number, durum: SikayetDurum) => void;
+  durumGuncelleniyorId?: number | null;
 }) {
   const sorted = useMemo(() => {
     const copy = [...items];
@@ -78,9 +90,26 @@ function SikayetListe({
             <Badge variant={s.tur === "ONERI" ? "tamamlandi" : "beklemede"}>
               {s.tur === "ONERI" ? "Öneri" : "Şikayet"}
             </Badge>
-            <Badge variant={s.durum === "ACIK" ? "acil" : "iptal"}>
-              {s.durum}
+            <Badge variant={sikayetDurumBadgeVariant(s.durum)}>
+              {sikayetDurumLabel(s.durum)}
             </Badge>
+            {canEdit && onDurumDegistir ? (
+              <select
+                className="ml-auto rounded border px-2 py-1 text-xs"
+                value={s.durum}
+                disabled={durumGuncelleniyorId === s.id}
+                aria-label={`Kayıt ${s.id} durumu`}
+                onChange={(e) =>
+                  onDurumDegistir(s.id, e.target.value as SikayetDurum)
+                }
+              >
+                {SIKAYET_DURUM_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <span className="text-xs text-muted-foreground">
               {formatIstanbulDateTime(s.tarih)}
             </span>
@@ -125,6 +154,9 @@ function SikayetKaynakBolumu({
   durum,
   tarihBas,
   tarihBit,
+  canEdit,
+  onDurumDegistir,
+  durumGuncelleniyorId,
 }: {
   kaynak: SikayetKaynak;
   siralama: SikayetSiralama;
@@ -132,6 +164,9 @@ function SikayetKaynakBolumu({
   durum: string;
   tarihBas: string;
   tarihBit: string;
+  canEdit: boolean;
+  onDurumDegistir?: (id: number, durum: SikayetDurum) => void;
+  durumGuncelleniyorId?: number | null;
 }) {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useSikayetQuery(true, {
@@ -158,7 +193,13 @@ function SikayetKaynakBolumu({
         <p className="text-sm text-muted-foreground">Yükleniyor…</p>
       ) : (
         <>
-          <SikayetListe items={liste} siralama={siralama} />
+          <SikayetListe
+            items={liste}
+            siralama={siralama}
+            canEdit={canEdit}
+            onDurumDegistir={onDurumDegistir}
+            durumGuncelleniyorId={durumGuncelleniyorId}
+          />
           <ListPager
             page={page}
             pageSize={PAGE_SIZE}
@@ -177,11 +218,14 @@ export function SikayetOneriPage() {
     s.hasRole("ADMIN", "BASHEKIM", "MUDUR"),
   );
   const [page, setPage] = useState(1);
+  const [durumGuncelleniyorId, setDurumGuncelleniyorId] = useState<number | null>(
+    null,
+  );
 
   const [siralama, setSiralama] = useState<SikayetSiralama>("yeni_once");
   const [kaynak, setKaynak] = useState<"" | SikayetKaynak>("");
   const [tur, setTur] = useState<"" | "SIKAYET" | "ONERI">("");
-  const [durum, setDurum] = useState<"" | "ACIK" | "KAPALI">("");
+  const [durum, setDurum] = useState<"" | SikayetDurum>("");
   const [tarihBas, setTarihBas] = useState("");
   const [tarihBit, setTarihBit] = useState("");
 
@@ -202,12 +246,29 @@ export function SikayetOneriPage() {
   const liste = unwrapPage(data ?? []);
   const total = pageTotal(data ?? []);
 
+  const guncelleDurum = useMutation({
+    mutationFn: ({ id, durum: yeniDurum }: { id: number; durum: SikayetDurum }) =>
+      api.patch(`/sikayet-oneri/${id}/durum`, { durum: yeniDurum }),
+    onMutate: ({ id }) => setDurumGuncelleniyorId(id),
+    onSettled: () => setDurumGuncelleniyorId(null),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sikayetler"] });
+      qc.invalidateQueries({ queryKey: ["sikayet-ozet"] });
+      qc.invalidateQueries({ queryKey: ["sikayet-oneri-recent"] });
+    },
+  });
+
+  const onDurumDegistir = (id: number, yeniDurum: SikayetDurum) => {
+    guncelleDurum.mutate({ id, durum: yeniDurum });
+  };
+
   const gonder = useMutation({
     mutationFn: async () =>
       api.post("/sikayet-oneri/", { tur: formTur, icerik }),
     onSuccess: () => {
       setIcerik("");
       qc.invalidateQueries({ queryKey: ["sikayetler"] });
+      qc.invalidateQueries({ queryKey: ["sikayet-ozet"] });
     },
   });
 
@@ -367,8 +428,11 @@ export function SikayetOneriPage() {
                   }}
                 >
                   <option value="">Tüm durumlar</option>
-                  <option value="ACIK">Açık</option>
-                  <option value="KAPALI">Kapalı</option>
+                  {SIKAYET_DURUM_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -379,7 +443,13 @@ export function SikayetOneriPage() {
               <p className="text-sm text-muted-foreground">Yükleniyor…</p>
             ) : (
               <>
-                <SikayetListe items={liste} siralama={siralama} />
+                <SikayetListe
+                  items={liste}
+                  siralama={siralama}
+                  canEdit
+                  onDurumDegistir={onDurumDegistir}
+                  durumGuncelleniyorId={durumGuncelleniyorId}
+                />
                 <ListPager
                   page={page}
                   pageSize={PAGE_SIZE}
@@ -399,6 +469,9 @@ export function SikayetOneriPage() {
                   durum={durum}
                   tarihBas={tarihBas}
                   tarihBit={tarihBit}
+                  canEdit
+                  onDurumDegistir={onDurumDegistir}
+                  durumGuncelleniyorId={durumGuncelleniyorId}
                 />
               ))}
             </div>

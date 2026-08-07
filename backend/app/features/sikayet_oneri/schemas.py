@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SikayetKaynak(str, Enum):
@@ -13,6 +13,26 @@ class SikayetKaynak(str, Enum):
 class SikayetSiralama(str, Enum):
     YENI_ONCE = "yeni_once"
     ESKI_ONCE = "eski_once"
+
+
+class SikayetDurum(str, Enum):
+    ACIK = "ACIK"
+    INCELENIYOR = "INCELENIYOR"
+    COZULDU = "COZULDU"
+    REDDEDILDI = "REDDEDILDI"
+
+
+class SikayetDurumGuncelle(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    durum: SikayetDurum
+    durum_notu: str | None = Field(default=None, max_length=500, alias="not")
+
+
+class SikayetOzet(BaseModel):
+    toplam: int
+    bekleyen: int
+    cozulen: int
 
 
 class SikayetOneriCreate(BaseModel):

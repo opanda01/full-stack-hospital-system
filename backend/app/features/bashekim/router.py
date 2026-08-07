@@ -18,6 +18,7 @@ from app.features.auth.models import DenetimKaydi
 from app.features.kullanicilar.models import Kullanici
 from app.features.randevular.models import Randevu
 from app.features.sikayet_oneri.models import SikayetOneri
+from app.features.sikayet_oneri.service import BEKLEYEN_DURUMLAR
 from app.features.temizlik_gorevleri.models import TemizlikGorevi
 from app.features.tetkikler.models import Tetkik
 
@@ -111,7 +112,11 @@ def _build_ozet(session: Session) -> BashekimOzet:
         )
     ).one()
 
-    acik_sikayet = session.exec(select(func.count()).select_from(SikayetOneri)).one()
+    acik_sikayet = session.exec(
+        select(func.count())
+        .select_from(SikayetOneri)
+        .where(col(SikayetOneri.durum).in_(tuple(BEKLEYEN_DURUMLAR)))
+    ).one()
 
     bekleyen_tetkik = session.exec(
         select(func.count())

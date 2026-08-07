@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/shared/api";
+import type { SikayetOzet } from "@/features/sikayet-oneri/types";
 import {
   LOOKUP_PAGE_SIZE,
   unwrapPage,
@@ -29,14 +30,10 @@ export function useAdminDashboardData(options?: { enabled?: boolean }) {
     enabled,
   });
 
-  const sikayetPage = useQuery({
-    queryKey: ["sikayet-oneri-count"],
+  const sikayetOzet = useQuery({
+    queryKey: ["sikayet-ozet"],
     queryFn: async () =>
-      (
-        await api.get<PageResponse<Sikayet>>("/sikayet-oneri/", {
-          params: { page: 1, page_size: 1 },
-        })
-      ).data,
+      (await api.get<SikayetOzet>("/sikayet-oneri/ozet")).data,
     enabled,
   });
 
@@ -99,7 +96,7 @@ export function useAdminDashboardData(options?: { enabled?: boolean }) {
 
   return {
     ozet,
-    sikayetPage,
+    sikayetOzet,
     sikayetList,
     hastaPage,
     temizlikler,

@@ -6,26 +6,30 @@ import {
 } from "lucide-react";
 import { DashboardGrid, DashboardSection, QuickLinkGrid } from "@/shared/ui/dashboard";
 import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { renkKuyrukSayaci } from "@/shared/ui/app-shell/metricCardSemantics";
 import { useAdminDashboardData } from "@/features/dashboard/hooks/useAdminDashboardData";
 
 export function AdminDashboardOperasyonTab() {
   const { acikTemizlik, isLoading, ozet } = useAdminDashboardData();
+  const bekleyenRandevu = ozet.data?.randevu_bekleyen ?? 0;
 
   return (
     <div className="space-y-6">
       <DashboardGrid>
         <MetricCard
           label="Açık temizlik"
-          value={acikTemizlik}
+          value={isLoading ? "…" : acikTemizlik}
           icon={Sparkles}
-          renk="warning"
+          renk={renkKuyrukSayaci(acikTemizlik, isLoading)}
+          emptyHint="Açık görev yok"
           to="/admin/temizlik"
         />
         <MetricCard
           label="Bekleyen randevu"
-          value={isLoading ? "…" : (ozet.data?.randevu_bekleyen ?? 0)}
+          value={isLoading ? "…" : bekleyenRandevu}
           icon={CalendarDays}
-          renk="accent"
+          renk={renkKuyrukSayaci(bekleyenRandevu, isLoading)}
+          emptyHint="Bekleyen yok"
           to="/admin/randevular"
         />
       </DashboardGrid>
