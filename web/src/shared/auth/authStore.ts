@@ -188,9 +188,9 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export const ROLE_HOME: Record<string, string> = {
-  ADMIN: "/admin",
-  BASHEKIM: "/bashekim",
-  MUDUR: "/mudur",
+  ADMIN: "/admin/ozet",
+  BASHEKIM: "/bashekim/ozet",
+  MUDUR: "/mudur/ozet",
   DOKTOR: "/doktor",
   HEMSIRE: "/hemsire",
   EBE: "/ebe",

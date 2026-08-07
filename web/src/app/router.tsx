@@ -22,7 +22,14 @@ import { SifreDegistirPage } from "@/pages/ortak/sifre-degistir";
 import { SifreSifirlaPage } from "@/pages/ortak/sifre-sifirla";
 import { KvkkOnayPage } from "@/pages/ortak/kvkk-onay";
 
-import { AdminDashboardPage } from "@/pages/admin/dashboard";
+import {
+  AdminDashboardLayout,
+  AdminDashboardOzetTab,
+  AdminDashboardBekleyenlerTab,
+  AdminDashboardOperasyonTab,
+  AdminDashboardIkTab,
+  AdminDashboardSistemTab,
+} from "@/pages/admin/dashboard";
 import { KullaniciYonetimiPage } from "@/pages/admin/kullanicilar";
 import { PersonelYonetimiPage } from "@/pages/admin/personel";
 import { DepartmanYonetimiPage } from "@/pages/admin/departmanlar";
@@ -74,7 +81,13 @@ import { RadyologRadyolojiPage } from "@/pages/radyolog/radyoloji";
 import { TemizlikDashboardPage } from "@/pages/temizlik/dashboard";
 import { TemizlikGorevlerimPage } from "@/pages/temizlik/gorevlerim";
 
-import { BashekimDashboardPage, BashekimErisimOnaylariPage } from "@/pages/bashekim/dashboard";
+import {
+  BashekimDashboardLayout,
+  BashekimDashboardOzetTab,
+  BashekimDashboardBekleyenlerTab,
+  BashekimDashboardKurumsalTab,
+  BashekimErisimOnaylariPage,
+} from "@/pages/bashekim/dashboard";
 import { BashekimMhrsPage } from "@/pages/bashekim/mhrs";
 import { BashekimEntegrasyonlarPage } from "@/pages/bashekim/entegrasyonlar";
 import { BashekimKlinikOnaylarPage } from "@/pages/bashekim/klinik-onaylar";
@@ -85,7 +98,14 @@ import {
   BashekimYetkiDuyurulariPage,
   BashekimSistemGozetimPage,
 } from "@/pages/bashekim/yetki";
-import { MudurDashboardPage } from "@/pages/mudur/dashboard";
+import {
+  MudurDashboardLayout,
+} from "@/pages/mudur/dashboard";
+import {
+  YonetimDashboardOzetTab,
+  YonetimDashboardBekleyenlerTab,
+  YonetimDashboardOperasyonTab,
+} from "@/pages/ortak/yonetim-dashboard";
 import { EbeDashboardPage } from "@/pages/ebe/dashboard";
 import { GuvenlikDashboardPage } from "@/pages/guvenlik/dashboard";
 import { GuvenlikOlaylarPage } from "@/pages/guvenlik/olaylar";
@@ -151,7 +171,14 @@ export function AppRouter() {
         <Route path="/kvkk-onay" element={<KvkkOnayPage />} />
         {/* ADMIN */}
         <Route path="/admin" element={<RoleLayoutRoute rol="ADMIN" />}>
-          <Route index element={<AdminDashboardPage />} />
+          <Route element={<AdminDashboardLayout />}>
+            <Route index element={<Navigate to="ozet" replace />} />
+            <Route path="ozet" element={<AdminDashboardOzetTab />} />
+            <Route path="bekleyenler" element={<AdminDashboardBekleyenlerTab />} />
+            <Route path="operasyon" element={<AdminDashboardOperasyonTab />} />
+            <Route path="insan-kaynaklari" element={<AdminDashboardIkTab />} />
+            <Route path="sistem" element={<AdminDashboardSistemTab />} />
+          </Route>
           <Route path="kullanicilar" element={<KullaniciYonetimiPage />} />
           <Route path="erisim-onaylari" element={<BashekimErisimOnaylariPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
@@ -184,7 +211,13 @@ export function AppRouter() {
 
         {/* BASHEKIM */}
         <Route path="/bashekim" element={<RoleLayoutRoute rol="BASHEKIM" />}>
-          <Route index element={<BashekimDashboardPage />} />
+          <Route element={<BashekimDashboardLayout />}>
+            <Route index element={<Navigate to="ozet" replace />} />
+            <Route path="ozet" element={<BashekimDashboardOzetTab />} />
+            <Route path="bekleyenler" element={<BashekimDashboardBekleyenlerTab />} />
+            <Route path="operasyon" element={<YonetimDashboardOperasyonTab root="/bashekim" />} />
+            <Route path="kurumsal" element={<BashekimDashboardKurumsalTab />} />
+          </Route>
           <Route path="erisim-onaylari" element={<BashekimErisimOnaylariPage />} />
           <Route path="personel" element={<PersonelYonetimiPage />} />
           <Route path="doktorlar" element={<AdminDoktorlarPage />} />
@@ -219,7 +252,12 @@ export function AppRouter() {
 
         {/* MUDUR */}
         <Route path="/mudur" element={<RoleLayoutRoute rol="MUDUR" />}>
-          <Route index element={<MudurDashboardPage />} />
+          <Route element={<MudurDashboardLayout />}>
+            <Route index element={<Navigate to="ozet" replace />} />
+            <Route path="ozet" element={<YonetimDashboardOzetTab root="/mudur" />} />
+            <Route path="bekleyenler" element={<YonetimDashboardBekleyenlerTab root="/mudur" />} />
+            <Route path="operasyon" element={<YonetimDashboardOperasyonTab root="/mudur" />} />
+          </Route>
           <Route path="personel" element={<PersonelYonetimiPage />} />
           <Route path="doktorlar" element={<AdminDoktorlarPage />} />
           <Route path="departmanlar" element={<DepartmanYonetimiPage />}>
