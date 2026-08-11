@@ -134,4 +134,15 @@ python -m app.core.seed_cli
 
 Demo şifre: `Test1234!` — web giriş: kullanıcı adı `admin`, `doktor`, `hemsire`… veya e-posta (`admin@hastane.example.com`, `doktor@hastane.example.com`, …); sicil `ADM-001`, `D-001`, `H-001` seed sonrası geçerlidir. Seed: `docker compose exec backend /opt/venv/bin/python -m app.core.seed_cli`
 
+## Demo senaryoları (mock, prod yok)
+
+| Senaryo | Rol | Adımlar |
+|---------|-----|---------|
+| Randevu → muayene → tetkik | `doktor` | Randevularım → Muayene kaydı (bildirim bayrakları) → Tetkik iste |
+| Laborant kuyruk | `laborant` | Bekleyen tetkikler → Sonuç girişi |
+| Mock entegrasyon | `bashekim` | Entegrasyonlar → outbox listesi / yeniden dene |
+| Zorunlu bildirim | `bashekim` | Zorunlu bildirimler → Mock gönder → Outbox’ta `BBY_MOCK` |
+| Yönetim analitik | `bashekim` | Dashboard → Analitik sekmesi (grafikler) |
+| Hasta PHR | Mobil OTP | Özet → Aşı takvimim / Aktif ilaçlarım |
+
 Shared types: [`packages/shared-types/README.md`](packages/shared-types/README.md) · Production: [`docs/PRODUCTION.md`](docs/PRODUCTION.md)

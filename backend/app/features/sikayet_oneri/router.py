@@ -12,6 +12,8 @@ from app.features.sikayet_oneri.schemas import (
     SikayetKaynak,
     SikayetOneriCreate,
     SikayetOneriRead,
+    SikayetOzet,
+    SikayetDurumGuncelle,
     SikayetSiralama,
 )
 
@@ -43,6 +45,14 @@ def list_sikayet_oneri(
     )
 
 
+@router.get("/ozet", response_model=SikayetOzet)
+def get_sikayet_ozet(
+    session: Session = Depends(get_session),
+    _user=Depends(require_permission("sikayet_oneri:tumunu_goruntule")),
+):
+    return sikayet_service.get_ozet(session)
+
+
 @router.post("/", response_model=SikayetOneriRead, status_code=status.HTTP_201_CREATED)
 def create_sikayet_oneri(
     body: SikayetOneriCreate,
@@ -64,3 +74,13 @@ def list_benim_sikayetler(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+
+
+@router.patch("/{sikayet_id}/durum", response_model=SikayetOneriRead)
+def update_sikayet_durum(
+    sikayet_id: int,
+    body: SikayetDurumGuncelle,
+    current_user: Kullanici = Depends(require_permission("sikayet_oneri:durum_guncelle")),
+    session: Session = Depends(get_session),
+):
+    return sikayet_service.update_durum(session, sikayet_id, body, current_user)

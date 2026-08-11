@@ -62,7 +62,7 @@ export function AyarlarPage() {
       <section className="rounded-xl border border-border bg-card p-5">
         <h3 className="mb-3 text-base font-semibold">Hesap</h3>
         <Link
-          to="/profil"
+          to={`${root}/profil`}
           className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-muted"
         >
           <UserCircle className="h-4 w-4 shrink-0" />

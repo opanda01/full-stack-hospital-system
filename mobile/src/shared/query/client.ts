@@ -28,4 +28,6 @@ export const queryKeys = {
   belge: (kaynak: string, id: number) => ["hasta", "belge", kaynak, id] as const,
   sikayetBenim: ["hasta", "sikayet", "benim"] as const,
   randevuAlBootstrap: ["hasta", "randevu-al", "bootstrap"] as const,
+  aktifIlaclar: ["hasta", "aktif-ilaclar"] as const,
+  asilar: ["hasta", "asilar"] as const,
 };

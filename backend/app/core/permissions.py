@@ -40,6 +40,7 @@ def _mudur_izinleri() -> dict[str, Kapsam]:
         "yatak:durum_guncelle": Kapsam.DEPARTMANIM,
         "sikayet_oneri:gonder": Kapsam.GLOBAL,
         "sikayet_oneri:tumunu_goruntule": Kapsam.GLOBAL,
+        "sikayet_oneri:durum_guncelle": Kapsam.GLOBAL,
         "yatis:goruntule": Kapsam.GLOBAL,
         "yatis:islem": Kapsam.GLOBAL,
         "ilac_talep:goruntule": Kapsam.GLOBAL,

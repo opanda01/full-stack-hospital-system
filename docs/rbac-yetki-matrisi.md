@@ -92,6 +92,7 @@ Semboller:
 | Şikayet gönder | `sikayet_oneri:gonder` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Şikayet kendi kayıtları | `sikayet_oneri:benim` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | *kendi* |
 | Şikayet tümünü gör | `sikayet_oneri:tumunu_goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Şikayet durum güncelle | `sikayet_oneri:durum_guncelle` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Güvenlik olay görüntüle | `guvenlik_olay:goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Güvenlik olay oluştur/güncelle | `guvenlik_olay:olustur` / `:guncelle` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Ziyaretçi / kayıp eşya / devriye görüntüle | `guvenlik_ziyaretci:goruntule` / `kayip_esya:goruntule` / `guvenlik_devriye:goruntule` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |

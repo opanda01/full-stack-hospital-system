@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.db import get_session
-from app.core.enums import OturumTipi
+from app.core.enums import OturumTipi, Rol
 from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.request_ip import istemci_ip_al
-from app.core.security import require_permission
+from app.core.security import require_permission, require_role
 from app.features.kullanicilar.models import Kullanici
 from app.features.muayeneler import service as muayene_service
 from app.features.muayeneler.schemas import MuayeneCreate, MuayeneRead, MuayeneUpdate
@@ -64,6 +64,34 @@ def list_muayeneler(
         page_size=pagination.page_size,
         oturum_tipi=getattr(request.state, "oturum_tipi", OturumTipi.PERSONEL),
     )
+
+
+@router.get("/zorunlu-bildirimler", response_model=list[MuayeneRead])
+def list_zorunlu_bildirimler(
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(
+        require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)
+    ),
+):
+    return muayene_service.list_zorunlu_bildirimler(session)
+
+
+@router.post("/{muayene_id}/zorunlu-bildirim-gonder")
+def zorunlu_bildirim_gonder(
+    muayene_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(
+        require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)
+    ),
+):
+    ref = muayene_service.zorunlu_bildirim_mock_gonder(
+        session,
+        muayene_id,
+        actor_id=current_user.id,
+        ip_adresi=istemci_ip_al(request),
+    )
+    return {"dis_referans": ref, "durum": "GONDERILDI"}
 
 
 @router.get("/{muayene_id}", response_model=MuayeneRead)

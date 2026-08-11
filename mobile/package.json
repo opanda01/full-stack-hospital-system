@@ -11,7 +11,7 @@
     "android": "node ./scripts/start-expo.cjs --android",
     "ios": "node ./scripts/start-expo.cjs --ios",
     "web": "expo start --web",
-    "lint": "echo \"TODO: lint\"",
+    "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

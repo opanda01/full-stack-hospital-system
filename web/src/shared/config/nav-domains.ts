@@ -7,6 +7,11 @@ import {
   Settings,
   Shield,
   FileSearch,
+  ListTodo,
+  Scan,
+  UserCircle,
+  ClipboardList,
+  FlaskConical,
 } from "lucide-react";
 import type { NavGroup, NavItem, Rol } from "@/shared/config/nav-items";
 import { NAV_GROUPS, flattenNav } from "@/shared/config/nav-items";
@@ -20,12 +25,151 @@ export type NavDomain = {
   groups: NavGroup[];
 };
 
-const PILOT_ROLES: Rol[] = ["ADMIN", "BASHEKIM", "MUDUR"];
+const ALL_ROLES: Rol[] = [
+  "ADMIN",
+  "BASHEKIM",
+  "MUDUR",
+  "DOKTOR",
+  "HEMSIRE",
+  "EBE",
+  "LABORANT",
+  "RADYOLOG",
+  "TEMIZLIK_PERSONELI",
+  "GUVENLIK",
+  "IDARI_PERSONEL",
+];
 
 function pick(items: NavItem[], paths: string[]): NavGroup[] {
   const set = new Set(paths);
   const picked = items.filter((i) => set.has(i.path));
   return picked.length ? [{ items: picked }] : [];
+}
+
+function pathsFromGroup(group: NavGroup): string[] {
+  return group.items.map((i) => i.path);
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function hesapDomain(root: string, extraPaths: string[] = []): NavDomain {
+  const paths = Array.from(
+    new Set([`${root}/profil`, `${root}/ayarlar`, ...extraPaths]),
+  );
+  return {
+    id: "hesap",
+    label: "Hesap",
+    icon: Settings,
+    paths,
+    groups: [
+      {
+        items: [
+          { label: "Profilim", path: `${root}/profil`, icon: UserCircle },
+          { label: "Ayarlar", path: `${root}/ayarlar`, icon: Settings },
+        ],
+      },
+    ],
+  };
+}
+
+function splitFlatRoleDomains(
+  rol: Rol,
+  root: string,
+  sections: {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+    paths: string[];
+  }[],
+  hesapExtra: string[] = [],
+): NavDomain[] {
+  const all = flattenNav(NAV_GROUPS[rol]);
+  const dashboardItems = all.filter((i) => i.path === root);
+
+  const domains: NavDomain[] = [
+    {
+      id: "gosterge",
+      label: "Gösterge",
+      icon: LayoutDashboard,
+      paths: [root],
+      groups: dashboardItems.length
+        ? [{ items: dashboardItems }]
+        : [{ items: [{ label: "Dashboard", path: root, icon: LayoutDashboard }] }],
+    },
+    ...sections.map((s) => ({
+      id: s.id,
+      label: s.label,
+      icon: s.icon,
+      paths: s.paths,
+      groups: pick(all, s.paths),
+    })),
+    hesapDomain(root, hesapExtra),
+  ];
+
+  return domains;
+}
+
+function domainsFromLabeledGroups(
+  rol: Rol,
+  dashboardPath: string,
+  hesapExtra: string[] = [],
+): NavDomain[] {
+  const groups = NAV_GROUPS[rol];
+  const root = dashboardPath.split("/").slice(0, 2).join("/") || dashboardPath;
+  const domains: NavDomain[] = [];
+
+  for (const group of groups) {
+    const paths = pathsFromGroup(group);
+    if (paths.length === 0) continue;
+
+    const isDashboard =
+      !group.label &&
+      paths.length === 1 &&
+      paths[0] === dashboardPath;
+
+    const isHesapGroup = paths.every(
+      (p) =>
+        p.includes("/profil") ||
+        p.includes("/ayarlar") ||
+        p.includes("/profilim"),
+    );
+
+    if (isDashboard) {
+      domains.push({
+        id: "gosterge",
+        label: "Gösterge",
+        icon: LayoutDashboard,
+        paths,
+        groups: [group],
+      });
+    } else if (isHesapGroup) {
+      domains.push({
+        id: "hesap",
+        label: "Hesap",
+        icon: Settings,
+        paths: Array.from(new Set([...paths, ...hesapExtra])),
+        groups: [group],
+      });
+    } else {
+      domains.push({
+        id: slugify(group.label ?? group.items[0].label),
+        label: group.label ?? group.items[0].label,
+        icon: group.items[0].icon,
+        paths,
+        groups: [group],
+      });
+    }
+  }
+
+  if (!domains.some((d) => d.id === "hesap")) {
+    domains.push(hesapDomain(root, hesapExtra));
+  }
+
+  return domains;
 }
 
 function adminDomains(): NavDomain[] {
@@ -127,6 +271,7 @@ function adminDomains(): NavDomain[] {
         `${root}/ayarlar`,
         `${root}/denetim`,
         `${root}/rbac`,
+        `${root}/profil`,
       ],
       groups: [
         {
@@ -134,6 +279,7 @@ function adminDomains(): NavDomain[] {
             ...pick(all, [`${root}/sikayet`, `${root}/raporlar`, `${root}/ayarlar`])[0]?.items ?? [],
             { label: "RBAC / yetki", path: `${root}/rbac`, icon: Shield },
             { label: "Denetim", path: `${root}/denetim`, icon: FileSearch },
+            { label: "Profilim", path: `${root}/profil`, icon: UserCircle },
           ],
         },
       ],
@@ -155,7 +301,7 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
         `${root}/ozet`,
         `${root}/bekleyenler`,
         `${root}/operasyon`,
-        ...(includeKurumsal ? [`${root}/kurumsal`] : []),
+        ...(includeKurumsal ? [`${root}/kurumsal`, `${root}/analytics`] : []),
       ],
       groups: [
         {
@@ -164,7 +310,10 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
             { label: "Bekleyenler", path: `${root}/bekleyenler`, icon: LayoutDashboard },
             { label: "Operasyon", path: `${root}/operasyon`, icon: Building2 },
             ...(includeKurumsal
-              ? [{ label: "Kurumsal", path: `${root}/kurumsal`, icon: Building2 }]
+              ? [
+                  { label: "Analitik", path: `${root}/analytics`, icon: Building2 },
+                  { label: "Kurumsal", path: `${root}/kurumsal`, icon: Building2 },
+                ]
               : []),
           ],
         },
@@ -239,15 +388,22 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
         `${root}/ayarlar`,
         `${root}/denetim`,
         `${root}/yetki-matrisi`,
+        `${root}/profil`,
       ],
-      groups: pick(all, [
-        `${root}/sikayet`,
-        `${root}/raporlar`,
-        `${root}/ayarlar`,
-        ...(includeKurumsal
-          ? [`${root}/denetim`, `${root}/yetki-matrisi`]
-          : []),
-      ]),
+      groups: [
+        {
+          items: [
+            ...pick(all, [`${root}/sikayet`, `${root}/raporlar`, `${root}/ayarlar`])[0]?.items ?? [],
+            ...(includeKurumsal
+              ? [
+                  { label: "Denetim", path: `${root}/denetim`, icon: FileSearch },
+                  { label: "Yetki matrisi", path: `${root}/yetki-matrisi`, icon: Shield },
+                ]
+              : []),
+            { label: "Profilim", path: `${root}/profil`, icon: UserCircle },
+          ],
+        },
+      ],
     },
   ];
 
@@ -259,6 +415,7 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
       paths: [
         `${root}/mhrs-kapasite`,
         `${root}/entegrasyonlar`,
+        `${root}/zorunlu-bildirimler`,
         `${root}/eczane`,
         `${root}/faturalandirma`,
         `${root}/doner-sermaye`,
@@ -268,6 +425,7 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
       groups: pick(all, [
         `${root}/mhrs-kapasite`,
         `${root}/entegrasyonlar`,
+        `${root}/zorunlu-bildirimler`,
         `${root}/eczane`,
         `${root}/faturalandirma`,
         `${root}/doner-sermaye`,
@@ -280,18 +438,135 @@ function yonetimDomains(root: "/bashekim" | "/mudur", includeKurumsal: boolean):
   return domains;
 }
 
-export const NAV_DOMAINS: Partial<Record<Rol, NavDomain[]>> = {
+function clinicalCareDomains(root: "/hemsire" | "/ebe"): NavDomain[] {
+  const rol = root === "/hemsire" ? "HEMSIRE" : "EBE";
+  return splitFlatRoleDomains(rol, root, [
+    {
+      id: "klinik",
+      label: "Klinik",
+      icon: HeartPulse,
+      paths: [
+        `${root}/servis-takip`,
+        `${root}/acil-triyaj`,
+        `${root}/yatak-yonetimi`,
+        `${root}/ameliyathane`,
+        `${root}/hasta-arama`,
+        `${root}/order-takip`,
+        `${root}/tetkikler`,
+        `${root}/epikriz`,
+      ],
+    },
+    {
+      id: "is",
+      label: "İş & plan",
+      icon: ListTodo,
+      paths: [
+        `${root}/ilac-talep`,
+        `${root}/gorevler`,
+        `${root}/vardiya-devir`,
+        `${root}/departman-randevulari`,
+        `${root}/nobet`,
+        `${root}/panel`,
+      ],
+    },
+  ]);
+}
+
+function laborantDomains(): NavDomain[] {
+  const root = "/laborant";
+  return splitFlatRoleDomains("LABORANT", root, [
+    {
+      id: "lab",
+      label: "Laboratuvar",
+      icon: FlaskConical,
+      paths: [`${root}/bekleyen`, `${root}/tetkik-sonuc-girisi`],
+    },
+  ]);
+}
+
+function radyologDomains(): NavDomain[] {
+  const root = "/radyolog";
+  const all = flattenNav(NAV_GROUPS.RADYOLOG);
+  return [
+    {
+      id: "radyoloji",
+      label: "Radyoloji",
+      icon: Scan,
+      paths: [root, `${root}/radyoloji`],
+      groups: pick(all, [`${root}/radyoloji`]),
+    },
+    hesapDomain(root),
+  ];
+}
+
+function temizlikDomains(): NavDomain[] {
+  const root = "/temizlik";
+  return splitFlatRoleDomains("TEMIZLIK_PERSONELI", root, [
+    {
+      id: "gorevler",
+      label: "Görevler",
+      icon: ClipboardList,
+      paths: [`${root}/gorevlerim`],
+    },
+  ]);
+}
+
+function guvenlikDomains(): NavDomain[] {
+  const root = "/guvenlik";
+  return splitFlatRoleDomains("GUVENLIK", root, [
+    {
+      id: "guvenlik",
+      label: "Güvenlik",
+      icon: Shield,
+      paths: [
+        `${root}/olaylar`,
+        `${root}/ziyaretciler`,
+        `${root}/kayip-esya`,
+        `${root}/devriyeler`,
+        `${root}/refakatci-sorgula`,
+        `${root}/nobet`,
+        `${root}/sikayet`,
+      ],
+    },
+  ]);
+}
+
+function idariDomains(): NavDomain[] {
+  const root = "/idari";
+  return splitFlatRoleDomains("IDARI_PERSONEL", root, [
+    {
+      id: "kayit",
+      label: "Kayıt",
+      icon: HeartPulse,
+      paths: [`${root}/hasta-kayit`, `${root}/ozel-kimlik-kayit`],
+    },
+  ]);
+}
+
+function doktorDomains(): NavDomain[] {
+  return domainsFromLabeledGroups("DOKTOR", "/doktor", ["/doktor/profil"]);
+}
+
+export const NAV_DOMAINS: Record<Rol, NavDomain[]> = {
   ADMIN: adminDomains(),
   BASHEKIM: yonetimDomains("/bashekim", true),
   MUDUR: yonetimDomains("/mudur", false),
+  DOKTOR: doktorDomains(),
+  HEMSIRE: clinicalCareDomains("/hemsire"),
+  EBE: clinicalCareDomains("/ebe"),
+  LABORANT: laborantDomains(),
+  RADYOLOG: radyologDomains(),
+  TEMIZLIK_PERSONELI: temizlikDomains(),
+  GUVENLIK: guvenlikDomains(),
+  IDARI_PERSONEL: idariDomains(),
 };
 
 export function usesDomainNav(rol: Rol): boolean {
-  return PILOT_ROLES.includes(rol);
+  return ALL_ROLES.includes(rol);
 }
 
-export function domainsForRole(rol: Rol): NavDomain[] | null {
-  return NAV_DOMAINS[rol] ?? null;
+export function domainsForRole(rol: Rol): NavDomain[] {
+  return NAV_DOMAINS[rol];
 }
 
 /** Longest matching path prefix selects the active domain. */

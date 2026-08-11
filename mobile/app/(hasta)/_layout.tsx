@@ -203,6 +203,26 @@ export default function HastaLayout() {
           headerTintColor: "#fff",
         }}
       />
+      <Tabs.Screen
+        name="aktif-ilaclar/index"
+        options={{
+          href: null,
+          title: "Aktif ilaçlarım",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
+      />
+      <Tabs.Screen
+        name="asilar/index"
+        options={{
+          href: null,
+          title: "Aşı takvimim",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
+      />
     </Tabs>
   );
 }

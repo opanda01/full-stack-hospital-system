@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import type { CurrentUser } from "@/shared/auth";
-import type { NavGroup, NavItem } from "@/shared/config/nav-items";
+import type { NavItem } from "@/shared/config/nav-items";
 import type { NavDomain } from "@/shared/config/nav-domains";
 import {
   flattenDomains,
@@ -8,35 +8,29 @@ import {
 } from "@/shared/config/nav-domains";
 import { InPanelShellContext } from "@/shared/ui/panel-shell-context";
 import { PrimaryNav } from "./PrimaryNav";
-import { Sidebar } from "./Sidebar";
+import { SecondaryNav } from "./SecondaryNav";
 import { Topbar } from "./Topbar";
 
 export type AppShellProps = {
   children: React.ReactNode;
-  navGroups: NavGroup[];
-  navDomains?: NavDomain[];
+  navDomains: NavDomain[];
   currentUser: CurrentUser;
 };
 
 export function AppShell({
   children,
-  navGroups,
   navDomains,
   currentUser,
 }: AppShellProps) {
   const { pathname } = useLocation();
-  const domainNav = Boolean(navDomains);
-  const sidebarGroups = navDomains
-    ? resolveNavDomain(pathname, navDomains).groups
-    : navGroups;
 
-  const navItems: NavItem[] = navDomains
-    ? flattenDomains(navDomains)
-    : navGroups.flatMap((g) => g.items);
+  if (!navDomains?.length) {
+    throw new Error("AppShell: navDomains gerekli (sidebar kaldırıldı).");
+  }
 
-  const activeDomain = navDomains
-    ? resolveNavDomain(pathname, navDomains)
-    : undefined;
+  const activeDomain = resolveNavDomain(pathname, navDomains);
+  const navItems: NavItem[] = flattenDomains(navDomains);
+  const showSecondaryNav = activeDomain.id !== "gosterge";
 
   return (
     <InPanelShellContext.Provider value={true}>
@@ -56,28 +50,33 @@ export function AppShell({
             <Topbar
               navItems={navItems}
               currentUser={currentUser}
-              domainLabel={activeDomain?.label}
-              showBrand={domainNav}
+              domainLabel={activeDomain.label}
+              showBrand
             />
           </div>
-          {navDomains ? (
-            <div className="border-t px-3 sm:px-4"
+          <div
+            className="border-t px-3 sm:px-4"
+            style={{
+              borderColor:
+                "color-mix(in srgb, var(--text-secondary) 10%, transparent)",
+            }}
+          >
+            <PrimaryNav domains={navDomains} />
+          </div>
+          {showSecondaryNav ? (
+            <div
+              className="border-t px-3 sm:px-4"
               style={{
                 borderColor:
                   "color-mix(in srgb, var(--text-secondary) 10%, transparent)",
               }}
             >
-              <PrimaryNav domains={navDomains} />
+              <SecondaryNav groups={activeDomain.groups} />
             </div>
           ) : null}
         </header>
 
-        <div className="flex min-h-0 flex-1 gap-2 p-2 sm:gap-3 sm:p-3">
-          <Sidebar
-            navGroups={sidebarGroups}
-            compact={domainNav}
-            showBrand={!domainNav}
-          />
+        <div className="flex min-h-0 flex-1 p-2 sm:p-3">
           <main
             className="min-w-0 flex-1 overflow-y-auto rounded-xl px-3 py-3 sm:px-5 sm:py-4 corporate-panel"
             style={{ background: "var(--panel-bg)" }}

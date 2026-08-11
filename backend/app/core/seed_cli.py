@@ -15,6 +15,7 @@ from app.core.seed_rbac import DEMO_SIFRE, seed_demo_kullanicilar
 from app.core.seed_yatak_yonetimi import seed_yatak_yonetimi_demo
 from app.core.seed_ameliyathane import seed_ameliyathane_demo
 from app.core.seed_radyoloji import seed_radyoloji_demo
+from app.core.seed_plan_demo import seed_plan_demo
 from sqlmodel import Session
 
 
@@ -29,6 +30,7 @@ def main() -> None:
         seed_yatak_yonetimi_demo(session)
         seed_ameliyathane_demo(session)
         seed_radyoloji_demo(session)
+        seed_plan_demo(session)
     print(
         f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor/hemsire demo seed tamamlandı "
         f"(şifre: {DEMO_SIFRE})."

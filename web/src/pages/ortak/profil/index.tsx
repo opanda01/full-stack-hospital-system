@@ -4,15 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, Navigate } from "react-router-dom";
 import { KeyRound, Stethoscope } from "lucide-react";
-import {
-  OnboardingGuard,
-  ProtectedRoute,
-  useAuthStore,
-} from "@/shared/auth";
+import { OnboardingGuard, ProtectedRoute, useAuthStore } from "@/shared/auth";
 import { api } from "@/shared/api";
 import { getApiErrorMessage } from "@/shared/lib";
-import { NAV_GROUPS, ROL_ETIKET, type Rol } from "@/shared/config/nav-items";
-import { Button, Input, PanelShell } from "@/shared/ui";
+import { ROL_ETIKET, type Rol } from "@/shared/config/nav-items";
+import { Button, Input } from "@/shared/ui";
 
 const schema = z.object({
   ad: z.string().min(1, "Ad gerekli").max(100),
@@ -33,14 +29,12 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-function ProfilInner() {
+/** Kişisel profil formu — RoleLayoutRoute içinde kullanılır (ek sidebar yok). */
+export function ProfilPage() {
   const currentUser = useAuthStore((s) => s.currentUser);
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const rol = useAuthStore((s) => s.primaryRole());
   const [hata, setHata] = useState<string | null>(null);
   const [basari, setBasari] = useState(false);
-  const navRol = (rol ?? "ADMIN") as Rol;
-  const navGroups = NAV_GROUPS[navRol] ?? NAV_GROUPS.ADMIN;
 
   const {
     register,
@@ -104,143 +98,140 @@ function ProfilInner() {
     ROL_ETIKET[currentUser.rol as Rol | "HASTA"] ?? currentUser.rol;
 
   return (
-    <PanelShell navGroups={navGroups} currentUser={currentUser}>
-      <div className="mx-auto max-w-2xl space-y-6">
-        <div>
-          <h2
-            className="text-2xl font-semibold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Profilim
-          </h2>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-            Kişisel bilgilerinizi güncelleyin
-          </p>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <h2
+          className="text-2xl font-semibold tracking-tight"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Profilim
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
+          Kişisel bilgilerinizi güncelleyin
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-5 rounded-xl border border-border bg-card p-5"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Ad
+            <Input autoComplete="given-name" {...register("ad")} />
+            {errors.ad && (
+              <span className="text-xs font-normal text-destructive">
+                {errors.ad.message}
+              </span>
+            )}
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Soyad
+            <Input autoComplete="family-name" {...register("soyad")} />
+            {errors.soyad && (
+              <span className="text-xs font-normal text-destructive">
+                {errors.soyad.message}
+              </span>
+            )}
+          </label>
         </div>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-5 rounded-xl border border-border bg-card p-5"
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Ad
-              <Input autoComplete="given-name" {...register("ad")} />
-              {errors.ad && (
-                <span className="text-xs font-normal text-destructive">
-                  {errors.ad.message}
-                </span>
-              )}
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Soyad
-              <Input autoComplete="family-name" {...register("soyad")} />
-              {errors.soyad && (
-                <span className="text-xs font-normal text-destructive">
-                  {errors.soyad.message}
-                </span>
-              )}
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
-            E-posta
-            <Input type="email" autoComplete="email" {...register("email")} />
-            {errors.email && (
-              <span className="text-xs font-normal text-destructive">
-                {errors.email.message}
-              </span>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
-            Telefon
-            <Input
-              type="tel"
-              autoComplete="tel"
-              placeholder="05XX XXX XX XX"
-              {...register("telefon")}
-            />
-            {errors.telefon && (
-              <span className="text-xs font-normal text-destructive">
-                {errors.telefon.message}
-              </span>
-            )}
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium">Kullanıcı adı</span>
-              <span className="rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
-                {currentUser.kullanici_adi?.trim() || "—"}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium">Rol</span>
-              <span className="rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
-                {rolEtiket}
-              </span>
-            </div>
-          </div>
-
-          {hata && (
-            <div
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {hata}
-            </div>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          E-posta
+          <Input type="email" autoComplete="email" {...register("email")} />
+          {errors.email && (
+            <span className="text-xs font-normal text-destructive">
+              {errors.email.message}
+            </span>
           )}
-          {basari && !isDirty && (
-            <p className="text-sm text-emerald-700">Profil kaydedildi.</p>
+        </label>
+
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Telefon
+          <Input
+            type="tel"
+            autoComplete="tel"
+            placeholder="05XX XXX XX XX"
+            {...register("telefon")}
+          />
+          {errors.telefon && (
+            <span className="text-xs font-normal text-destructive">
+              {errors.telefon.message}
+            </span>
           )}
+        </label>
 
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? "Kaydediliyor…" : "Kaydet"}
-          </Button>
-        </form>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">Kullanıcı adı</span>
+            <span className="rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
+              {currentUser.kullanici_adi?.trim() || "—"}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">Rol</span>
+            <span className="rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
+              {rolEtiket}
+            </span>
+          </div>
+        </div>
 
-        <section className="rounded-xl border border-border bg-card p-5">
-          <h3 className="mb-3 text-base font-semibold">Hesap</h3>
-          <div className="grid gap-2 sm:grid-cols-2">
+        {hata && (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {hata}
+          </div>
+        )}
+        {basari && !isDirty && (
+          <p className="text-sm text-emerald-700">Profil kaydedildi.</p>
+        )}
+
+        <Button type="submit" disabled={isSubmitting || !isDirty}>
+          {isSubmitting ? "Kaydediliyor…" : "Kaydet"}
+        </Button>
+      </form>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h3 className="mb-3 text-base font-semibold">Hesap</h3>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link
+            to="/sifre-degistir"
+            className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-muted"
+          >
+            <KeyRound className="h-4 w-4 shrink-0" />
+            <span>
+              <span className="block font-medium">Şifre değiştir</span>
+              <span className="text-muted-foreground">Hesap güvenliği</span>
+            </span>
+          </Link>
+          {currentUser.rol === "DOKTOR" && (
             <Link
-              to="/sifre-degistir"
+              to="/doktor/profilim"
               className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-muted"
             >
-              <KeyRound className="h-4 w-4 shrink-0" />
+              <Stethoscope className="h-4 w-4 shrink-0" />
               <span>
-                <span className="block font-medium">Şifre değiştir</span>
+                <span className="block font-medium">Klinik profilim</span>
                 <span className="text-muted-foreground">
-                  Hesap güvenliği
+                  Uzmanlık ve muayene bilgileri
                 </span>
               </span>
             </Link>
-            {currentUser.rol === "DOKTOR" && (
-              <Link
-                to="/doktor/profilim"
-                className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-muted"
-              >
-                <Stethoscope className="h-4 w-4 shrink-0" />
-                <span>
-                  <span className="block font-medium">Klinik profilim</span>
-                  <span className="text-muted-foreground">
-                    Uzmanlık ve muayene bilgileri
-                  </span>
-                </span>
-              </Link>
-            )}
-          </div>
-        </section>
-      </div>
-    </PanelShell>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
-export function ProfilPage() {
+/** Eski /profil URL → rol ana yolu/profil */
+export function ProfilPageWithGuards() {
   return (
     <ProtectedRoute>
       <OnboardingGuard>
-        <ProfilInner />
+        <ProfilPage />
       </OnboardingGuard>
     </ProtectedRoute>
   );

@@ -7,10 +7,12 @@ from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from app.core.db import get_session
-from app.core.enums import IlacTalepDurumu, KlinikOnayDurumu
+from app.core.enums import IlacTalepDurumu, KlinikOnayDurumu, Rol, TriyajRenk, YatakDurumu
 from app.core.lookups import doktor_getir, personel_getir
-from app.core.security import get_current_user, require_permission
+from app.core.security import get_current_user, require_permission, require_role
+from app.features.acil.models import AcilTriyajKaydi
 from app.features.departmanlar.models import Departman
+from app.features.hastalar.models import Hasta
 from app.features.doktorlar.models import Doktor
 from app.features.hastalar import service as hasta_service
 from app.features.ilac_talep.models import IlacTalebi
@@ -20,6 +22,7 @@ from app.features.nobet_cizelgesi.models import NobetCizelgesi
 from app.features.personel.models import Personel
 from app.features.randevular.models import Randevu
 from app.features.tetkikler.models import Tetkik
+from app.features.yatak_yonetimi.models import Yatak
 from app.features.yatis.models import HemsireGorevi, IlacUygulama, YatisKaydi
 
 router = APIRouter()
@@ -49,6 +52,34 @@ class AdminOzet(BaseModel):
     personel_sayisi: int
     randevu_bekleyen: int
     randevu_toplam: int
+
+
+class LaborantOzet(BaseModel):
+    bekleyen_tetkik: int
+    bugun_tamamlanan: int
+    sonuc_girisi_bekleyen: int
+    toplam_tetkik: int
+
+
+class IdariOzet(BaseModel):
+    bugun_hasta_kayit: int
+    bekleyen_randevu: int
+    ozel_kimlik_hasta: int
+    departman_sayisi: int
+
+
+class AnalyticsDagilim(BaseModel):
+    etiket: str
+    deger: int
+
+
+class AnalyticsOzet(BaseModel):
+    tetkik_durumlari: list[AnalyticsDagilim]
+    triyaj_renkleri: list[AnalyticsDagilim]
+    yatak_dolu: int
+    yatak_bos: int
+    no_show_hasta: int
+    outbox_hata: int
 
 
 @router.get("/doktor/ozet", response_model=DoktorOzet)
@@ -273,4 +304,162 @@ def admin_ozet(
         randevu_toplam=int(
             session.exec(select(func.count()).select_from(Randevu)).one() or 0
         ),
+    )
+
+
+@router.get("/laborant/ozet", response_model=LaborantOzet)
+def laborant_ozet(
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(require_permission("tetkik:goruntule")),
+):
+    bugun = date.today()
+    bas = datetime(bugun.year, bugun.month, bugun.day, tzinfo=timezone.utc)
+    bit = bas + timedelta(days=1)
+    bekleyen = int(
+        session.exec(
+            select(func.count())
+            .select_from(Tetkik)
+            .where(Tetkik.durum != "SONUCLANDI")
+        ).one()
+        or 0
+    )
+    bugun_tam = int(
+        session.exec(
+            select(func.count())
+            .select_from(Tetkik)
+            .where(
+                Tetkik.durum == "SONUCLANDI",
+                Tetkik.updated_at >= bas,
+                Tetkik.updated_at < bit,
+            )
+        ).one()
+        or 0
+    )
+    giris_bekleyen = int(
+        session.exec(
+            select(func.count())
+            .select_from(Tetkik)
+            .where(Tetkik.durum == "ISTEK_ALINDI")
+        ).one()
+        or 0
+    )
+    toplam = int(session.exec(select(func.count()).select_from(Tetkik)).one() or 0)
+    return LaborantOzet(
+        bekleyen_tetkik=bekleyen,
+        bugun_tamamlanan=bugun_tam,
+        sonuc_girisi_bekleyen=giris_bekleyen,
+        toplam_tetkik=toplam,
+    )
+
+
+@router.get("/idari/ozet", response_model=IdariOzet)
+def idari_ozet(
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(require_role(Rol.IDARI_PERSONEL)),
+):
+    bugun = date.today()
+    bas = datetime(bugun.year, bugun.month, bugun.day, tzinfo=timezone.utc)
+    bit = bas + timedelta(days=1)
+    bugun_kayit = int(
+        session.exec(
+            select(func.count())
+            .select_from(Hasta)
+            .where(Hasta.created_at >= bas, Hasta.created_at < bit)
+        ).one()
+        or 0
+    )
+    bekleyen_randevu = int(
+        session.exec(
+            select(func.count())
+            .select_from(Randevu)
+            .where(Randevu.durum == "BEKLEMEDE")
+        ).one()
+        or 0
+    )
+    ozel_kimlik = int(
+        session.exec(
+            select(func.count())
+            .select_from(Hasta)
+            .where(Hasta.kimlik_tipi != "TC")
+        ).one()
+        or 0
+    )
+    return IdariOzet(
+        bugun_hasta_kayit=bugun_kayit,
+        bekleyen_randevu=bekleyen_randevu,
+        ozel_kimlik_hasta=ozel_kimlik,
+        departman_sayisi=int(
+            session.exec(select(func.count()).select_from(Departman)).one() or 0
+        ),
+    )
+
+
+@router.get("/analytics/ozet", response_model=AnalyticsOzet)
+def analytics_ozet(
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)),
+):
+    from app.features.entegrasyonlar.outbox_models import EntegrasyonGonderim
+
+    tetkik_rows = session.exec(
+        select(Tetkik.durum, func.count())
+        .select_from(Tetkik)
+        .group_by(Tetkik.durum)
+    ).all()
+    tetkik_durumlari = [
+        AnalyticsDagilim(etiket=str(durum or "BILINMIYOR"), deger=int(cnt))
+        for durum, cnt in tetkik_rows
+    ]
+
+    renk_sayim: dict[str, int] = {r.value: 0 for r in TriyajRenk}
+    triyaj_rows = session.exec(
+        select(AcilTriyajKaydi.renk, func.count())
+        .select_from(AcilTriyajKaydi)
+        .group_by(AcilTriyajKaydi.renk)
+    ).all()
+    for renk, cnt in triyaj_rows:
+        renk_sayim[str(renk)] = int(cnt)
+    triyaj_renkleri = [
+        AnalyticsDagilim(etiket=k, deger=v) for k, v in renk_sayim.items() if v > 0
+    ]
+
+    yatak_dolu = int(
+        session.exec(
+            select(func.count())
+            .select_from(Yatak)
+            .where(Yatak.durum == YatakDurumu.DOLU)
+        ).one()
+        or 0
+    )
+    yatak_bos = int(
+        session.exec(
+            select(func.count())
+            .select_from(Yatak)
+            .where(Yatak.durum == YatakDurumu.BOS)
+        ).one()
+        or 0
+    )
+    no_show = int(
+        session.exec(
+            select(func.count())
+            .select_from(Hasta)
+            .where(Hasta.gelmeyen_randevu_sayisi > 0)
+        ).one()
+        or 0
+    )
+    outbox_hata = int(
+        session.exec(
+            select(func.count())
+            .select_from(EntegrasyonGonderim)
+            .where(EntegrasyonGonderim.durum == "HATA")
+        ).one()
+        or 0
+    )
+    return AnalyticsOzet(
+        tetkik_durumlari=tetkik_durumlari,
+        triyaj_renkleri=triyaj_renkleri,
+        yatak_dolu=yatak_dolu,
+        yatak_bos=yatak_bos,
+        no_show_hasta=no_show,
+        outbox_hata=outbox_hata,
     )

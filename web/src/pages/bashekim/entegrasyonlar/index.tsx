@@ -47,8 +47,8 @@ export function BashekimEntegrasyonlarPage() {
   return (
     <AppShell title="Entegrasyonlar" links={[{ to: root, label: "Ana" }]}>
       <p className="mb-4 text-sm text-muted-foreground">
-        Canlı geçiş için `docs/integrations/LIVE-CHECKLIST.md`. E-Nabız / SGK / KPS
-        durum özeti ve outbox yeniden deneme.
+        Mock entegrasyon durumu ve outbox kuyruğu. Canlı MEDULA/e-Nabız bağlantısı
+        bu projede gerekmez; demo akışları mock adaptörlerle çalışır.
       </p>
       {isLoading ? (
         <p>Yükleniyor…</p>

@@ -147,6 +147,7 @@ function bashekimGroups(): NavGroup[] {
         { label: "Klinik onaylar", path: `${root}/klinik-onaylar`, icon: Activity },
         { label: "MHRS kapasite", path: `${root}/mhrs-kapasite`, icon: Network },
         { label: "Entegrasyonlar", path: `${root}/entegrasyonlar`, icon: Network },
+        { label: "Zorunlu bildirimler", path: `${root}/zorunlu-bildirimler`, icon: AlertTriangle },
         { label: "Eczane", path: `${root}/eczane`, icon: Pill },
         { label: "Faturalandırma", path: `${root}/faturalandirma`, icon: Receipt },
         { label: "Döner sermaye", path: `${root}/doner-sermaye`, icon: Wallet },

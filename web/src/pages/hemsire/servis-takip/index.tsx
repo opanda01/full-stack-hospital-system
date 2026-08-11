@@ -333,7 +333,7 @@ export function HemsireServisTakipPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 md:touch-manipulation">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Servis Hasta Takip</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -341,9 +341,10 @@ export function HemsireServisTakipPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center md:gap-3">
         <Button
           size="sm"
+          className="md:min-h-11 md:px-4"
           variant={kapsamBenim ? "default" : "outline"}
           onClick={() => setKapsamBenim(true)}
         >
@@ -351,6 +352,7 @@ export function HemsireServisTakipPage() {
         </Button>
         <Button
           size="sm"
+          className="md:min-h-11 md:px-4"
           variant={!kapsamBenim ? "default" : "outline"}
           onClick={() => setKapsamBenim(false)}
         >
@@ -412,7 +414,7 @@ export function HemsireServisTakipPage() {
               {kayitlar.map((k) => (
                 <tr
                   key={k.id}
-                  className={`border-b cursor-pointer ${rowClass(k.klinik_durum)} ${
+                  className={`border-b cursor-pointer md:min-h-[3rem] ${rowClass(k.klinik_durum)} ${
                     selectedId === k.id ? "ring-1 ring-inset ring-primary/40" : ""
                   }`}
                   onClick={() => {

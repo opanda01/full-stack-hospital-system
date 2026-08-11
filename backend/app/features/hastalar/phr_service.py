@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
@@ -6,13 +6,19 @@ from app.core.enums import EpikrizDurumu, KlinikOnayDurumu, OturumTipi
 from app.core.lookups import hasta_getir
 from app.core.pagination import Page, make_page
 from app.core.timezone import as_utc
-from app.features.kullanicilar.models import Kullanici
 from app.features.epikriz.models import Epikriz
+from app.features.hastalar.asi_models import HastaAsiKaydi
 from app.features.hastalar.phr_schemas import (
+    AktifIlacRead,
+    AsiKaydiRead,
     HastaBelgeRead,
     HastaOzetRead,
     HastaYatisOzetRead,
 )
+from app.features.klinik_onay.models import KlinikOnayKaydi
+from app.features.kullanicilar.models import Kullanici
+from app.features.muayeneler.models import MuayeneKaydi
+from app.features.muayeneler.recete_models import ReceteKalemi
 from app.features.klinik_onay.models import KlinikOnayKaydi
 from app.features.randevular import service as randevu_service
 from app.features.randevular.models import Randevu
@@ -171,3 +177,53 @@ def hasta_ozet(
         ),
         yatis=yatis_ozet(session, current_user),
     )
+
+
+def list_aktif_ilaclar(session: Session, current_user: Kullanici) -> list[AktifIlacRead]:
+    hasta = hasta_getir(session, current_user.id)
+    assert hasta.id is not None
+    since = datetime.now(timezone.utc) - timedelta(days=180)
+    muayene_ids = list(
+        session.exec(
+            select(MuayeneKaydi.id)
+            .join(Randevu, MuayeneKaydi.randevu_id == Randevu.id)
+            .where(Randevu.hasta_id == hasta.id, MuayeneKaydi.updated_at >= since)
+            .order_by(MuayeneKaydi.updated_at.desc())
+        ).all()
+    )
+    if not muayene_ids:
+        return []
+    kalemler = session.exec(
+        select(ReceteKalemi)
+        .where(ReceteKalemi.muayene_id.in_(muayene_ids))
+        .order_by(ReceteKalemi.muayene_id.desc(), ReceteKalemi.sira)
+    ).all()
+    seen: set[str] = set()
+    sonuc: list[AktifIlacRead] = []
+    for k in kalemler:
+        key = k.urun_adi.strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        m = session.get(MuayeneKaydi, k.muayene_id)
+        sonuc.append(
+            AktifIlacRead(
+                urun_adi=k.urun_adi,
+                doz=k.doz,
+                periyod=k.periyod,
+                muayene_id=k.muayene_id,
+                son_guncelleme=m.updated_at if m else None,
+            )
+        )
+    return sonuc
+
+
+def list_asilar(session: Session, current_user: Kullanici) -> list[AsiKaydiRead]:
+    hasta = hasta_getir(session, current_user.id)
+    assert hasta.id is not None
+    rows = session.exec(
+        select(HastaAsiKaydi)
+        .where(HastaAsiKaydi.hasta_id == hasta.id)
+        .order_by(HastaAsiKaydi.uygulama_tarihi.desc())
+    ).all()
+    return [AsiKaydiRead.model_validate(r) for r in rows]

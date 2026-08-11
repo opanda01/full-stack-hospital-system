@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/shared/auth/authStore";
-import { NAV_GROUPS, type Rol } from "@/shared/config/nav-items";
+import { type Rol } from "@/shared/config/nav-items";
 import { domainsForRole } from "@/shared/config/nav-domains";
 import { AppShell } from "@/shared/ui/app-shell";
 import { OnboardingGuard } from "./OnboardingGuard";
@@ -41,11 +41,7 @@ function RoleLayoutInner({ rol }: { rol: Rol }) {
   const navDomains = domainsForRole(rol);
 
   return (
-    <AppShell
-      navGroups={NAV_GROUPS[rol]}
-      navDomains={navDomains ?? undefined}
-      currentUser={currentUser}
-    >
+    <AppShell navDomains={navDomains} currentUser={currentUser}>
       <Outlet />
     </AppShell>
   );
