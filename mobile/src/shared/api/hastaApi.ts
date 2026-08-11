@@ -270,6 +270,35 @@ export async function fetchRecetelerimSatirlari(): Promise<ReceteSatirDto[]> {
   return rows;
 }
 
+export type AktifIlacDto = {
+  urun_adi: string;
+  doz: string | null;
+  periyod: string | null;
+  muayene_id: number;
+  son_guncelleme: string | null;
+};
+
+export type AsiKaydiDto = {
+  id: number;
+  asi_adi: string;
+  uygulama_tarihi: string;
+  sonraki_tarih: string | null;
+  notlar: string | null;
+  uygulayan: string | null;
+};
+
+export async function fetchAktifIlaclar(): Promise<AktifIlacDto[]> {
+  const res = await apiFetch("/hastalar/ben/aktif-ilaclar");
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
+export async function fetchAsilar(): Promise<AsiKaydiDto[]> {
+  const res = await apiFetch("/hastalar/ben/asilar");
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
 export type RandevuAlBootstrap = {
   hastaId: string;
   departmanlar: { id: number; ad: string }[];

@@ -32,6 +32,9 @@ type Muayene = {
   tani: string | null;
   tedavi_plani: string | null;
   recete_kalemleri?: ReceteKalem[];
+  bulasici_bildirim_mi?: boolean;
+  adli_vaka_mi?: boolean;
+  olum_bildirim_mi?: boolean;
 };
 type Alerji = {
   id: number;
@@ -96,6 +99,9 @@ export function DoktorMuayeneEkraniPage() {
   const [pendingUyarilar, setPendingUyarilar] = useState<
     { kod: string; mesaj: string }[] | null
   >(null);
+  const [bulasici, setBulasici] = useState(false);
+  const [adli, setAdli] = useState(false);
+  const [olum, setOlum] = useState(false);
   const [gerekce, setGerekce] = useState("");
   const hastaFiltre = useDoktorHastaListeFiltresi();
 
@@ -120,6 +126,9 @@ export function DoktorMuayeneEkraniPage() {
   const payloadBase = () => ({
     tani,
     tedavi_plani: tedavi,
+    bulasici_bildirim_mi: bulasici,
+    adli_vaka_mi: adli,
+    olum_bildirim_mi: olum,
     recete_kalemleri: kalemler.map((k, i) => ({
       urun_adi: k.urun_adi,
       doz: k.doz || null,
@@ -199,11 +208,17 @@ export function DoktorMuayeneEkraniPage() {
           sira: k.sira ?? i + 1,
         }))
       );
+      setBulasici(Boolean(m.bulasici_bildirim_mi));
+      setAdli(Boolean(m.adli_vaka_mi));
+      setOlum(Boolean(m.olum_bildirim_mi));
     } else {
       setEditingId(null);
       setTani("");
       setTedavi("");
       setKalemler([]);
+      setBulasici(false);
+      setAdli(false);
+      setOlum(false);
     }
   };
 
@@ -259,6 +274,22 @@ export function DoktorMuayeneEkraniPage() {
           value={tedavi}
           onChange={(e) => setTedavi(e.target.value)}
         />
+
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <p className="text-sm font-medium">Zorunlu bildirim bayrakları</p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={bulasici} onChange={(e) => setBulasici(e.target.checked)} />
+            Bulaşıcı hastalık bildirimi
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={adli} onChange={(e) => setAdli(e.target.checked)} />
+            Adli vaka
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={olum} onChange={(e) => setOlum(e.target.checked)} />
+            Ölüm bildirimi
+          </label>
+        </div>
 
         <div className="space-y-2 border-t border-border pt-3">
           <p className="text-sm font-medium">Reçete kalemleri</p>

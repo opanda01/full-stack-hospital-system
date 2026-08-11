@@ -85,11 +85,13 @@ import {
   BashekimDashboardLayout,
   BashekimDashboardOzetTab,
   BashekimDashboardBekleyenlerTab,
+  BashekimDashboardAnalyticsTab,
   BashekimDashboardKurumsalTab,
   BashekimErisimOnaylariPage,
 } from "@/pages/bashekim/dashboard";
 import { BashekimMhrsPage } from "@/pages/bashekim/mhrs";
 import { BashekimEntegrasyonlarPage } from "@/pages/bashekim/entegrasyonlar";
+import { BashekimZorunluBildirimlerPage } from "@/pages/bashekim/zorunlu-bildirimler";
 import { BashekimKlinikOnaylarPage } from "@/pages/bashekim/klinik-onaylar";
 import { BashekimEczanePage } from "@/pages/bashekim/eczane";
 import { BashekimFaturalandirmaPage } from "@/pages/bashekim/faturalandirma";
@@ -135,6 +137,19 @@ function Guard({
   );
 }
 
+/** /profil → rol ana yolu/profil */
+function ProfilRedirect() {
+  const rol = useAuthStore((s) => s.primaryRole());
+  const home = homeForRole(rol);
+  if (home === "/hasta-mobil") {
+    return <Navigate to="/hasta-mobil" replace />;
+  }
+  if (home === "/giris") {
+    return <Navigate to="/giris" replace />;
+  }
+  return <Navigate to={`${home}/profil`} replace />;
+}
+
 /** /ayarlar → rol ana yolu/ayarlar */
 function AyarlarRedirect() {
   const rol = useAuthStore((s) => s.primaryRole());
@@ -158,7 +173,14 @@ export function AppRouter() {
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/hasta-mobil" element={<HastaMobilPage />} />
         <Route path="/hasta" element={<HastaGirisPage />} />
-        <Route path="/profil" element={<ProfilPage />} />
+        <Route
+          path="/profil"
+          element={
+            <Guard>
+              <ProfilRedirect />
+            </Guard>
+          }
+        />
         <Route
           path="/ayarlar"
           element={
@@ -206,6 +228,7 @@ export function AppRouter() {
           <Route path="denetim" element={<AdminDenetimPage />} />
           <Route path="rbac" element={<AdminRbacPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AdminAyarlarPage />} />
         </Route>
 
@@ -216,6 +239,7 @@ export function AppRouter() {
             <Route path="ozet" element={<BashekimDashboardOzetTab />} />
             <Route path="bekleyenler" element={<BashekimDashboardBekleyenlerTab />} />
             <Route path="operasyon" element={<YonetimDashboardOperasyonTab root="/bashekim" />} />
+            <Route path="analytics" element={<BashekimDashboardAnalyticsTab />} />
             <Route path="kurumsal" element={<BashekimDashboardKurumsalTab />} />
           </Route>
           <Route path="erisim-onaylari" element={<BashekimErisimOnaylariPage />} />
@@ -233,6 +257,7 @@ export function AppRouter() {
           <Route path="klinik-onaylar" element={<BashekimKlinikOnaylarPage />} />
           <Route path="mhrs-kapasite" element={<BashekimMhrsPage />} />
           <Route path="entegrasyonlar" element={<BashekimEntegrasyonlarPage />} />
+          <Route path="zorunlu-bildirimler" element={<BashekimZorunluBildirimlerPage />} />
           <Route path="eczane" element={<BashekimEczanePage />} />
           <Route path="faturalandirma" element={<BashekimFaturalandirmaPage />} />
           <Route path="doner-sermaye" element={<BashekimDonerSermayePage />} />
@@ -247,6 +272,7 @@ export function AppRouter() {
           <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -276,6 +302,7 @@ export function AppRouter() {
           <Route path="radyoloji" element={<RadyolojiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
           <Route path="raporlar" element={<AdminRaporlarPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -300,7 +327,7 @@ export function AppRouter() {
           <Route path="konsultasyonlar" element={<DoktorKonsultasyonlarPage />} />
           <Route path="saglik-kurulu" element={<DoktorSaglikKuruluPage />} />
           <Route path="profilim" element={<DoktorProfilPage />} />
-          <Route path="profil" element={<Navigate to="/doktor/profilim" replace />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -325,6 +352,7 @@ export function AppRouter() {
           <Route path="randevular" element={<Navigate to="/hemsire/departman-randevulari" replace />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="panel" element={<HemsirePanelPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -348,6 +376,7 @@ export function AppRouter() {
           />
           <Route path="randevular" element={<Navigate to="/ebe/departman-randevulari" replace />} />
           <Route path="nobet" element={<NobetYonetimiPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -364,6 +393,7 @@ export function AppRouter() {
             path="isler"
             element={<Navigate to="/laborant/tetkik-sonuc-girisi" replace />}
           />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -371,6 +401,7 @@ export function AppRouter() {
         <Route path="/radyolog" element={<RoleLayoutRoute rol="RADYOLOG" />}>
           <Route index element={<Navigate to="/radyolog/radyoloji" replace />} />
           <Route path="radyoloji" element={<RadyologRadyolojiPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -385,6 +416,7 @@ export function AppRouter() {
             path="gorevler"
             element={<Navigate to="/temizlik/gorevlerim" replace />}
           />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 
@@ -401,12 +433,14 @@ export function AppRouter() {
           />
           <Route path="nobet" element={<NobetYonetimiPage />} />
           <Route path="sikayet" element={<SikayetOneriPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
         <Route path="/idari" element={<RoleLayoutRoute rol="IDARI_PERSONEL" />}>
           <Route index element={<IdariDashboardPage />} />
           <Route path="ozel-kimlik-kayit" element={<OzelKimlikKayitPage />} />
           <Route path="hasta-kayit" element={<HastaKayitPage />} />
+          <Route path="profil" element={<ProfilPage />} />
           <Route path="ayarlar" element={<AyarlarPage />} />
         </Route>
 

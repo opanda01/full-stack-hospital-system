@@ -276,6 +276,18 @@ export default function OzetScreen() {
               onPress={() => go("/(hasta)/recetelerim")}
             />
             <MenuRow
+              title="Aktif ilaçlarım"
+              subtitle="Güncel ilaç özeti"
+              icon={Pill}
+              onPress={() => go("/(hasta)/aktif-ilaclar")}
+            />
+            <MenuRow
+              title="Aşı takvimim"
+              subtitle="Yapılan ve planlanan aşılar"
+              icon={Stethoscope}
+              onPress={() => go("/(hasta)/asilar")}
+            />
+            <MenuRow
               title="Belgelerim"
               subtitle="Onaylı epikriz, reçete, sevk, rapor"
               icon={FileText}

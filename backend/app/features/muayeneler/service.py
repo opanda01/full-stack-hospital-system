@@ -387,9 +387,53 @@ def list_muayeneler(
                 tedavi_plani=kayit.tedavi_plani,
                 receteler=recete_text,
                 recete_kalemleri=kalemler,
+                bulasici_bildirim_mi=bool(kayit.bulasici_bildirim_mi),
+                adli_vaka_mi=bool(kayit.adli_vaka_mi),
+                olum_bildirim_mi=bool(kayit.olum_bildirim_mi),
             )
         )
     return make_page(items, total=total, page=page, page_size=page_size)
+
+
+def list_zorunlu_bildirimler(session: Session) -> list[MuayeneRead]:
+    rows = session.exec(
+        select(MuayeneKaydi)
+        .where(
+            (MuayeneKaydi.bulasici_bildirim_mi == True)  # noqa: E712
+            | (MuayeneKaydi.adli_vaka_mi == True)  # noqa: E712
+            | (MuayeneKaydi.olum_bildirim_mi == True)  # noqa: E712
+        )
+        .order_by(MuayeneKaydi.id.desc())
+        .limit(100)
+    ).all()
+    return [muayene_to_read(session, r) for r in rows]
+
+
+def zorunlu_bildirim_mock_gonder(
+    session: Session,
+    muayene_id: int,
+    *,
+    actor_id: int | None = None,
+    ip_adresi: str | None = None,
+) -> str | None:
+    from app.features.entegrasyonlar.bby_mock_service import zorunlu_bildirim_gonder
+
+    kayit = session.get(MuayeneKaydi, muayene_id)
+    if kayit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Muayene bulunamadı")
+    ref = zorunlu_bildirim_gonder(
+        session,
+        muayene=kayit,
+        actor_id=actor_id,
+        ip_adresi=ip_adresi,
+        commit=True,
+    )
+    if ref is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Zorunlu bildirim bayrağı işaretli değil",
+        )
+    return ref
 
 
 def get_muayene(

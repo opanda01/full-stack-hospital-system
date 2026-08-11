@@ -10,7 +10,13 @@ from app.core.pagination import Page, PaginationParams, get_pagination
 from app.core.security import get_current_user, require_permission, require_role
 from app.features.bashekim.router import phi_goruntuleme_logla
 from app.features.hastalar import service as hasta_service
-from app.features.hastalar.phr_schemas import HastaBelgeRead, HastaOzetRead, HastaYatisOzetRead
+from app.features.hastalar.phr_schemas import (
+    AktifIlacRead,
+    AsiKaydiRead,
+    HastaBelgeRead,
+    HastaOzetRead,
+    HastaYatisOzetRead,
+)
 from app.features.hastalar import phr_service
 from app.features.hastalar import alerji_service
 from app.features.hastalar.schemas import (
@@ -121,6 +127,22 @@ def benim_yatis_ozet(
     current_user: Kullanici = Depends(require_role(Rol.HASTA)),
 ):
     return phr_service.yatis_ozet(session, current_user)
+
+
+@router.get("/ben/aktif-ilaclar", response_model=list[AktifIlacRead])
+def benim_aktif_ilaclar(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    return phr_service.list_aktif_ilaclar(session, current_user)
+
+
+@router.get("/ben/asilar", response_model=list[AsiKaydiRead])
+def benim_asilar(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+):
+    return phr_service.list_asilar(session, current_user)
 
 
 @router.put("/ben/mobil-cihaz", response_model=MobilCihazRead)

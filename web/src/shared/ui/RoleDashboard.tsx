@@ -55,7 +55,7 @@ function DashboardActivityPlaceholder() {
       <p className="border-t px-4 py-2 text-[10px] uppercase tracking-wide text-muted-foreground"
         style={{ borderColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)" }}
       >
-        Canlı veri bağlantısı sonraki entegrasyon aşamasında etkinleştirilecektir.
+        Özet göstergeler canlı API verisiyle güncellenir.
       </p>
     </section>
   );

@@ -13,6 +13,7 @@ export function bashekimDashboardTabs(root: "/bashekim"): DashboardTabDef[] {
     { id: "ozet", label: "Özet", path: `${root}/ozet` },
     { id: "bekleyenler", label: "Bekleyenler", path: `${root}/bekleyenler` },
     { id: "operasyon", label: "Operasyon", path: `${root}/operasyon` },
+    { id: "analytics", label: "Analitik", path: `${root}/analytics` },
     { id: "kurumsal", label: "Kurumsal", path: `${root}/kurumsal` },
   ];
 }

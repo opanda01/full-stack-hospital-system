@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -37,3 +37,22 @@ class HastaOzetRead(BaseModel):
     son_tetkik_tarih: datetime | None = None
     okunmamis_sonuc_sayisi: int = 0
     yatis: HastaYatisOzetRead | None = None
+
+
+class AktifIlacRead(BaseModel):
+    urun_adi: str
+    doz: str | None = None
+    periyod: str | None = None
+    muayene_id: int
+    son_guncelleme: datetime | None = None
+
+
+class AsiKaydiRead(BaseModel):
+    id: int
+    asi_adi: str
+    uygulama_tarihi: date
+    sonraki_tarih: date | None = None
+    notlar: str | None = None
+    uygulayan: str | None = None
+
+    model_config = {"from_attributes": True}
