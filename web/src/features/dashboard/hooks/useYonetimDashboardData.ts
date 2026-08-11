@@ -1,17 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/shared/api";
-import type { SikayetOzet } from "@/features/sikayet-oneri/types";
 import {
   LOOKUP_PAGE_SIZE,
   pageTotal,
   unwrapPage,
   type PageResponse,
 } from "@/shared/lib";
+
 type Personel = { id: number };
 type Doktor = { id: number };
 type Departman = { id: number };
 type Randevu = { id: string; tarih_saat: string; durum: string };
-type Sikayet = { id: number; baslik?: string };
+type Sikayet = { id: number };
 type Temizlik = { id: number; durum?: string };
 type Hasta = { id: string };
 
@@ -69,25 +69,17 @@ export function useYonetimDashboardData(root: "/mudur" | "/bashekim", options?: 
     enabled,
   });
 
-  const sikayetOzet = useQuery({
-    queryKey: ["sikayet-ozet"],
+  const sikayetPage = useQuery({
+    queryKey: ["sikayet-oneri-count"],
     queryFn: async () =>
-      (await api.get<SikayetOzet>("/sikayet-oneri/ozet")).data,
+      (
+        await api.get<PageResponse<Sikayet>>("/sikayet-oneri/", {
+          params: { page: 1, page_size: 1 },
+        })
+      ).data,
     enabled,
   });
 
-  const sikayetList = useQuery({
-    queryKey: ["sikayet-oneri-recent"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Sikayet>>("/sikayet-oneri/", {
-            params: { page: 1, page_size: 5 },
-          })
-        ).data,
-      ),
-    enabled,
-  });
   const temizlikler = useQuery({
     queryKey: ["temizlik-gorevleri"],
     queryFn: async () =>
@@ -117,7 +109,7 @@ export function useYonetimDashboardData(root: "/mudur" | "/bashekim", options?: 
     doktorPage.isLoading ||
     departmanlar.isLoading ||
     randevular.isLoading ||
-    sikayetOzet.isLoading ||
+    sikayetPage.isLoading ||
     temizlikler.isLoading ||
     hastaPage.isLoading;
 
@@ -137,10 +129,8 @@ export function useYonetimDashboardData(root: "/mudur" | "/bashekim", options?: 
     personelPage,
     doktorPage,
     departmanlar,
-    randevular,
     bugunRandevu,
-    sikayetOzet,
-    sikayetList,
+    sikayetPage,
     acikTemizlik,
     hastaPage,
     pageTotal,
