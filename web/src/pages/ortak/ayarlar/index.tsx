@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import { KeyRound, ScrollText, Server, Megaphone, UserCircle } from "lucide-react";
 import { TemaSecici } from "./TemaSecici";
 import { api } from "@/shared/api";
-import { useAuthStore } from "@/shared/auth";
-import { homeForRole } from "@/shared/auth";
+import { roleRootForRole, useAuthStore } from "@/shared/auth";
 
 type SistemBilgi = {
   bildirim_backend: string;
@@ -29,7 +28,7 @@ export function AyarlarPage() {
   const rol = useAuthStore((s) => s.primaryRole());
   const isAdmin = rol === "ADMIN";
   const isBashekim = rol === "BASHEKIM";
-  const root = homeForRole(rol);
+  const root = roleRootForRole(rol);
 
   const { data: sistem } = useQuery({
     queryKey: ["sistem-bilgi"],

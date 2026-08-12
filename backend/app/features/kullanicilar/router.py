@@ -20,12 +20,17 @@ router = APIRouter()
 @router.get("/", response_model=Page[KullaniciRead])
 def list_kullanicilar(
     rol: Rol | None = Query(default=None),
+    aktif_mi: bool | None = Query(default=None),
     pagination: PaginationParams = Depends(get_pagination),
     session: Session = Depends(get_session),
     _user=Depends(require_role(Rol.ADMIN, Rol.BASHEKIM, Rol.MUDUR)),
 ):
     return kullanici_service.list_kullanicilar(
-        session, rol=rol, page=pagination.page, page_size=pagination.page_size
+        session,
+        rol=rol,
+        aktif_mi=aktif_mi,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

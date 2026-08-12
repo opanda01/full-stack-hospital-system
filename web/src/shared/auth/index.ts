@@ -1,6 +1,7 @@
 export {
   useAuthStore,
   homeForRole,
+  roleRootForRole,
   roleBasePathFromPathname,
   postLoginPath,
   needsOnboarding,
