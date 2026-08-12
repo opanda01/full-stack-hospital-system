@@ -30,7 +30,6 @@ export function AppShell({
 
   const activeDomain = resolveNavDomain(pathname, navDomains);
   const navItems: NavItem[] = flattenDomains(navDomains);
-  const showSecondaryNav = activeDomain.id !== "gosterge";
 
   return (
     <InPanelShellContext.Provider value={true}>
@@ -63,17 +62,6 @@ export function AppShell({
           >
             <PrimaryNav domains={navDomains} />
           </div>
-          {showSecondaryNav ? (
-            <div
-              className="border-t px-3 sm:px-4"
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--text-secondary) 10%, transparent)",
-              }}
-            >
-              <SecondaryNav groups={activeDomain.groups} />
-            </div>
-          ) : null}
         </header>
 
         <div className="flex min-h-0 flex-1 p-2 sm:p-3">
@@ -81,6 +69,11 @@ export function AppShell({
             className="min-w-0 flex-1 overflow-y-auto rounded-xl px-3 py-3 sm:px-5 sm:py-4 corporate-panel"
             style={{ background: "var(--panel-bg)" }}
           >
+            {activeDomain.id !== "gosterge" ? (
+              <div className="mb-4">
+                <SecondaryNav groups={activeDomain.groups} />
+              </div>
+            ) : null}
             {children}
           </main>
         </div>

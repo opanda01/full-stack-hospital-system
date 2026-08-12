@@ -42,7 +42,7 @@ import { AdminDenetimPage } from "@/pages/admin/denetim";
 import { AdminRbacPage } from "@/pages/admin/rbac";
 import { AdminMuayenelerPage } from "@/pages/admin/muayeneler";
 import { AdminTetkiklerPage } from "@/pages/admin/tetkikler";
-import { homeForRole, useAuthStore } from "@/shared/auth";
+import { roleRootForRole, useAuthStore } from "@/shared/auth";
 
 import { DoktorDashboardPage } from "@/pages/doktor/dashboard";
 import { DoktorRandevularimPage } from "@/pages/doktor/randevularim";
@@ -140,27 +140,27 @@ function Guard({
 /** /profil → rol ana yolu/profil */
 function ProfilRedirect() {
   const rol = useAuthStore((s) => s.primaryRole());
-  const home = homeForRole(rol);
-  if (home === "/hasta-mobil") {
+  const root = roleRootForRole(rol);
+  if (root === "/hasta-mobil") {
     return <Navigate to="/hasta-mobil" replace />;
   }
-  if (home === "/giris") {
+  if (root === "/giris") {
     return <Navigate to="/giris" replace />;
   }
-  return <Navigate to={`${home}/profil`} replace />;
+  return <Navigate to={`${root}/profil`} replace />;
 }
 
 /** /ayarlar → rol ana yolu/ayarlar */
 function AyarlarRedirect() {
   const rol = useAuthStore((s) => s.primaryRole());
-  const home = homeForRole(rol);
-  if (home === "/hasta-mobil") {
+  const root = roleRootForRole(rol);
+  if (root === "/hasta-mobil") {
     return <Navigate to="/hasta-mobil" replace />;
   }
-  if (home === "/giris") {
+  if (root === "/giris") {
     return <Navigate to="/giris" replace />;
   }
-  return <Navigate to={`${home}/ayarlar`} replace />;
+  return <Navigate to={`${root}/ayarlar`} replace />;
 }
 
 export function AppRouter() {

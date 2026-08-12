@@ -79,6 +79,12 @@ export function nobetDraggableId(nobetId: number) {
   return `nobet:${nobetId}`;
 }
 
+export const NOBET_SILME_DROP_ID = "nobet-delete-drop";
+
+export function isNobetSilmeDropId(id: string | number | undefined): boolean {
+  return String(id ?? "") === NOBET_SILME_DROP_ID;
+}
+
 export function parseDragId(id: string) {
   if (id.startsWith("pool:")) {
     return { kind: "pool" as const, personelId: Number(id.slice(5)) };

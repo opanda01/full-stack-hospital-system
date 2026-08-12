@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Trash2 } from "lucide-react";
 
 import type { NobetKaydi } from "../model/types";
 
@@ -186,23 +187,19 @@ export function DepartmanNobetTablosu({
                           </div>
 
                           {canEdit && onDeleteNobet ? (
-
                             <button
-
                               type="button"
-
-                              className="shrink-0 rounded px-1 text-xs text-muted-foreground hover:text-destructive"
-
+                              className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                               title="Nöbeti kaldır"
-
-                              onClick={() => onDeleteNobet(n.id)}
-
+                              aria-label="Nöbeti kaldır"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteNobet(n.id);
+                              }}
                             >
-
-                              ×
-
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
-
                           ) : null}
 
                         </div>

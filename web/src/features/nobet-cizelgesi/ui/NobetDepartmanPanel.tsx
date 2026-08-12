@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { DepartmanNobetTablosu } from "./DepartmanNobetTablosu";
 import { NobetAtamaForm } from "./NobetAtamaForm";
+import { NobetSilmeAlani } from "./NobetSilmeAlani";
 import { PersonelChip } from "./PersonelChip";
 import type { NobetKaydi, NobetPersonel } from "../model/types";
 import { personelTamEtiket } from "../lib/personel-label";
@@ -84,6 +85,8 @@ export function NobetDepartmanPanel({
           return n.personel_ad_soyad ?? `#${n.personel_id}`;
         }}
       />
+
+      {canEdit && onDeleteNobet ? <NobetSilmeAlani /> : null}
 
       {canEdit && (
         <div className="rounded-lg border bg-[var(--panel-inset-bg)] p-3">

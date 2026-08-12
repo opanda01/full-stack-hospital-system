@@ -24,7 +24,7 @@ from app.features.kullanicilar.models import Kullanici
 from app.features.personel.erisim_service import apply_erisim_durumu
 from app.features.personel.models import Personel
 
-# HASTA dışı operasyonel roller (demo admin/başhekim seed_rbac'de)
+# HASTA dışı tüm personel rolleri (demo admin/başhekim seed_rbac'de 1'er adet)
 SEED_ROLLER: tuple[tuple[Rol, str, str], ...] = (
     (Rol.HEMSIRE, "HEM", "hemsire"),
     (Rol.EBE, "EBE", "ebe"),
@@ -33,7 +33,13 @@ SEED_ROLLER: tuple[tuple[Rol, str, str], ...] = (
     (Rol.GUVENLIK, "GUV", "guvenlik"),
     (Rol.IDARI_PERSONEL, "IDR", "idari"),
     (Rol.DOKTOR, "DOK", "doktor"),
+    (Rol.RADYOLOG, "RAD", "radyolog"),
+    (Rol.ADMIN, "ADM", "admin"),
+    (Rol.BASHEKIM, "BHK", "bashekim"),
+    (Rol.MUDUR, "MUD", "mudur"),
 )
+
+_DOKTOR_ROLLER = frozenset({Rol.DOKTOR, Rol.RADYOLOG})
 
 
 def _tc_for(rol_kod: int, index: int) -> str:
@@ -122,13 +128,17 @@ def seed_test_personel(
             session.add(personel)
             session.flush()
 
-            if rol == Rol.DOKTOR:
+            if rol in _DOKTOR_ROLLER:
                 session.add(
                     Doktor(
                         personel_id=personel.id,
-                        uzmanlik_alani="Genel" if i % 3 else "Dahiliye",
+                        uzmanlik_alani=(
+                            "Radyoloji"
+                            if rol == Rol.RADYOLOG
+                            else ("Genel" if i % 3 else "Dahiliye")
+                        ),
                         diploma_no=f"DIP-TEST-{rol_idx:02d}-{i:04d}",
-                        online_randevu_acik_mi=True,
+                        online_randevu_acik_mi=rol == Rol.DOKTOR,
                     )
                 )
 

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, ChevronRight, KeyRound, LogOut, Settings, User } from "lucide-react";
 import type { CurrentUser } from "@/shared/auth";
-import { homeForRole, useAuthStore } from "@/shared/auth";
+import { roleRootForRole, useAuthStore } from "@/shared/auth";
 import type { NavItem, Rol } from "@/shared/config/nav-items";
 import { ROL_ETIKET } from "@/shared/config/nav-items";
 import { api } from "@/shared/api";
@@ -94,7 +94,7 @@ export function Topbar({ navItems, currentUser, showBrand }: TopbarProps) {
 
   const rolEtiket =
     ROL_ETIKET[currentUser.rol as Rol | "HASTA"] ?? currentUser.rol;
-  const accountBase = homeForRole(currentUser.rol);
+  const accountBase = roleRootForRole(currentUser.rol);
 
   const { data: bildirimler = [] } = useQuery({
     queryKey: ["panel-bildirimler"],

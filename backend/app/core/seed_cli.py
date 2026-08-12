@@ -11,6 +11,7 @@ from app.core.seed_doktor import seed_doktor_panel
 from app.core.seed_hastane import seed_hastane_referans
 from app.core.seed_hemsire_yatis import seed_hemsire_yatis
 from app.core.seed_ornek_islemler import seed_ornek_islemler
+from app.core.seed_personel_toplu import seed_test_personel
 from app.core.seed_rbac import DEMO_SIFRE, seed_demo_kullanicilar
 from app.core.seed_yatak_yonetimi import seed_yatak_yonetimi_demo
 from app.core.seed_ameliyathane import seed_ameliyathane_demo
@@ -31,9 +32,10 @@ def main() -> None:
         seed_ameliyathane_demo(session)
         seed_radyoloji_demo(session)
         seed_plan_demo(session)
+        seed_test_personel(session, per_rol=50)
     print(
-        f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor/hemsire demo seed tamamlandı "
-        f"(şifre: {DEMO_SIFRE})."
+        f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor/hemsire demo "
+        f"+ toplu personel (rol başına 50) seed tamamlandı (şifre: {DEMO_SIFRE})."
     )
 
 

@@ -208,6 +208,14 @@ export function homeForRole(rol: string | null | undefined): string {
   return ROLE_HOME[rol] ?? "/giris";
 }
 
+/** Hesap sayfaları (profil, ayarlar) için rol kökü — dashboard alt yolu değil. */
+export function roleRootForRole(rol: string | null | undefined): string {
+  const home = homeForRole(rol);
+  if (home === "/giris" || home === "/hasta-mobil") return home;
+  if (home.endsWith("/ozet")) return home.slice(0, -"/ozet".length);
+  return home;
+}
+
 /**
  * Klinik sayfalar HEMSIRE/EBE altında paylaşılır.
  * pathname kökünü tercih eder; yoksa rol ana sayfası.

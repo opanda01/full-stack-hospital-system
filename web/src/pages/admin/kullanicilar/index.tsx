@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell, Button, ConfirmDialog, ListPager } from "@/shared/ui";
 import { api } from "@/shared/api";
@@ -27,6 +27,7 @@ const ROLLER = [
   "HEMSIRE",
   "EBE",
   "LABORANT",
+  "RADYOLOG",
   "TEMIZLIK_PERSONELI",
   "GUVENLIK",
   "IDARI_PERSONEL",
@@ -45,26 +46,27 @@ export function KullaniciYonetimiPage() {
   const [rolFiltre, setRolFiltre] = useState("");
   const [durumFiltre, setDurumFiltre] = useState<DurumFiltre>("hepsi");
 
+  useEffect(() => {
+    setPage(1);
+  }, [rolFiltre, durumFiltre]);
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["kullanicilar", page],
-    queryFn: async () =>
-      (
-        await api.get<PageResponse<Kullanici>>("/kullanicilar/", {
-          params: { page, page_size: PAGE_SIZE },
-        })
-      ).data,
+    queryKey: ["kullanicilar", page, rolFiltre, durumFiltre],
+    queryFn: async () => {
+      const params: Record<string, string | number | boolean> = {
+        page,
+        page_size: PAGE_SIZE,
+      };
+      if (rolFiltre) params.rol = rolFiltre;
+      if (durumFiltre === "aktif") params.aktif_mi = true;
+      if (durumFiltre === "pasif") params.aktif_mi = false;
+      return (
+        await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params })
+      ).data;
+    },
   });
   const items = unwrapPage(data ?? []);
   const total = pageTotal(data ?? []);
-
-  const filtered = useMemo(() => {
-    return items.filter((u) => {
-      if (rolFiltre && u.rol !== rolFiltre) return false;
-      if (durumFiltre === "aktif" && !u.aktif_mi) return false;
-      if (durumFiltre === "pasif" && u.aktif_mi) return false;
-      return true;
-    });
-  }, [items, rolFiltre, durumFiltre]);
 
   const patchMut = useMutation({
     mutationFn: async ({
@@ -117,29 +119,39 @@ export function KullaniciYonetimiPage() {
         içindir.
       </p>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <select
-          className="rounded-md border border-border px-3 py-2 text-sm"
-          value={rolFiltre}
-          onChange={(e) => setRolFiltre(e.target.value)}
-        >
-          <option value="">Tüm roller</option>
-          {ROLLER.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        <select
-          className="rounded-md border border-border px-3 py-2 text-sm"
-          value={durumFiltre}
-          onChange={(e) => setDurumFiltre(e.target.value as DurumFiltre)}
-        >
-          <option value="hepsi">Tüm durumlar</option>
-          <option value="aktif">Aktif</option>
-          <option value="pasif">Pasif</option>
-        </select>
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="space-y-1 text-sm">
+          <span className="text-muted-foreground">Rol</span>
+          <select
+            className="block min-w-[160px] rounded-md border border-border bg-background px-3 py-2"
+            value={rolFiltre}
+            onChange={(e) => setRolFiltre(e.target.value)}
+          >
+            <option value="">Tüm roller</option>
+            {ROLLER.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-sm">
+          <span className="text-muted-foreground">Durum</span>
+          <select
+            className="block min-w-[140px] rounded-md border border-border bg-background px-3 py-2"
+            value={durumFiltre}
+            onChange={(e) => setDurumFiltre(e.target.value as DurumFiltre)}
+          >
+            <option value="hepsi">Tüm durumlar</option>
+            <option value="aktif">Aktif</option>
+            <option value="pasif">Pasif</option>
+          </select>
+        </label>
       </div>
+
+      <p className="mb-2 text-sm text-muted-foreground">
+        {total} kullanıcı
+      </p>
 
       {actionError && (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -153,7 +165,7 @@ export function KullaniciYonetimiPage() {
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
-      ) : filtered.length === 0 ? (
+      ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Eşleşen kullanıcı yok.</p>
       ) : (
         <table className="w-full border-collapse text-sm">
@@ -167,7 +179,7 @@ export function KullaniciYonetimiPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
+            {items.map((u) => (
               <tr key={u.id} className="border-b">
                 <td className="py-2">
                   {u.ad} {u.soyad}

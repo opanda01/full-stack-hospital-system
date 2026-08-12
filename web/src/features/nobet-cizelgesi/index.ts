@@ -7,5 +7,7 @@ export {
   shiftWeek,
   parseCellId,
   parseDragId,
+  NOBET_SILME_DROP_ID,
+  isNobetSilmeDropId,
 } from "./lib/week";
 export { resolveNobetCellFromDragEnd } from "./lib/resolve-drop";

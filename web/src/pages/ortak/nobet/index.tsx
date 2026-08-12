@@ -18,6 +18,7 @@ import {
   parseDragId,
   resolveNobetCellFromDragEnd,
   shiftWeek,
+  isNobetSilmeDropId,
   type Departman,
   type NobetKaydi,
   type NobetPersonel,
@@ -189,6 +190,18 @@ export function NobetYonetimiPage() {
 
     const drag = parseDragId(String(event.active.id));
     if (!drag) return;
+
+    const overId = event.over?.id;
+    if (isNobetSilmeDropId(overId) || event.collisions?.some((c) => isNobetSilmeDropId(c.id))) {
+      if (drag.kind !== "nobet") return;
+      setErr(null);
+      try {
+        await deleteMut.mutateAsync(drag.nobetId);
+      } catch (e) {
+        setErr(getApiErrorMessage(e));
+      }
+      return;
+    }
 
     const cell = resolveNobetCellFromDragEnd(event);
     if (!cell || cell.departmanId !== openDepartmanId) {
