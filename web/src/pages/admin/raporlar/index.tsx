@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Bar,
@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { AppShell } from "@/shared/ui";
+import { ChartCard } from "@/shared/ui/dashboard";
 import { api } from "@/shared/api";
 import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
@@ -373,21 +374,6 @@ function OzetKart({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="mb-3 font-semibold">{title}</h3>
-      {children}
     </div>
   );
 }
