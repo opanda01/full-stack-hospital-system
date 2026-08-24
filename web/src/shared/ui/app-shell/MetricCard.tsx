@@ -5,13 +5,15 @@ import { Badge } from "@/shared/ui/badge";
 import { cn } from "@/shared/lib/utils";
 import { sayisalBosMu } from "./metricCardSemantics";
 
-export type MetricCardRenk = "success" | "accent" | "warning" | "notr";
+export type MetricCardRenk = "success" | "accent" | "warning" | "notr" | "kritik";
+export type MetricCardSize = "hero" | "default" | "compact";
 
 type MetricCardProps = {
   label: string;
   value: string | number;
   icon?: LucideIcon;
   renk?: MetricCardRenk;
+  size?: MetricCardSize;
   to?: string;
   className?: string;
   /** Örn. "+12%" veya "3 kritik" */
@@ -26,17 +28,31 @@ type MetricCardProps = {
 };
 
 const RENK_BG: Record<MetricCardRenk, string> = {
-  success: "var(--card-success-bg)",
-  accent: "var(--card-accent-bg)",
-  warning: "var(--card-warning-bg)",
-  notr: "var(--panel-inset-bg)",
+  success: "var(--panel-bg)",
+  accent: "var(--panel-bg)",
+  warning: "var(--panel-bg)",
+  kritik: "var(--panel-bg)",
+  notr: "var(--panel-bg)",
 };
 
 const RENK_ACCENT: Record<MetricCardRenk, string> = {
   success: "var(--status-tamamlandi-fg)",
   accent: "var(--nav-active-bg)",
   warning: "var(--status-beklemede-fg)",
+  kritik: "var(--status-kritik-fg)",
   notr: "var(--status-iptal-fg)",
+};
+
+const SIZE_VALUE: Record<MetricCardSize, string> = {
+  hero: "mt-1 text-4xl font-semibold tabular-nums tracking-tight",
+  default: "mt-1 text-2xl font-semibold tabular-nums tracking-tight",
+  compact: "mt-0.5 text-lg font-semibold tabular-nums tracking-tight",
+};
+
+const SIZE_SHELL: Record<MetricCardSize, string> = {
+  hero: "p-4 sm:p-5",
+  default: "p-4",
+  compact: "p-3",
 };
 
 export function MetricCard({
@@ -44,6 +60,7 @@ export function MetricCard({
   value,
   icon: Icon,
   renk = "notr",
+  size = "default",
   to,
   className,
   trend,
@@ -55,6 +72,7 @@ export function MetricCard({
   const yukleniyor = value === "…";
   const bosSayac = variant === "stat" && !yukleniyor && sayisalBosMu(value);
   const effectiveRenk = bosSayac && emptyHint ? "success" : renk;
+  const showIcon = Icon && size !== "compact" && (size === "hero" || effectiveRenk !== "notr");
 
   const valueBlock =
     variant === "action" ? (
@@ -69,7 +87,10 @@ export function MetricCard({
       </div>
     ) : bosSayac && emptyHint ? (
       <p
-        className="mt-1 flex min-h-[2rem] items-center gap-1.5 text-lg font-semibold leading-tight"
+        className={cn(
+          "flex min-h-[2rem] items-center gap-1.5 font-semibold leading-tight",
+          size === "hero" ? "mt-1 text-xl" : "mt-1 text-lg",
+        )}
         style={{ color: "var(--status-tamamlandi-fg)" }}
       >
         <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
@@ -77,7 +98,7 @@ export function MetricCard({
       </p>
     ) : (
       <p
-        className="mt-1 text-2xl font-semibold tabular-nums tracking-tight"
+        className={SIZE_VALUE[size]}
         style={{ color: "var(--text-primary)" }}
       >
         {value}
@@ -88,7 +109,10 @@ export function MetricCard({
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
         <p
-          className="text-xs font-medium leading-snug"
+          className={cn(
+            "font-medium leading-snug",
+            size === "compact" ? "text-[11px]" : "text-xs",
+          )}
           style={{ color: "var(--text-secondary)" }}
         >
           {label}
@@ -103,7 +127,9 @@ export function MetricCard({
                   color:
                     trend.direction === "down"
                       ? "var(--status-kritik-fg)"
-                      : "var(--status-tamamlandi-fg)",
+                      : trend.direction === "up"
+                        ? "var(--status-tamamlandi-fg)"
+                        : "var(--text-secondary)",
                 }}
               >
                 {trend.direction === "down" ? (
@@ -122,12 +148,12 @@ export function MetricCard({
           </div>
         ) : null}
       </div>
-      {Icon ? (
+      {showIcon ? (
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border"
           style={{
-            background: "var(--panel-bg)",
-            color: "var(--nav-active-bg)",
+            background: "var(--panel-inset-bg)",
+            color: RENK_ACCENT[effectiveRenk],
             borderColor: "color-mix(in srgb, var(--text-secondary) 15%, transparent)",
           }}
           aria-hidden
@@ -139,8 +165,9 @@ export function MetricCard({
   );
 
   const shellClass = cn(
-    "rounded-lg border border-transparent p-4",
+    "rounded-lg border",
     "border-l-4",
+    SIZE_SHELL[size],
     to &&
       "block transition hover:border-[color:var(--border-accent)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--border-accent)] focus-visible:ring-offset-2",
     className,
@@ -148,6 +175,7 @@ export function MetricCard({
   const shellStyle = {
     background: RENK_BG[effectiveRenk],
     borderLeftColor: RENK_ACCENT[effectiveRenk],
+    borderColor: "color-mix(in srgb, var(--text-secondary) 12%, transparent)",
   } as const;
 
   if (to) {

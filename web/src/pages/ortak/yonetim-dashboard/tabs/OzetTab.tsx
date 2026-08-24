@@ -10,10 +10,9 @@ import {
 } from "lucide-react";
 import { DashboardGrid } from "@/shared/ui/dashboard";
 import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { renkEnvanter, renkKuyrukSayaci, renkNavigasyon } from "@/shared/ui/app-shell/metricCardSemantics";
 import { useYonetimDashboardData } from "@/features/dashboard/hooks/useYonetimDashboardData";
 import { pageTotal } from "@/shared/lib";
-
-const RENK = ["success", "accent", "warning", "notr"] as const;
 
 type Props = { root: "/mudur" | "/bashekim" };
 
@@ -62,7 +61,9 @@ export function YonetimDashboardOzetTab({ root }: Props) {
     },
     {
       label: "Nöbet çizelgesi",
-      value: "Git",
+      variant: "action" as const,
+      actionHint: "Çizelgeyi aç",
+      value: 0,
       icon: CalendarDays,
       to: `${root}/nobet`,
     },
@@ -82,14 +83,24 @@ export function YonetimDashboardOzetTab({ root }: Props) {
 
   return (
     <DashboardGrid>
-      {metrics.map((m, i) => (
+      {metrics.map((m) => (
         <MetricCard
           key={m.label}
           label={m.label}
           value={m.value}
           icon={m.icon}
-          renk={RENK[i % RENK.length]}
+          renk={
+            m.label === "Nöbet çizelgesi"
+              ? renkNavigasyon()
+              : typeof m.value === "number" && m.label.includes("temizlik")
+                ? renkKuyrukSayaci(m.value as number, loading)
+                : typeof m.value === "number" && m.label.includes("randevu")
+                  ? renkKuyrukSayaci(m.value as number, loading)
+                  : renkEnvanter()
+          }
           to={m.to}
+          variant={"variant" in m ? m.variant : "stat"}
+          actionHint={"actionHint" in m ? m.actionHint : undefined}
         />
       ))}
     </DashboardGrid>

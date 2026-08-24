@@ -2,9 +2,10 @@
 
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from sqlmodel import Session, func, select
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import case
+from sqlmodel import Session, col, func, select
 
 from app.core.db import get_session
 from app.core.enums import IlacTalepDurumu, KlinikOnayDurumu, Rol, TriyajRenk, YatakDurumu
@@ -21,8 +22,11 @@ from app.features.kullanicilar.models import Kullanici
 from app.features.nobet_cizelgesi.models import NobetCizelgesi
 from app.features.personel.models import Personel
 from app.features.randevular.models import Randevu
+from app.features.sikayet_oneri.models import SikayetOneri
+from app.features.sikayet_oneri.service import BEKLEYEN_DURUMLAR
+from app.features.temizlik_gorevleri.models import TemizlikGorevi
 from app.features.tetkikler.models import Tetkik
-from app.features.yatak_yonetimi.models import Yatak
+from app.features.yatak_yonetimi.models import Oda, Servis, Yatak
 from app.features.yatis.models import HemsireGorevi, IlacUygulama, YatisKaydi
 
 router = APIRouter()
@@ -52,6 +56,84 @@ class AdminOzet(BaseModel):
     personel_sayisi: int
     randevu_bekleyen: int
     randevu_toplam: int
+    randevu_onay_bekleyen: int
+    sikayet_bekleyen: int
+    temizlik_acik: int
+    yatak_dolu: int
+    yatak_bos: int
+    aktif_yatis: int
+    nobet_bugun: int
+
+
+class GunlukAdet(BaseModel):
+    tarih: str
+    adet: int
+
+
+class AdminTrend(BaseModel):
+    randevu_gunluk: list[GunlukAdet]
+    yatis_gunluk: list[GunlukAdet]
+
+
+class ServisDolulukSatir(BaseModel):
+    servis_id: int
+    servis_adi: str
+    dolu: int
+    toplam: int
+    oran: float = Field(ge=0.0, le=1.0)
+
+
+def _zero_fill_gunluk(rows: dict[date, int], gun: int) -> list[GunlukAdet]:
+    bugun = date.today()
+    return [
+        GunlukAdet(
+            tarih=(bugun - timedelta(days=i)).isoformat(),
+            adet=rows.get(bugun - timedelta(days=i), 0),
+        )
+        for i in reversed(range(gun))
+    ]
+
+
+def _gunluk_sayim_randevu(session: Session, gun: int) -> list[GunlukAdet]:
+    bas = date.today() - timedelta(days=gun - 1)
+    bit = date.today() + timedelta(days=1)
+    gun_expr = func.date(Randevu.tarih_saat)
+    rows = session.exec(
+        select(gun_expr, func.count())
+        .select_from(Randevu)
+        .where(gun_expr >= bas, gun_expr < bit)
+        .group_by(gun_expr)
+    ).all()
+    sayim: dict[date, int] = {}
+    for gun_degeri, cnt in rows:
+        if gun_degeri is None:
+            continue
+        if isinstance(gun_degeri, str):
+            sayim[date.fromisoformat(gun_degeri)] = int(cnt or 0)
+        else:
+            sayim[gun_degeri] = int(cnt or 0)
+    return _zero_fill_gunluk(sayim, gun)
+
+
+def _gunluk_sayim_yatis(session: Session, gun: int) -> list[GunlukAdet]:
+    bas = date.today() - timedelta(days=gun - 1)
+    bit = date.today() + timedelta(days=1)
+    gun_expr = func.date(YatisKaydi.yatis_tarihi)
+    rows = session.exec(
+        select(gun_expr, func.count())
+        .select_from(YatisKaydi)
+        .where(gun_expr >= bas, gun_expr < bit)
+        .group_by(gun_expr)
+    ).all()
+    sayim: dict[date, int] = {}
+    for gun_degeri, cnt in rows:
+        if gun_degeri is None:
+            continue
+        if isinstance(gun_degeri, str):
+            sayim[date.fromisoformat(gun_degeri)] = int(cnt or 0)
+        else:
+            sayim[gun_degeri] = int(cnt or 0)
+    return _zero_fill_gunluk(sayim, gun)
 
 
 class LaborantOzet(BaseModel):
@@ -280,6 +362,7 @@ def admin_ozet(
     session: Session = Depends(get_session),
     _user: Kullanici = Depends(require_permission("personel:listele")),
 ):
+    bugun = date.today()
     return AdminOzet(
         kullanici_sayisi=int(
             session.exec(select(func.count()).select_from(Kullanici)).one() or 0
@@ -304,7 +387,116 @@ def admin_ozet(
         randevu_toplam=int(
             session.exec(select(func.count()).select_from(Randevu)).one() or 0
         ),
+        randevu_onay_bekleyen=int(
+            session.exec(
+                select(func.count())
+                .select_from(Randevu)
+                .where(Randevu.durum == "ONAY_BEKLIYOR")
+            ).one()
+            or 0
+        ),
+        sikayet_bekleyen=int(
+            session.exec(
+                select(func.count())
+                .select_from(SikayetOneri)
+                .where(col(SikayetOneri.durum).in_(tuple(BEKLEYEN_DURUMLAR)))
+            ).one()
+            or 0
+        ),
+        temizlik_acik=int(
+            session.exec(
+                select(func.count())
+                .select_from(TemizlikGorevi)
+                .where(
+                    TemizlikGorevi.durum != "TAMAMLANDI",
+                    TemizlikGorevi.durum != "IPTAL",
+                )
+            ).one()
+            or 0
+        ),
+        yatak_dolu=int(
+            session.exec(
+                select(func.count())
+                .select_from(Yatak)
+                .where(Yatak.durum == YatakDurumu.DOLU)
+            ).one()
+            or 0
+        ),
+        yatak_bos=int(
+            session.exec(
+                select(func.count())
+                .select_from(Yatak)
+                .where(Yatak.durum == YatakDurumu.BOS)
+            ).one()
+            or 0
+        ),
+        aktif_yatis=int(
+            session.exec(
+                select(func.count())
+                .select_from(YatisKaydi)
+                .where(YatisKaydi.aktif_mi == True)  # noqa: E712
+            ).one()
+            or 0
+        ),
+        nobet_bugun=int(
+            session.exec(
+                select(func.count())
+                .select_from(NobetCizelgesi)
+                .where(NobetCizelgesi.tarih == bugun)
+            ).one()
+            or 0
+        ),
     )
+
+
+@router.get("/admin/trend", response_model=AdminTrend)
+def admin_trend(
+    session: Session = Depends(get_session),
+    gun: int = Query(default=7, ge=1, le=30),
+    _user: Kullanici = Depends(require_permission("personel:listele")),
+):
+    return AdminTrend(
+        randevu_gunluk=_gunluk_sayim_randevu(session, gun),
+        yatis_gunluk=_gunluk_sayim_yatis(session, gun),
+    )
+
+
+@router.get("/admin/servis-doluluk", response_model=list[ServisDolulukSatir])
+def admin_servis_doluluk(
+    session: Session = Depends(get_session),
+    _user: Kullanici = Depends(require_permission("personel:listele")),
+):
+    dolu_expr = func.sum(
+        case((Yatak.durum == YatakDurumu.DOLU, 1), else_=0)
+    )
+    rows = session.exec(
+        select(
+            Servis.id,
+            Servis.ad,
+            func.count(Yatak.id),
+            dolu_expr,
+        )
+        .select_from(Servis)
+        .outerjoin(Oda, Oda.servis_id == Servis.id)
+        .outerjoin(Yatak, Yatak.oda_id == Oda.id)
+        .group_by(Servis.id, Servis.ad)
+        .order_by(Servis.ad)
+    ).all()
+    sonuc: list[ServisDolulukSatir] = []
+    for servis_id, servis_adi, toplam, dolu in rows:
+        toplam_i = int(toplam or 0)
+        dolu_i = int(dolu or 0)
+        oran = round(dolu_i / toplam_i, 2) if toplam_i > 0 else 0.0
+        sonuc.append(
+            ServisDolulukSatir(
+                servis_id=int(servis_id),
+                servis_adi=str(servis_adi),
+                dolu=dolu_i,
+                toplam=toplam_i,
+                oran=oran,
+            )
+        )
+    return sonuc
 
 
 @router.get("/laborant/ozet", response_model=LaborantOzet)

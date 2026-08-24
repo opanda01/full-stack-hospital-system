@@ -1,104 +1,94 @@
-import { Link } from "react-router-dom";
 import {
   CalendarClock,
   MessageSquareWarning,
   Sparkles,
 } from "lucide-react";
-import { DashboardGrid, DashboardSection } from "@/shared/ui/dashboard";
-import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { DASHBOARD_ESIKLERI } from "@/features/dashboard/config/dashboardEsikleri";
 import { useAdminDashboardData } from "@/features/dashboard/hooks/useAdminDashboardData";
-import { pageTotal } from "@/shared/lib";
+import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import {
+  renkKritik,
+  renkKuyrukSayaci,
+} from "@/shared/ui/app-shell/metricCardSemantics";
+import { DashboardGrid, DashboardSection } from "@/shared/ui/dashboard";
+import { DashboardInsetList } from "@/shared/ui/dashboard/DashboardInsetList";
 
 export function AdminDashboardBekleyenlerTab() {
   const {
     ozet,
     isLoading,
-    acikTemizlik,
-    sikayetPage,
+    sikayetOzet,
     sikayetList,
     randevuBekleyenList,
   } = useAdminDashboardData();
+
+  const randevuBekleyen =
+    (ozet.data?.randevu_bekleyen ?? 0) + (ozet.data?.randevu_onay_bekleyen ?? 0);
+  const temizlikAcik = ozet.data?.temizlik_acik ?? 0;
+  const sikayetBekleyen =
+    ozet.data?.sikayet_bekleyen ?? sikayetOzet.data?.bekleyen ?? 0;
 
   return (
     <div className="space-y-6">
       <DashboardGrid>
         <MetricCard
           label="Bekleyen randevu"
-          value={isLoading ? "…" : (ozet.data?.randevu_bekleyen ?? 0)}
+          value={isLoading ? "…" : randevuBekleyen}
           icon={CalendarClock}
-          renk="warning"
+          renk={renkKuyrukSayaci(
+            randevuBekleyen,
+            isLoading,
+            DASHBOARD_ESIKLERI.randevuBekleyen,
+          )}
           to="/admin/randevular"
           statusBadge={
-            (ozet.data?.randevu_bekleyen ?? 0) > 0
+            randevuBekleyen > 0
               ? { label: "Aksiyon gerekli", variant: "beklemede" }
               : undefined
           }
         />
         <MetricCard
           label="Açık temizlik görevi"
-          value={acikTemizlik}
+          value={isLoading ? "…" : temizlikAcik}
           icon={Sparkles}
-          renk="accent"
+          renk={renkKuyrukSayaci(
+            temizlikAcik,
+            isLoading,
+            DASHBOARD_ESIKLERI.temizlikAcik,
+          )}
           to="/admin/temizlik"
+          emptyHint="Tüm görevler tamam"
         />
         <MetricCard
-          label="Şikayet / öneri"
-          value={sikayetPage.data ? pageTotal(sikayetPage.data) : "…"}
+          label="Bekleyen şikayet"
+          value={isLoading ? "…" : sikayetBekleyen}
           icon={MessageSquareWarning}
-          renk="warning"
+          renk={renkKritik(sikayetBekleyen, DASHBOARD_ESIKLERI.sikayetBekleyen)}
           to="/admin/sikayet"
         />
       </DashboardGrid>
 
       <DashboardSection title="Son şikayet / öneriler">
-        <ul
-          className="divide-y rounded-lg corporate-panel text-sm"
-          style={{
-            background: "var(--panel-inset-bg)",
-            borderColor:
-              "color-mix(in srgb, var(--text-secondary) 15%, transparent)",
-          }}
-        >
-          {(sikayetList.data ?? []).length === 0 ? (
-            <li className="px-4 py-3 text-[color:var(--text-secondary)]">
-              Bekleyen kayıt yok veya liste yükleniyor…
-            </li>
-          ) : (
-            (sikayetList.data ?? []).map((s) => (
-              <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                <span>#{s.id} {s.baslik ?? "Şikayet / öneri"}</span>
-                <Link
-                  to="/admin/sikayet"
-                  className="text-xs font-medium text-primary hover:underline"
-                >
-                  İncele
-                </Link>
-              </li>
-            ))
-          )}
-        </ul>
+        <DashboardInsetList
+          emptyMessage="Bekleyen kayıt yok veya liste yükleniyor…"
+          items={(sikayetList.data ?? []).map((s) => ({
+            id: String(s.id),
+            primary: `#${s.id} ${s.baslik ?? "Şikayet / öneri"}`,
+            to: "/admin/sikayet",
+            actionLabel: "İncele",
+          }))}
+        />
       </DashboardSection>
 
       <DashboardSection title="Bekleyen randevular (özet)">
-        <ul
-          className="divide-y rounded-lg corporate-panel text-sm"
-          style={{ background: "var(--panel-inset-bg)" }}
-        >
-          {(randevuBekleyenList.data ?? []).length === 0 ? (
-            <li className="px-4 py-3 text-[color:var(--text-secondary)]">
-              Bekleyen randevu bulunamadı.
-            </li>
-          ) : (
-            (randevuBekleyenList.data ?? []).map((r) => (
-              <li key={r.id} className="flex items-center justify-between px-4 py-2.5">
-                <span>Randevu {r.id.slice(0, 8)}…</span>
-                <span className="text-xs text-[color:var(--text-secondary)]">
-                  {r.durum ?? "BEKLEMEDE"}
-                </span>
-              </li>
-            ))
-          )}
-        </ul>
+        <DashboardInsetList
+          emptyMessage="Bekleyen randevu bulunamadı."
+          items={(randevuBekleyenList.data ?? []).map((r) => ({
+            id: r.id,
+            primary: `Randevu ${r.id.slice(0, 8)}…`,
+            trailing: r.durum ?? "BEKLEMEDE",
+          }))}
+        />
       </DashboardSection>
     </div>
   );

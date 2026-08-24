@@ -36,13 +36,16 @@ export function DashboardSection({
 type DashboardGridProps = {
   children: ReactNode;
   className?: string;
-  cols?: "metrics" | "links" | "widgets";
+  cols?: "metrics" | "links" | "widgets" | "hero" | "compact";
 };
 
 const COLS: Record<NonNullable<DashboardGridProps["cols"]>, string> = {
   metrics: "grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4",
   links: "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
   widgets: "grid gap-4 lg:grid-cols-2",
+  hero: "grid gap-3 sm:grid-cols-2 lg:grid-cols-3",
+  compact:
+    "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-3",
 };
 
 export function DashboardGrid({

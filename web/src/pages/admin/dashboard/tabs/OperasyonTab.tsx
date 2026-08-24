@@ -4,28 +4,43 @@ import {
   Scissors,
   Sparkles,
 } from "lucide-react";
-import { DashboardGrid, DashboardSection, QuickLinkGrid } from "@/shared/ui/dashboard";
-import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { DASHBOARD_ESIKLERI } from "@/features/dashboard/config/dashboardEsikleri";
 import { useAdminDashboardData } from "@/features/dashboard/hooks/useAdminDashboardData";
+import { MetricCard } from "@/shared/ui/app-shell/MetricCard";
+import { renkKuyrukSayaci } from "@/shared/ui/app-shell/metricCardSemantics";
+import { DashboardGrid, DashboardSection, QuickLinkGrid } from "@/shared/ui/dashboard";
 
 export function AdminDashboardOperasyonTab() {
-  const { acikTemizlik, isLoading, ozet } = useAdminDashboardData();
+  const { isLoading, ozet } = useAdminDashboardData();
+
+  const temizlikAcik = ozet.data?.temizlik_acik ?? 0;
+  const randevuBekleyen =
+    (ozet.data?.randevu_bekleyen ?? 0) + (ozet.data?.randevu_onay_bekleyen ?? 0);
 
   return (
     <div className="space-y-6">
       <DashboardGrid>
         <MetricCard
           label="Açık temizlik"
-          value={acikTemizlik}
+          value={isLoading ? "…" : temizlikAcik}
           icon={Sparkles}
-          renk="warning"
+          renk={renkKuyrukSayaci(
+            temizlikAcik,
+            isLoading,
+            DASHBOARD_ESIKLERI.temizlikAcik,
+          )}
           to="/admin/temizlik"
+          emptyHint="Tüm görevler tamam"
         />
         <MetricCard
           label="Bekleyen randevu"
-          value={isLoading ? "…" : (ozet.data?.randevu_bekleyen ?? 0)}
+          value={isLoading ? "…" : randevuBekleyen}
           icon={CalendarDays}
-          renk="accent"
+          renk={renkKuyrukSayaci(
+            randevuBekleyen,
+            isLoading,
+            DASHBOARD_ESIKLERI.randevuBekleyen,
+          )}
           to="/admin/randevular"
         />
       </DashboardGrid>
@@ -53,7 +68,7 @@ export function AdminDashboardOperasyonTab() {
               to: "/admin/temizlik",
               icon: Sparkles,
               description: "Atama ve takip",
-              badge: acikTemizlik > 0 ? String(acikTemizlik) : undefined,
+              badge: temizlikAcik > 0 ? String(temizlikAcik) : undefined,
             },
             {
               label: "Ameliyathane",
