@@ -17,6 +17,7 @@ from app.core.seed_yatak_yonetimi import seed_yatak_yonetimi_demo
 from app.core.seed_ameliyathane import seed_ameliyathane_demo
 from app.core.seed_radyoloji import seed_radyoloji_demo
 from app.core.seed_plan_demo import seed_plan_demo
+from app.core.seed_admin_dashboard_demo import seed_admin_dashboard_demo
 from sqlmodel import Session
 
 
@@ -33,6 +34,7 @@ def main() -> None:
         seed_radyoloji_demo(session)
         seed_plan_demo(session)
         seed_test_personel(session, per_rol=50)
+        seed_admin_dashboard_demo(session)
     print(
         f"Demo kullanıcılar + hastane referans + örnek işlemler + bashekim/doktor/hemsire demo "
         f"+ toplu personel (rol başına 50) seed tamamlandı (şifre: {DEMO_SIFRE})."
