@@ -42,6 +42,7 @@ export function BashekimErisimOnaylariPage() {
       api.post(`/personel/erisim-talepleri/${id}/onayla`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["erisim-talepleri"] });
+      qc.invalidateQueries({ queryKey: ["personel"] });
       qc.invalidateQueries({ queryKey: ["bashekim-ozet"] });
     },
     onError: (e) => setFormError(getApiErrorMessage(e)),
@@ -54,6 +55,7 @@ export function BashekimErisimOnaylariPage() {
       setRedId(null);
       setGerekce("");
       qc.invalidateQueries({ queryKey: ["erisim-talepleri"] });
+      qc.invalidateQueries({ queryKey: ["personel"] });
       qc.invalidateQueries({ queryKey: ["bashekim-ozet"] });
     },
     onError: (e) => setFormError(getApiErrorMessage(e)),
@@ -66,6 +68,7 @@ export function BashekimErisimOnaylariPage() {
       setBypassId(null);
       setGerekce("");
       qc.invalidateQueries({ queryKey: ["erisim-talepleri"] });
+      qc.invalidateQueries({ queryKey: ["personel"] });
       qc.invalidateQueries({ queryKey: ["bashekim-ozet"] });
     },
     onError: (e) => setFormError(getApiErrorMessage(e)),

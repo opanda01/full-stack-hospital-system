@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from app.core.enums import ErisimDurumu, PersonelKaynakTipi, Rol
@@ -57,13 +58,36 @@ def list_personel(
     session: Session,
     *,
     rol: Rol | None = None,
+    departman_id: int | None = None,
+    departman_atanmamis: bool | None = None,
+    aktif_mi: bool | None = None,
+    erisim_durumu: ErisimDurumu | None = None,
+    arama: str | None = None,
     page: int = 1,
     page_size: int = 50,
 ) -> Page[PersonelRead]:
-    q = select(Personel)
+    q = select(Personel).join(Kullanici, Kullanici.id == Personel.kullanici_id)
     if rol is not None:
-        q = q.join(Kullanici, Kullanici.id == Personel.kullanici_id).where(
-            Kullanici.rol == rol
+        q = q.where(Kullanici.rol == rol)
+    if departman_atanmamis:
+        q = q.where(Personel.departman_id.is_(None))
+    elif departman_id is not None:
+        q = q.where(Personel.departman_id == departman_id)
+    if aktif_mi is not None:
+        q = q.where(Kullanici.aktif_mi == aktif_mi)
+    if erisim_durumu is not None:
+        q = q.where(Kullanici.erisim_durumu == erisim_durumu)
+    if arama:
+        term = f"%{arama.strip()}%"
+        q = q.where(
+            or_(
+                Kullanici.ad.ilike(term),
+                Kullanici.soyad.ilike(term),
+                Kullanici.email.ilike(term),
+                Kullanici.telefon.ilike(term),
+                Personel.sicil_no.ilike(term),
+                Personel.unvan.ilike(term),
+            )
         )
     q = q.order_by(Personel.id.desc())
     rows, total = paginate(session, q, page=page, page_size=page_size)
