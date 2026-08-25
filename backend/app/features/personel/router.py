@@ -28,12 +28,22 @@ router = APIRouter()
 def list_personel(
     pagination: PaginationParams = Depends(get_pagination),
     rol: Rol | None = None,
+    departman_id: int | None = None,
+    departman_atanmamis: bool | None = None,
+    aktif_mi: bool | None = None,
+    erisim_durumu: ErisimDurumu | None = None,
+    arama: str | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_permission("personel:listele")),
 ):
     return personel_service.list_personel(
         session,
         rol=rol,
+        departman_id=departman_id,
+        departman_atanmamis=departman_atanmamis,
+        aktif_mi=aktif_mi,
+        erisim_durumu=erisim_durumu,
+        arama=arama,
         page=pagination.page,
         page_size=pagination.page_size,
     )

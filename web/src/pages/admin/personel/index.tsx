@@ -3,7 +3,12 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AppShell, Button, Input, ListPager, SearchableCombobox } from "@/shared/ui";
 import { api } from "@/shared/api";
-import { getApiErrorMessage, fetchAllPages } from "@/shared/lib";
+import {
+  getApiErrorMessage,
+  pageTotal,
+  unwrapPage,
+  type PageResponse,
+} from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
 import { PersonelEkleForm } from "@/features/personel-ekle";
 import { PersonelImportPanel } from "@/features/personel-import";
@@ -25,18 +30,34 @@ const ROLLER = [
   "IDARI_PERSONEL",
 ];
 
-type DurumFiltre = "hepsi" | "aktif" | "pasif";
+type DurumFiltre = "hepsi" | "aktif" | "pasif" | "onay_bekliyor";
 
 const PAGE_SIZE = 50;
 
-function normalize(s: string) {
-  return s.trim().toLocaleLowerCase("tr-TR");
+function erisimEtiket(durum: string | null | undefined): string {
+  switch (durum) {
+    case "BEKLEMEDE":
+      return "Onay bekliyor";
+    case "ONAYLANDI":
+      return "Onaylandı";
+    case "REDDEDILDI":
+      return "Reddedildi";
+    default:
+      return durum ?? "—";
+  }
+}
+
+function hesapDurumu(p: Personel): string {
+  if (p.erisim_durumu === "BEKLEMEDE") return "Onay bekliyor";
+  if (p.aktif_mi === false) return "Pasif";
+  return "Aktif";
 }
 
 export function PersonelYonetimiPage() {
   const location = useLocation();
   const roleRoot = roleRootFromPath(location.pathname);
   const isAdmin = roleRoot === "/admin";
+  const isBashekim = roleRoot === "/bashekim";
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Personel | null>(null);
   const [editDepartmanId, setEditDepartmanId] = useState("");
@@ -46,17 +67,52 @@ export function PersonelYonetimiPage() {
   const [editEmail, setEditEmail] = useState("");
   const [editTelefon, setEditTelefon] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [eklemeMesaji, setEklemeMesaji] = useState<string | null>(null);
   const [arama, setArama] = useState("");
+  const [aramaGirdi, setAramaGirdi] = useState("");
   const [rolFiltre, setRolFiltre] = useState("");
   const [durumFiltre, setDurumFiltre] = useState<DurumFiltre>("hepsi");
   const [departmanFiltre, setDepartmanFiltre] = useState("");
   const [page, setPage] = useState(1);
   const titleId = useId();
 
-  const { data: personeller = [], isLoading, isError, error } = useQuery({
-    queryKey: ["personel"],
-    queryFn: () => fetchAllPages<Personel>("/personel/"),
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: [
+      "personel",
+      page,
+      rolFiltre,
+      durumFiltre,
+      departmanFiltre,
+      arama,
+    ],
+    queryFn: async () => {
+      const params: Record<string, string | number | boolean> = {
+        page,
+        page_size: PAGE_SIZE,
+      };
+      if (rolFiltre) params.rol = rolFiltre;
+      if (departmanFiltre === "yok") {
+        params.departman_atanmamis = true;
+      } else if (departmanFiltre) {
+        params.departman_id = Number(departmanFiltre);
+      }
+      if (durumFiltre === "aktif") params.aktif_mi = true;
+      if (durumFiltre === "pasif") params.aktif_mi = false;
+      if (durumFiltre === "onay_bekliyor") params.erisim_durumu = "BEKLEMEDE";
+      if (arama.trim()) params.arama = arama.trim();
+      return (
+        await api.get<PageResponse<Personel>>("/personel/", { params })
+      ).data;
+    },
   });
+
+  const personeller = unwrapPage(data ?? []);
+  const total = pageTotal(data ?? []);
 
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
@@ -76,44 +132,9 @@ export function PersonelYonetimiPage() {
     [departmanlar],
   );
 
-  const filtered = useMemo(() => {
-    const q = normalize(arama);
-    return personeller.filter((p) => {
-      if (rolFiltre && p.rol !== rolFiltre) return false;
-      if (durumFiltre === "aktif" && p.aktif_mi === false) return false;
-      if (durumFiltre === "pasif" && p.aktif_mi !== false) return false;
-      if (departmanFiltre) {
-        if (departmanFiltre === "yok") {
-          if (p.departman_id != null) return false;
-        } else if (String(p.departman_id) !== departmanFiltre) {
-          return false;
-        }
-      }
-      if (!q) return true;
-      const haystack = normalize(
-        [
-          p.sicil_no,
-          p.ad ?? "",
-          p.soyad ?? "",
-          p.email ?? "",
-          p.telefon ?? "",
-          p.rol ?? "",
-          p.unvan ?? "",
-          p.departman_ad ?? "",
-        ].join(" "),
-      );
-      return haystack.includes(q);
-    });
-  }, [personeller, arama, rolFiltre, durumFiltre, departmanFiltre]);
-
   useEffect(() => {
     setPage(1);
   }, [arama, rolFiltre, durumFiltre, departmanFiltre]);
-
-  const paged = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
 
   const filtreAktif =
     Boolean(arama.trim()) ||
@@ -169,7 +190,34 @@ export function PersonelYonetimiPage() {
   return (
     <AppShell title="Personel Yönetimi" links={links}>
       <PersonelImportPanel />
-      <PersonelEkleForm />
+      <PersonelEkleForm
+        onSuccess={() => {
+          setPage(1);
+          setArama("");
+          setAramaGirdi("");
+          setRolFiltre("");
+          setDurumFiltre("hepsi");
+          setDepartmanFiltre("");
+          setEklemeMesaji(
+            "Personel eklendi. Kayıt listede «Onay bekliyor» olarak görünür; giriş için Başhekim erişim onayı gerekir.",
+          );
+        }}
+      />
+
+      {eklemeMesaji && (
+        <p className="mb-4 rounded border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+          {eklemeMesaji}
+          {isBashekim ? (
+            <>
+              {" "}
+              <Link className="font-medium underline" to={`${roleRoot}/erisim-onaylari`}>
+                Erişim onayları
+              </Link>{" "}
+              sayfasından onaylayabilirsiniz.
+            </>
+          ) : null}
+        </p>
+      )}
 
       {isLoading ? (
         <p>Yükleniyor…</p>
@@ -177,19 +225,32 @@ export function PersonelYonetimiPage() {
         <p className="text-sm text-red-600" role="alert">
           {getApiErrorMessage(error)}
         </p>
-      ) : personeller.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Henüz personel yok.</p>
+      ) : total === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {filtreAktif ? "Filtreye uyan personel yok." : "Henüz personel yok."}
+        </p>
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
-            <label className="min-w-[200px] flex-1 space-y-1 text-sm">
+            <form
+              className="min-w-[200px] flex-1 space-y-1 text-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setArama(aramaGirdi);
+              }}
+            >
               <span className="text-muted-foreground">Ara</span>
-              <Input
-                value={arama}
-                onChange={(e) => setArama(e.target.value)}
-                placeholder="Sicil, ad, e-posta, unvan…"
-              />
-            </label>
+              <div className="flex gap-2">
+                <Input
+                  value={aramaGirdi}
+                  onChange={(e) => setAramaGirdi(e.target.value)}
+                  placeholder="Sicil, ad, e-posta, unvan…"
+                />
+                <Button type="submit" variant="outline" size="sm">
+                  Ara
+                </Button>
+              </div>
+            </form>
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Rol</span>
               <select
@@ -208,12 +269,13 @@ export function PersonelYonetimiPage() {
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Durum</span>
               <select
-                className="block min-w-[120px] rounded-md border border-border bg-background px-3 py-2"
+                className="block min-w-[140px] rounded-md border border-border bg-background px-3 py-2"
                 value={durumFiltre}
                 onChange={(e) => setDurumFiltre(e.target.value as DurumFiltre)}
               >
                 <option value="hepsi">Tümü</option>
                 <option value="aktif">Aktif</option>
+                <option value="onay_bekliyor">Onay bekliyor</option>
                 <option value="pasif">Pasif</option>
               </select>
             </label>
@@ -240,6 +302,7 @@ export function PersonelYonetimiPage() {
                 size="sm"
                 onClick={() => {
                   setArama("");
+                  setAramaGirdi("");
                   setRolFiltre("");
                   setDurumFiltre("hepsi");
                   setDepartmanFiltre("");
@@ -251,58 +314,59 @@ export function PersonelYonetimiPage() {
           </div>
 
           <p className="mb-2 text-sm text-muted-foreground">
-            {filtered.length} / {personeller.length} personel
+            {total} personel
+            {durumFiltre === "aktif" ? (
+              <span className="ml-1">
+                (onay bekleyenler «Onay bekliyor» filtresinde)
+              </span>
+            ) : null}
           </p>
 
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Filtreye uyan personel yok.
-            </p>
-          ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="py-2">Sicil</th>
-                  <th>Ad Soyad</th>
-                  <th>Rol</th>
-                  <th>Durum</th>
-                  <th>Departman</th>
-                  <th>Unvan</th>
-                  <th />
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-2">Sicil</th>
+                <th>Ad Soyad</th>
+                <th>Rol</th>
+                <th>Durum</th>
+                <th>Erişim</th>
+                <th>Departman</th>
+                <th>Unvan</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {personeller.map((p) => (
+                <tr key={p.id} className="border-b">
+                  <td className="py-2">{p.sicil_no}</td>
+                  <td>
+                    {p.ad || p.soyad
+                      ? `${p.ad ?? ""} ${p.soyad ?? ""}`.trim()
+                      : `Kullanıcı #${p.kullanici_id}`}
+                  </td>
+                  <td>{p.rol ?? "—"}</td>
+                  <td>{hesapDurumu(p)}</td>
+                  <td>{erisimEtiket(p.erisim_durumu)}</td>
+                  <td>{p.departman_ad ?? "—"}</td>
+                  <td>{p.unvan ?? "—"}</td>
+                  <td className="py-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(p)}
+                    >
+                      Düzenle
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {paged.map((p) => (
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2">{p.sicil_no}</td>
-                    <td>
-                      {p.ad || p.soyad
-                        ? `${p.ad ?? ""} ${p.soyad ?? ""}`.trim()
-                        : `Kullanıcı #${p.kullanici_id}`}
-                    </td>
-                    <td>{p.rol ?? "—"}</td>
-                    <td>{p.aktif_mi === false ? "Pasif" : "Aktif"}</td>
-                    <td>{p.departman_ad ?? "—"}</td>
-                    <td>{p.unvan ?? "—"}</td>
-                    <td className="py-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(p)}
-                      >
-                        Düzenle
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
           <ListPager
             page={page}
             pageSize={PAGE_SIZE}
-            total={filtered.length}
+            total={total}
             onPageChange={setPage}
           />
         </>
