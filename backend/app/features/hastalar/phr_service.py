@@ -127,7 +127,7 @@ def yatis_ozet(session: Session, current_user: Kullanici) -> HastaYatisOzetRead:
         yatak_no=yatak_no,
         oda_no=oda_no,
         yatis_tarihi=row.yatis_tarihi,
-        taburcu_tarihi=row.taburcu_tarihi,
+        taburcu_tarihi=row.cikis_tarihi,
     )
 
 
