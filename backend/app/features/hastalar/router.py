@@ -129,6 +129,15 @@ def benim_yatis_ozet(
     return phr_service.yatis_ozet(session, current_user)
 
 
+@router.get("/ben/yatis-gecmisi", response_model=list[HastaYatisOzetRead])
+def benim_yatis_gecmisi(
+    session: Session = Depends(get_session),
+    current_user: Kullanici = Depends(require_role(Rol.HASTA)),
+    limit: int = 10,
+):
+    return phr_service.list_yatis_gecmisi(session, current_user, limit=min(limit, 50))
+
+
 @router.get("/ben/aktif-ilaclar", response_model=list[AktifIlacRead])
 def benim_aktif_ilaclar(
     session: Session = Depends(get_session),

@@ -55,6 +55,39 @@ def test_hasta_ozet_endpoint(client, seeded):
     assert "okunmamis_sonuc_sayisi" in body
 
 
+def test_hasta_ozet_yatis_kaydi_ile(client, session, seeded):
+    """Yatış kaydı olan hastada özet 500 vermemeli (cikis_tarihi → taburcu_tarihi)."""
+    from datetime import datetime, timezone
+
+    from app.core.enums import KlinikDurum
+    from app.features.yatak_yonetimi.models import Servis
+    from app.features.yatis.models import YatisKaydi
+
+    servis = Servis(ad="Test Servis", kod="TS-1", kat_no=1, departman_id=seeded["dep_a"].id)
+    session.add(servis)
+    session.commit()
+    session.refresh(servis)
+
+    yatis = YatisKaydi(
+        hasta_id=seeded["hasta_a_entity"].id,
+        servis_id=servis.id,
+        protokol_no="PR-OZET-001",
+        yatis_tarihi=datetime.now(timezone.utc),
+        cikis_tarihi=None,
+        klinik_durum=KlinikDurum.NORMAL,
+        aktif_mi=True,
+    )
+    session.add(yatis)
+    session.commit()
+
+    r = client.get("/hastalar/ben/ozet", headers=_hasta_auth(seeded["hasta_a"]))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["yatis"] is not None
+    assert body["yatis"]["aktif_mi"] is True
+    assert body["yatis"]["taburcu_tarihi"] is None
+
+
 def test_hasta_oturumunda_personel_rolu_ile_ozet(client, seeded):
     """OTP hasta oturumu: DB rolü personel olsa da KENDI_KAYDIM hasta filtresi."""
     doktor = seeded["doktor_a"]
@@ -66,6 +99,42 @@ def test_hasta_oturumunda_personel_rolu_ile_ozet(client, seeded):
     if r.status_code == 403 and "Hasta kaydı" in r.json().get("detail", ""):
         return
     assert r.status_code == 200, r.text
+
+
+def test_hasta_yatis_gecmisi(client, session, seeded):
+    from datetime import datetime, timezone
+
+    from app.core.enums import KlinikDurum
+    from app.features.yatak_yonetimi.models import Servis
+    from app.features.yatis.models import YatisKaydi
+
+    servis = Servis(ad="Gecmis Servis", kod="GS-1", kat_no=2, departman_id=seeded["dep_a"].id)
+    session.add(servis)
+    session.commit()
+    session.refresh(servis)
+
+    session.add(
+        YatisKaydi(
+            hasta_id=seeded["hasta_a_entity"].id,
+            servis_id=servis.id,
+            protokol_no="PR-GECMIS-001",
+            yatis_tarihi=datetime(2025, 6, 1, tzinfo=timezone.utc),
+            cikis_tarihi=datetime(2025, 6, 10, tzinfo=timezone.utc),
+            klinik_durum=KlinikDurum.NORMAL,
+            aktif_mi=False,
+        )
+    )
+    session.commit()
+
+    r = client.get(
+        "/hastalar/ben/yatis-gecmisi",
+        headers=_hasta_auth(seeded["hasta_a"]),
+    )
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) >= 1
+    assert items[0]["protokol_no"] == "PR-GECMIS-001"
+    assert items[0]["taburcu_tarihi"] is not None
 
 
 def test_hasta_sikayet_benim(client, seeded):

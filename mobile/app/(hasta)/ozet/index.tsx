@@ -200,16 +200,28 @@ export default function OzetScreen() {
             </View>
           ) : null}
 
-          {yatis?.aktif_mi ? (
-            <Card>
-              <Text style={styles.cardLabel}>Yatış</Text>
-              <Text style={styles.cardValue}>
-                {[yatis.servis_adi, yatis.yatak_no && `Yatak ${yatis.yatak_no}`]
-                  .filter(Boolean)
-                  .join(" · ") || "Aktif yatış kaydı"}
-              </Text>
-            </Card>
-          ) : null}
+          {yatis?.aktif_mi || yatis?.yatis_id ? (
+            <Pressable onPress={() => go("/(hasta)/yatislarim")}>
+              <Card>
+                <View style={styles.sectionHead}>
+                  <Text style={styles.cardLabel}>Yatış</Text>
+                  <Text style={styles.link}>Geçmiş yatışlar</Text>
+                </View>
+                <Text style={styles.cardValue}>
+                  {[yatis.servis_adi, yatis.yatak_no && `Yatak ${yatis.yatak_no}`]
+                    .filter(Boolean)
+                    .join(" · ") || "Yatış kaydı"}
+                </Text>
+              </Card>
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => go("/(hasta)/yatislarim")}>
+              <Card>
+                <Text style={styles.cardLabel}>Yatış geçmişi</Text>
+                <Text style={styles.cardMuted}>Kayıtları görüntüle</Text>
+              </Card>
+            </Pressable>
+          )}
 
           <Text style={[typography.section, styles.quickTitle]}>Hızlı işlemler</Text>
           <View style={styles.quickGrid}>
