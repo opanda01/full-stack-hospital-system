@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  View,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBelgeler } from "@/shared/api/hastaApi";
@@ -24,7 +25,24 @@ import {
 
 const PAGE_SIZE = 20;
 
+type BelgeFiltre = "TUMU" | "EPIKRIZ" | "RECETE" | "TIBBI_RAPOR" | "SEVK";
+
+const FILTRELER: { id: BelgeFiltre; label: string }[] = [
+  { id: "TUMU", label: "Tümü" },
+  { id: "EPIKRIZ", label: "Epikriz" },
+  { id: "RECETE", label: "Reçete" },
+  { id: "TIBBI_RAPOR", label: "Rapor" },
+  { id: "SEVK", label: "Sevk" },
+];
+
+function belgeFiltreUygun(item: HastaBelgeDto, filtre: BelgeFiltre): boolean {
+  if (filtre === "TUMU") return true;
+  if (filtre === "EPIKRIZ") return item.kaynak === "EPIKRIZ";
+  return item.tur === filtre;
+}
+
 export default function BelgelerimScreen() {
+  const [filtre, setFiltre] = useState<BelgeFiltre>("TUMU");
   const [moreItems, setMoreItems] = useState<HastaBelgeDto[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -56,6 +74,11 @@ export default function BelgelerimScreen() {
     ? [...firstPage.items, ...moreItems]
     : [];
 
+  const filteredItems = useMemo(
+    () => items.filter((i) => belgeFiltreUygun(i, filtre)),
+    [items, filtre],
+  );
+
   const queryHata = error instanceof Error ? error.message : null;
 
   const loadMore = useCallback(async () => {
@@ -83,8 +106,26 @@ export default function BelgelerimScreen() {
   return (
     <Screen>
       <ErrorText>{hata ?? queryHata}</ErrorText>
+      <View style={styles.filtreRow}>
+        {FILTRELER.map((f) => (
+          <Pressable
+            key={f.id}
+            style={[styles.filtreChip, filtre === f.id && styles.filtreChipActive]}
+            onPress={() => setFiltre(f.id)}
+          >
+            <Text
+              style={[
+                styles.filtreText,
+                filtre === f.id && styles.filtreTextActive,
+              ]}
+            >
+              {f.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
       <FlatList
-        data={items}
+        data={filteredItems}
         keyExtractor={(i) => `${i.kaynak}-${i.id}`}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />
@@ -97,7 +138,11 @@ export default function BelgelerimScreen() {
           ) : null
         }
         ListEmptyComponent={
-          <EmptyText>Onaylı belge yok (epikriz, reçete, sevk, rapor)</EmptyText>
+          <EmptyText>
+            {filtre === "TUMU"
+              ? "Onaylı belge yok (epikriz, reçete, sevk, rapor)"
+              : "Bu kategoride belge yok"}
+          </EmptyText>
         }
         renderItem={({ item }) => (
           <Pressable
@@ -127,6 +172,24 @@ export default function BelgelerimScreen() {
 }
 
 const styles = StyleSheet.create({
+  filtreRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  filtreChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#f1f5f9",
+  },
+  filtreChipActive: {
+    backgroundColor: colors.accent,
+  },
+  filtreText: { fontSize: 13, color: colors.muted, fontWeight: "600" },
+  filtreTextActive: { color: "#fff" },
   title: { fontWeight: "700", color: colors.text },
   meta: { color: colors.muted, fontSize: 13 },
   ozet: { color: colors.text, marginTop: 4, fontSize: 14 },

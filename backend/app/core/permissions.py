@@ -78,6 +78,7 @@ def _mudur_izinleri() -> dict[str, Kapsam]:
         "sterilizasyon:guncelle": Kapsam.GLOBAL,
         "transfuzyon:goruntule": Kapsam.GLOBAL,
         "transfuzyon:olustur": Kapsam.GLOBAL,
+        "rapor:goruntule": Kapsam.GLOBAL,
     }
 
 

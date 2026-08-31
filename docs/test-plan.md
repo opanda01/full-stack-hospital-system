@@ -121,6 +121,8 @@ Kurallar:
 - Güvenlik olay yaşam döngüsü (`test_guvenlik.py` + Faz K)
 - Denetim `KAYIT_GORUNTULEME`
 - Personel CSV/XLSX import job
+- Raporlama modülü: `/raporlar/*` auth + export (`test_raporlar.py`)
+- Mobil yatış geçmişi + özet dayanıklılık (`test_hasta_phr.py`)
 
 ### P2 — Orta
 

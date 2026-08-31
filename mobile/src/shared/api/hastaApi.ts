@@ -187,10 +187,19 @@ export async function fetchSikayetBenim(page = 1, pageSize = 20) {
 
 export async function fetchOzetSnapshot(): Promise<{
   me: MeResponse;
-  ozet: HastaOzetDto;
+  ozet: HastaOzetDto | null;
 }> {
-  const [me, ozet] = await Promise.all([fetchMe(), fetchHastaOzet()]);
+  const [me, ozet] = await Promise.all([
+    fetchMe(),
+    fetchHastaOzet().catch(() => null),
+  ]);
   return { me, ozet };
+}
+
+export async function fetchYatisGecmisi(limit = 10): Promise<HastaYatisOzetDto[]> {
+  const res = await apiFetch(`/hastalar/ben/yatis-gecmisi?limit=${limit}`);
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
 }
 
 export type ProfilBundle = {

@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Bar,
@@ -7,6 +6,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -17,40 +18,37 @@ import {
 import { AppShell } from "@/shared/ui";
 import { ChartCard } from "@/shared/ui/dashboard";
 import { api } from "@/shared/api";
-import { getApiErrorMessage, LOOKUP_PAGE_SIZE, unwrapPage, type PageResponse } from "@/shared/lib";
+import { getApiErrorMessage } from "@/shared/lib";
 import { roleRootFromPath } from "@/shared/lib/role-root";
+import { exportRapor, type RaporTur } from "@/features/raporlar/api/raporApi";
+import {
+  useFinansRapor,
+  useKlinikRapor,
+  useRandevuRapor,
+  useYatakRapor,
+  useYatisRapor,
+} from "@/features/raporlar/hooks/useRaporData";
+import { useQuery } from "@tanstack/react-query";
 
-type Kullanici = { id: number; rol: string; aktif_mi: boolean };
-type Doktor = { id: number; departman_id?: number | null };
-type Departman = { id: number; ad: string; birim_ad?: string | null };
-type Randevu = {
-  id: string;
-  durum: string;
-  tarih_saat?: string;
-  doktor_id?: number;
-  departman_id?: number | null;
-};
-type Personel = { id: number; rol?: string | null };
-
-const ROL_COLORS = [
+const CHART_COLORS = [
   "#0f766e",
   "#0369a1",
   "#b45309",
   "#be123c",
   "#4f46e5",
   "#15803d",
-  "#0e7490",
-  "#a16207",
-  "#7c3aed",
-  "#c2410c",
 ];
 
-const OZET_COLORS = ["#0f766e", "#0369a1", "#b45309", "#be123c"];
+type TabId = "randevu" | "yatis" | "finans" | "klinik";
 
-function dayKey(iso?: string) {
-  if (!iso) return null;
-  return iso.slice(0, 10);
-}
+type Departman = { id: number; ad: string };
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "randevu", label: "Randevu" },
+  { id: "yatis", label: "Yatış" },
+  { id: "finans", label: "Finans" },
+  { id: "klinik", label: "Klinik" },
+];
 
 export function AdminRaporlarPage() {
   const roleRoot = roleRootFromPath(useLocation().pathname);
@@ -58,178 +56,99 @@ export function AdminRaporlarPage() {
   const monthAgo = new Date(Date.now() - 30 * 86400000)
     .toISOString()
     .slice(0, 10);
+  const [tab, setTab] = useState<TabId>("randevu");
   const [baslangic, setBaslangic] = useState(monthAgo);
   const [bitis, setBitis] = useState(today);
   const [departmanId, setDepartmanId] = useState("");
+  const [exporting, setExporting] = useState(false);
 
-  const {
-    data: kullanicilar = [],
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["kullanicilar"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Kullanici>>("/kullanicilar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
-  const { data: doktorlar = [] } = useQuery({
-    queryKey: ["doktorlar"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Doktor>>("/doktorlar/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
+  const filtre = {
+    baslangic,
+    bitis,
+    departman_id: departmanId ? Number(departmanId) : undefined,
+  };
+
   const { data: departmanlar = [] } = useQuery({
     queryKey: ["departmanlar"],
     queryFn: async () => (await api.get<Departman[]>("/departmanlar/")).data,
   });
-  const { data: randevular = [] } = useQuery({
-    queryKey: ["randevular"],
-    queryFn: async () =>
-      unwrapPage(
-        (
-          await api.get<PageResponse<Randevu>>("/randevular/", {
-            params: { page_size: LOOKUP_PAGE_SIZE },
-          })
-        ).data,
-      ),
-  });
-  const { data: personeller = [] } = useQuery({
-    queryKey: ["personel"],
-    queryFn: async () => unwrapPage((await api.get<PageResponse<Personel>>("/personel/", { params: { page_size: LOOKUP_PAGE_SIZE } })).data),
-  });
 
-  const doktorById = useMemo(() => {
-    const map = new Map<number, Doktor>();
-    for (const d of doktorlar) map.set(d.id, d);
-    return map;
-  }, [doktorlar]);
+  const randevu = useRandevuRapor(filtre, tab === "randevu");
+  const yatis = useYatisRapor(filtre, tab === "yatis");
+  const yatak = useYatakRapor(tab === "yatis");
+  const finans = useFinansRapor(filtre, tab === "finans");
+  const klinik = useKlinikRapor(tab === "klinik");
 
-  const filteredRandevular = useMemo(() => {
-    return randevular.filter((r) => {
-      const day = dayKey(r.tarih_saat);
-      if (day && (day < baslangic || day > bitis)) return false;
-      if (departmanId) {
-        const depId =
-          r.departman_id ??
-          (r.doktor_id != null
-            ? (doktorById.get(r.doktor_id)?.departman_id ?? null)
-            : null);
-        if (String(depId ?? "") !== departmanId) return false;
-      }
-      return true;
-    });
-  }, [randevular, baslangic, bitis, departmanId, doktorById]);
+  const activeQuery =
+    tab === "randevu"
+      ? randevu
+      : tab === "yatis"
+        ? yatis
+        : tab === "finans"
+          ? finans
+          : klinik;
 
-  const filteredDepartmanlar = useMemo(() => {
-    if (!departmanId) return departmanlar;
-    return departmanlar.filter((d) => String(d.id) === departmanId);
-  }, [departmanlar, departmanId]);
-
-  const filteredDoktorlar = useMemo(() => {
-    if (!departmanId) return doktorlar;
-    return doktorlar.filter((d) => String(d.departman_id ?? "") === departmanId);
-  }, [doktorlar, departmanId]);
-
-  const rolDagilimi = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const u of kullanicilar) {
-      counts.set(u.rol, (counts.get(u.rol) ?? 0) + 1);
+  const csvIndir = async (format: "csv" | "pdf") => {
+    const tur: RaporTur =
+      tab === "randevu"
+        ? "randevu"
+        : tab === "yatis"
+          ? "yatis"
+          : tab === "finans"
+            ? "finans"
+            : "klinik";
+    setExporting(true);
+    try {
+      await exportRapor(tur, format, filtre);
+    } finally {
+      setExporting(false);
     }
-    return [...counts.entries()]
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [kullanicilar]);
-
-  const randevuDurum = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of filteredRandevular) {
-      counts.set(r.durum, (counts.get(r.durum) ?? 0) + 1);
-    }
-    return [...counts.entries()].map(([name, value]) => ({ name, value }));
-  }, [filteredRandevular]);
-
-  const birimDagilimi = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const d of filteredDepartmanlar) {
-      const key = d.birim_ad ?? "Birimsiz";
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [filteredDepartmanlar]);
-
-  const ozetVeri = useMemo(
-    () => [
-      { name: "Personel", value: personeller.length },
-      { name: "Doktor", value: filteredDoktorlar.length },
-      { name: "Departman", value: filteredDepartmanlar.length },
-      { name: "Kullanıcı", value: kullanicilar.length },
-    ],
-    [personeller, filteredDoktorlar, filteredDepartmanlar, kullanicilar],
-  );
-
-  const aktifKullanici = kullanicilar.filter((u) => u.aktif_mi).length;
-  const aktifRandevu = filteredRandevular.filter(
-    (r) => r.durum !== "IPTAL",
-  ).length;
-  const iptalRandevu = filteredRandevular.filter(
-    (r) => r.durum === "IPTAL",
-  ).length;
-
-  const csvIndir = () => {
-    const lines = [
-      "metrik,deger",
-      `filtre_baslangic,${baslangic}`,
-      `filtre_bitis,${bitis}`,
-      `filtre_departman_id,${departmanId || "hepsi"}`,
-      `kullanici_aktif,${aktifKullanici}`,
-      `kullanici_toplam,${kullanicilar.length}`,
-      `personel,${personeller.length}`,
-      `doktor,${filteredDoktorlar.length}`,
-      `departman,${filteredDepartmanlar.length}`,
-      `randevu_aktif,${aktifRandevu}`,
-      `randevu_iptal,${iptalRandevu}`,
-      ...rolDagilimi.map((r) => `rol_${r.name},${r.value}`),
-      ...randevuDurum.map((r) => `randevu_durum_${r.name},${r.value}`),
-    ];
-    const blob = new Blob([lines.join("\n")], {
-      type: "text/csv;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hastane-rapor-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
     <AppShell title="Raporlar" links={[{ to: roleRoot, label: "Ana" }]}>
-      {isLoading ? (
-        <p>Yükleniyor…</p>
-      ) : isError ? (
-        <p className="text-sm text-red-600" role="alert">
-          {getApiErrorMessage(error)}
-        </p>
-      ) : (
-        <div className="space-y-8">
-          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Başlangıç</span>
-              <input
-                type="date"
-                className="block rounded-md border border-border px-3 py-2"
-                value={baslangic}
-                onChange={(e) => setBaslangic(e.target.value)}
-              />
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Bitiş</span>
-              <input
-                type="date"
-                className="block rounded-md border border-border px-3 py-2"
-                value={bitis}
-                onChange={(e) => setBitis(e.target.value)}
-              />
-            </label>
+      <div className="space-y-6">
+        <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`rounded-md px-4 py-2 text-sm font-medium ${
+                tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
+          {tab !== "klinik" && (
+            <>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Başlangıç</span>
+                <input
+                  type="date"
+                  className="block rounded-md border border-border px-3 py-2"
+                  value={baslangic}
+                  onChange={(e) => setBaslangic(e.target.value)}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Bitiş</span>
+                <input
+                  type="date"
+                  className="block rounded-md border border-border px-3 py-2"
+                  value={bitis}
+                  onChange={(e) => setBitis(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+          {tab === "randevu" && (
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Departman</span>
               <select
@@ -245,126 +164,44 @@ export function AdminRaporlarPage() {
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              className="ml-auto rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
-              onClick={csvIndir}
-            >
-              CSV indir
-            </button>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <OzetKart
-              label="Kullanıcı (aktif)"
-              value={`${aktifKullanici} / ${kullanicilar.length}`}
-            />
-            <OzetKart label="Personel" value={personeller.length} />
-            <OzetKart label="Doktor" value={filteredDoktorlar.length} />
-            <OzetKart
-              label="Randevu (aktif / iptal)"
-              value={`${aktifRandevu} / ${iptalRandevu}`}
-            />
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ChartCard title="Genel özet">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart
-                  data={ozetVeri}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Adet" radius={[4, 4, 0, 0]}>
-                    {ozetVeri.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={OZET_COLORS[i % OZET_COLORS.length]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Randevu durumları (filtreli)">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={randevuDurum}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    label
-                  >
-                    {randevuDurum.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={ROL_COLORS[i % ROL_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Rol dağılımı">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart
-                  data={rolDagilimi}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 40 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 10 }}
-                    angle={-35}
-                    textAnchor="end"
-                    interval={0}
-                  />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Adet" radius={[4, 4, 0, 0]}>
-                    {rolDagilimi.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={ROL_COLORS[i % ROL_COLORS.length]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Birim bazlı departman">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart
-                  data={birimDagilimi}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar
-                    dataKey="value"
-                    name="Departman"
-                    fill="#0f766e"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
+          )}
+          <button
+            type="button"
+            disabled={exporting}
+            className="ml-auto rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+            onClick={() => void csvIndir("csv")}
+          >
+            CSV indir
+          </button>
+          <button
+            type="button"
+            disabled={exporting}
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+            onClick={() => void csvIndir("pdf")}
+          >
+            PDF indir
+          </button>
         </div>
-      )}
+
+        {activeQuery.isLoading ? (
+          <p>Yükleniyor…</p>
+        ) : activeQuery.isError ? (
+          <p className="text-sm text-red-600" role="alert">
+            {getApiErrorMessage(activeQuery.error)}
+          </p>
+        ) : (
+          <>
+            {tab === "randevu" && randevu.data && (
+              <RandevuTab data={randevu.data} />
+            )}
+            {tab === "yatis" && yatis.data && yatak.data && (
+              <YatisTab yatis={yatis.data} yatak={yatak.data} />
+            )}
+            {tab === "finans" && finans.data && <FinansTab data={finans.data} />}
+            {tab === "klinik" && klinik.data && <KlinikTab data={klinik.data} />}
+          </>
+        )}
+      </div>
     </AppShell>
   );
 }
@@ -374,6 +211,204 @@ function OzetKart({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function DagilimPie({
+  title,
+  data,
+}: {
+  title: string;
+  data: { etiket: string; deger: number }[];
+}) {
+  const chartData = data.map((d) => ({ name: d.etiket, value: d.deger }));
+  if (!chartData.length) {
+    return (
+      <ChartCard title={title}>
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Veri yok
+        </p>
+      </ChartCard>
+    );
+  }
+  return (
+    <ChartCard title={title}>
+      <ResponsiveContainer width="100%" height={280}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            outerRadius={90}
+            label
+          >
+            {chartData.map((_, i) => (
+              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+function RandevuTab({
+  data,
+}: {
+  data: {
+    toplam: number;
+    no_show: number;
+    durum_dagilimi: { etiket: string; deger: number }[];
+    gunluk_adet: { tarih: string; adet: number }[];
+    departman_dagilimi: { etiket: string; deger: number }[];
+  };
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <OzetKart label="Toplam randevu" value={data.toplam} />
+        <OzetKart label="No-show" value={data.no_show} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ChartCard title="Günlük randevu trendi">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={data.gunluk_adet}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="tarih" tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="adet"
+                stroke="#0f766e"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <DagilimPie title="Durum dağılımı" data={data.durum_dagilimi} />
+        <DagilimPie title="Departman dağılımı" data={data.departman_dagilimi} />
+      </div>
+    </div>
+  );
+}
+
+function YatisTab({
+  yatis,
+  yatak,
+}: {
+  yatis: {
+    aktif_yatis: number;
+    ortalama_los_gun: number;
+    servis_doluluk: {
+      servis_adi: string;
+      dolu: number;
+      toplam: number;
+      oran: number;
+    }[];
+    gunluk_yatis: { tarih: string; adet: number }[];
+  };
+  yatak: {
+    dolu: number;
+    bos: number;
+    temizlik_bekleyen: number;
+    arizali: number;
+  };
+}) {
+  const servisChart = yatis.servis_doluluk.map((s) => ({
+    name: s.servis_adi,
+    dolu: s.dolu,
+    bos: s.toplam - s.dolu,
+  }));
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <OzetKart label="Aktif yatış" value={yatis.aktif_yatis} />
+        <OzetKart label="Ort. LOS (gün)" value={yatis.ortalama_los_gun} />
+        <OzetKart label="Yatak dolu" value={yatak.dolu} />
+        <OzetKart label="Yatak boş" value={yatak.bos} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ChartCard title="Günlük yatış">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={yatis.gunluk_yatis}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="tarih" tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Line type="monotone" dataKey="adet" stroke="#0369a1" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Servis doluluk">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={servisChart}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="dolu" stackId="a" fill="#0f766e" name="Dolu" />
+              <Bar dataKey="bos" stackId="a" fill="#94a3b8" name="Boş" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+    </div>
+  );
+}
+
+function FinansTab({
+  data,
+}: {
+  data: {
+    fatura_toplam: number;
+    toplam_tutar: string;
+    doner_gelir: string;
+    doner_gider: string;
+    fatura_durum_dagilimi: { etiket: string; deger: number }[];
+  };
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <OzetKart label="Fatura sayısı" value={data.fatura_toplam} />
+        <OzetKart label="Toplam tutar" value={data.toplam_tutar} />
+        <OzetKart label="Döner gelir" value={data.doner_gelir} />
+        <OzetKart label="Döner gider" value={data.doner_gider} />
+      </div>
+      <DagilimPie title="Fatura durum dağılımı" data={data.fatura_durum_dagilimi} />
+    </div>
+  );
+}
+
+function KlinikTab({
+  data,
+}: {
+  data: {
+    sikayet_bekleyen: number;
+    epikriz_onay_bekleyen: number;
+    no_show_hasta: number;
+    tetkik_durum_dagilimi: { etiket: string; deger: number }[];
+    triyaj_renk_dagilimi: { etiket: string; deger: number }[];
+  };
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <OzetKart label="Şikayet bekleyen" value={data.sikayet_bekleyen} />
+        <OzetKart label="Epikriz onay bekleyen" value={data.epikriz_onay_bekleyen} />
+        <OzetKart label="No-show hasta" value={data.no_show_hasta} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DagilimPie title="Tetkik durum" data={data.tetkik_durum_dagilimi} />
+        <DagilimPie title="Triyaj renk" data={data.triyaj_renk_dagilimi} />
+      </div>
     </div>
   );
 }

@@ -42,6 +42,7 @@ from app.features.radyoloji.router import router as radyoloji_router
 from app.features.yatis.router import router as yatis_router
 from app.features.ilac_talep.router import router as ilac_talep_router
 from app.features.epikriz.router import router as epikriz_router
+from app.features.raporlar.router import router as raporlar_router
 from app.features.dashboard.router import router as dashboard_router
 from app.features.guvenlik.router import router as guvenlik_router
 from app.features.sterilizasyon.router import router as sterilizasyon_router
@@ -136,3 +137,4 @@ app.include_router(guvenlik_router, prefix="/guvenlik", tags=["guvenlik"])
 app.include_router(sterilizasyon_router, prefix="/sterilizasyon", tags=["sterilizasyon"])
 app.include_router(transfuzyon_router, prefix="/transfuzyon", tags=["transfuzyon"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+app.include_router(raporlar_router, prefix="/raporlar", tags=["raporlar"])

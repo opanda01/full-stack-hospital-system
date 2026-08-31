@@ -32,6 +32,20 @@ Bu klasör, `docs/reports/` altındaki **detaylı günlük raporların** Word sa
 | 24 | 20.08.2026 | [gun-24.md](gun-24.md) | [../2026-08-20/gun-24-metriccard-ve-data-hook.md](../2026-08-20/gun-24-metriccard-ve-data-hook.md) |
 | 25 | 21.08.2026 | [gun-25.md](gun-25.md) | [../2026-08-21/gun-25-admin-ozet-tab-ve-grafikler.md](../2026-08-21/gun-25-admin-ozet-tab-ve-grafikler.md) |
 | 26 | 24.08.2026 | [gun-26.md](gun-26.md) | [../2026-08-24/gun-26-entegrasyon-pr42-ve-teslim.md](../2026-08-24/gun-26-entegrasyon-pr42-ve-teslim.md) |
+| 27 | 27.08.2026 | — | [../2026-08-27/gun-27-mobil-ozet-500-yatis-alan-hatasi.md](../2026-08-27/gun-27-mobil-ozet-500-yatis-alan-hatasi.md) |
+| 28 | 01.09.2026 | [gun-28.md](gun-28.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 29 | 02.09.2026 | [gun-29.md](gun-29.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 30 | 03.09.2026 | [gun-30.md](gun-30.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 31 | 04.09.2026 | [gun-31.md](gun-31.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 32 | 05.09.2026 | [gun-32.md](gun-32.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 33 | 08.09.2026 | [gun-33.md](gun-33.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 34 | 09.09.2026 | [gun-34.md](gun-34.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 35 | 10.09.2026 | [gun-35.md](gun-35.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 36 | 11.09.2026 | [gun-36.md](gun-36.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 37 | 12.09.2026 | [gun-37.md](gun-37.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 38 | 15.09.2026 | [gun-38.md](gun-38.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 39 | 16.09.2026 | [gun-39.md](gun-39.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
+| 40 | 17.09.2026 | [gun-40.md](gun-40.md) | [../2026-09-17/gun-28-40-raporlama-modulu-teslim.md](../2026-09-17/gun-28-40-raporlama-modulu-teslim.md) |
 
 ## Word'e aktarma
 

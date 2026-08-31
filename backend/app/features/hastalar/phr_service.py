@@ -107,15 +107,13 @@ def list_benim_belgeler(
 
 
 def yatis_ozet(session: Session, current_user: Kullanici) -> HastaYatisOzetRead:
-    hasta = hasta_getir(session, current_user.id)
-    assert hasta.id is not None
-    row = session.exec(
-        select(YatisKaydi)
-        .where(YatisKaydi.hasta_id == hasta.id)
-        .order_by(YatisKaydi.yatis_tarihi.desc(), YatisKaydi.id.desc())
-    ).first()
-    if row is None:
+    rows = list_yatis_gecmisi(session, current_user, limit=1)
+    if not rows:
         return HastaYatisOzetRead(aktif_mi=False)
+    return rows[0]
+
+
+def _yatis_kaydi_to_read(session: Session, row: YatisKaydi) -> HastaYatisOzetRead:
     servis = session.get(Servis, row.servis_id) if row.servis_id else None
     yatak = session.get(Yatak, row.yatak_id) if row.yatak_id else None
     oda_no, yatak_no, _ = yatak_oda_bilgi(session, yatak)
@@ -129,6 +127,23 @@ def yatis_ozet(session: Session, current_user: Kullanici) -> HastaYatisOzetRead:
         yatis_tarihi=row.yatis_tarihi,
         taburcu_tarihi=row.cikis_tarihi,
     )
+
+
+def list_yatis_gecmisi(
+    session: Session,
+    current_user: Kullanici,
+    *,
+    limit: int = 10,
+) -> list[HastaYatisOzetRead]:
+    hasta = hasta_getir(session, current_user.id)
+    assert hasta.id is not None
+    rows = session.exec(
+        select(YatisKaydi)
+        .where(YatisKaydi.hasta_id == hasta.id)
+        .order_by(YatisKaydi.yatis_tarihi.desc(), YatisKaydi.id.desc())
+        .limit(limit)
+    ).all()
+    return [_yatis_kaydi_to_read(session, row) for row in rows]
 
 
 def hasta_ozet(

@@ -28,6 +28,10 @@ class HastaYatisOzetRead(BaseModel):
     taburcu_tarihi: datetime | None = None
 
 
+class HastaYatisGecmisRead(HastaYatisOzetRead):
+    """Yatış geçmişi satırı — aktif ve taburcu kayıtlar."""
+
+
 class HastaOzetRead(BaseModel):
     ad_soyad: str
     yaklasan_randevu: RandevuRead | None = None

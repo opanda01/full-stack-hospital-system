@@ -174,6 +174,16 @@ export default function HastaLayout() {
         }}
       />
       <Tabs.Screen
+        name="yatislarim/index"
+        options={{
+          href: null,
+          title: "Yatışlarım",
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: "#fff",
+        }}
+      />
+      <Tabs.Screen
         name="belgelerim/index"
         options={{
           href: null,
